@@ -163,8 +163,30 @@ pub fn exec(
                 };
                 stack.push(Value::Closure(Rc::new(closure)));
             }
-            // Tail calls and numeric fast paths land in B4.
-            Op::TailCall(_) | Op::SelfTailCall(_) => {
+            Op::SelfTailCall(n) => {
+                // In-place tail-recursion: copy the top n stack values
+                // into `locals[0..n]` and reset `pc = 0`. The Rust
+                // stack doesn't grow because we stay inside this
+                // `vm::exec` invocation. Lets in slots [n..n_locals]
+                // are left as-is; they'll be reassigned by `StoreLocal`
+                // as the body re-executes, matching shen-go's behavior
+                // (`../shen-go/kl/vm.go:258–263`).
+                let n = n as usize;
+                if stack.len() < n {
+                    return Err(ShenError::new("vm: stack underflow on SelfTailCall"));
+                }
+                if n > locals.len() {
+                    return Err(ShenError::new("vm: SelfTailCall n > n_locals"));
+                }
+                let new_args_start = stack.len() - n;
+                for (i, v) in stack.drain(new_args_start..).enumerate() {
+                    locals[i] = v;
+                }
+                pc = 0;
+            }
+            // Cross-tier TailCall lands in B5/B6. Numeric fast-path
+            // opcodes land in B4b.
+            Op::TailCall(_) => {
                 return Err(ShenError::new(format!(
                     "vm: opcode {op:?} not implemented in this phase"
                 )));

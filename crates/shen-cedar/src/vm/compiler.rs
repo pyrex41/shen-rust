@@ -37,10 +37,17 @@ pub fn compile_fn(
     body: &KlExpr,
 ) -> Result<BytecodeFn, String> {
     let mut c = Compiler::new(interp);
+    // Tag the outermost frame with the function's name + arity so
+    // self-tail-calls can be detected in tail position.
+    {
+        let f = c.top_mut();
+        f.current_fn = name;
+        f.current_arity = params.len();
+    }
     for &p in params {
         c.add_local(p);
     }
-    c.compile_expr(body)?;
+    c.compile_expr(body, true)?;
     c.emit(Op::Return);
     assert_eq!(
         c.frames.len(),
@@ -83,6 +90,14 @@ struct CompilerFrame {
     /// lives, so the outer frame can emit the right `LoadLocal` /
     /// `LoadUpval` at `MakeClosure` time.
     upvals: Vec<UpvalInfo>,
+    /// The Sym this frame is the body of, if it's a named `defun`. Used
+    /// to detect self-tail-calls so they can lower to `SelfTailCall(n)`
+    /// (in-place arg rebind + `pc=0`) instead of the general
+    /// trampoline. `None` for anonymous frames (nested lambdas).
+    current_fn: Option<SymId>,
+    /// Arity of the function this frame is the body of. Self-tail-call
+    /// only fires when the actual arg count matches.
+    current_arity: usize,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -220,7 +235,7 @@ impl<'a> Compiler<'a> {
         Some(VarKind::Upval(new_idx as u16))
     }
 
-    fn compile_expr(&mut self, expr: &KlExpr) -> Result<(), String> {
+    fn compile_expr(&mut self, expr: &KlExpr, tail: bool) -> Result<(), String> {
         match expr {
             KlExpr::Nil => self.emit_const(Value::Nil)?,
             KlExpr::Bool(b) => self.emit_const(Value::Bool(*b))?,
@@ -240,12 +255,12 @@ impl<'a> Compiler<'a> {
                     }
                 }
             }
-            KlExpr::App(items) => self.compile_app(items)?,
+            KlExpr::App(items) => self.compile_app(items, tail)?,
         }
         Ok(())
     }
 
-    fn compile_app(&mut self, items: &[KlExpr]) -> Result<(), String> {
+    fn compile_app(&mut self, items: &[KlExpr], tail: bool) -> Result<(), String> {
         if items.is_empty() {
             return self.emit_const(Value::Nil);
         }
@@ -253,22 +268,22 @@ impl<'a> Compiler<'a> {
             let wk = &self.interp.well_known;
             let sym = *head_sym;
             if sym == wk.k_if {
-                return self.compile_if(&items[1..]);
+                return self.compile_if(&items[1..], tail);
             }
             if sym == wk.k_let {
-                return self.compile_let(&items[1..]);
+                return self.compile_let(&items[1..], tail);
             }
             if sym == wk.k_and {
-                return self.compile_and(&items[1..]);
+                return self.compile_and(&items[1..], tail);
             }
             if sym == wk.k_or {
-                return self.compile_or(&items[1..]);
+                return self.compile_or(&items[1..], tail);
             }
             if sym == wk.k_do {
-                return self.compile_do(&items[1..]);
+                return self.compile_do(&items[1..], tail);
             }
             if sym == wk.k_cond {
-                return self.compile_cond(&items[1..]);
+                return self.compile_cond(&items[1..], tail);
             }
             if sym == wk.k_lambda {
                 return self.compile_lambda(&items[1..]);
@@ -280,7 +295,7 @@ impl<'a> Compiler<'a> {
                 if items.len() < 2 {
                     return Err("type: expected at least 1 arg".into());
                 }
-                return self.compile_expr(&items[1]);
+                return self.compile_expr(&items[1], tail);
             }
             if sym == wk.k_defun || sym == wk.k_trap_error || sym == wk.k_thaw || sym == wk.k_quote
             {
@@ -291,16 +306,43 @@ impl<'a> Compiler<'a> {
             }
         }
 
-        // Plain call: head value, then args, then `Call(n)`.
-        self.compile_head(&items[0])?;
+        // Self-tail-call detection. Only fires when:
+        //   1. We're in tail position.
+        //   2. We're in the outermost frame (`frames.len() == 1`) — inner
+        //      lambdas don't have a meaningful "self" name to recurse to,
+        //      and the SelfTailCall opcode loops back to the current frame.
+        //   3. The head is a bare Sym matching this frame's `current_fn`.
+        //   4. The head isn't shadowed by a local (would resolve to a
+        //      local binding instead of the global function).
+        //   5. The argument count matches the function's declared arity.
         let n_args = items.len() - 1;
         if n_args > u8::MAX as usize {
             return Err(format!(
                 "vm: more than u8::MAX args at call site ({n_args})"
             ));
         }
+        if tail && self.frames.len() == 1 {
+            if let KlExpr::Sym(head_sym) = &items[0] {
+                let f = &self.frames[0];
+                if Some(*head_sym) == f.current_fn
+                    && n_args == f.current_arity
+                    && !f.locals.contains_key(head_sym)
+                {
+                    // Compile args onto the operand stack — none of
+                    // them are themselves in tail position.
+                    for arg in &items[1..] {
+                        self.compile_expr(arg, false)?;
+                    }
+                    self.emit(Op::SelfTailCall(n_args as u8));
+                    return Ok(());
+                }
+            }
+        }
+
+        // Plain call: head value, then args, then `Call(n)`.
+        self.compile_head(&items[0])?;
         for arg in &items[1..] {
-            self.compile_expr(arg)?;
+            self.compile_expr(arg, false)?;
         }
         self.emit(Op::Call(n_args as u8));
         Ok(())
@@ -325,24 +367,28 @@ impl<'a> Compiler<'a> {
                 }
             }
         }
-        self.compile_expr(head)
+        // A non-Sym head in head position is just any value
+        // expression — never in tail position, since its value
+        // becomes the callee and the args' eval happens after.
+        self.compile_expr(head, false)
     }
 
-    fn compile_if(&mut self, args: &[KlExpr]) -> Result<(), String> {
+    fn compile_if(&mut self, args: &[KlExpr], tail: bool) -> Result<(), String> {
         if args.len() != 3 {
             return Err("if: expected 3 args".into());
         }
-        self.compile_expr(&args[0])?;
+        // Condition is not in tail position; both branches are.
+        self.compile_expr(&args[0], false)?;
         let else_jump = self.emit_jump(Op::JumpFalse);
-        self.compile_expr(&args[1])?;
+        self.compile_expr(&args[1], tail)?;
         let end_jump = self.emit_jump(Op::Jump);
         self.patch_jump(else_jump)?;
-        self.compile_expr(&args[2])?;
+        self.compile_expr(&args[2], tail)?;
         self.patch_jump(end_jump)?;
         Ok(())
     }
 
-    fn compile_let(&mut self, args: &[KlExpr]) -> Result<(), String> {
+    fn compile_let(&mut self, args: &[KlExpr], tail: bool) -> Result<(), String> {
         if args.len() != 3 {
             return Err("let: expected 3 args".into());
         }
@@ -350,7 +396,9 @@ impl<'a> Compiler<'a> {
             KlExpr::Sym(s) => *s,
             _ => return Err("let: var must be a symbol".into()),
         };
-        self.compile_expr(&args[1])?;
+        // The value expression is NOT in tail position; the body IS
+        // (whatever tail-ness the let itself has).
+        self.compile_expr(&args[1], false)?;
         // Reserve a fresh slot in the *current* frame and shadow any
         // outer binding of the same name. Save the prior mapping so a
         // nested `(let X .. (let X .. X))` correctly restores the
@@ -366,7 +414,7 @@ impl<'a> Compiler<'a> {
             (slot, prev)
         };
         self.emit(Op::StoreLocal(slot));
-        let res = self.compile_expr(&args[2]);
+        let res = self.compile_expr(&args[2], tail);
         {
             let f = self.top_mut();
             match prev {
@@ -381,13 +429,15 @@ impl<'a> Compiler<'a> {
         res
     }
 
-    fn compile_and(&mut self, args: &[KlExpr]) -> Result<(), String> {
+    fn compile_and(&mut self, args: &[KlExpr], tail: bool) -> Result<(), String> {
         if args.len() != 2 {
             return Err("and: expected 2 args".into());
         }
-        self.compile_expr(&args[0])?;
+        self.compile_expr(&args[0], false)?;
         let else_jump = self.emit_jump(Op::JumpFalse);
-        self.compile_expr(&args[1])?;
+        // Second arg's value is the value of the `and` on the true
+        // path, so it inherits tail-ness.
+        self.compile_expr(&args[1], tail)?;
         let end_jump = self.emit_jump(Op::Jump);
         self.patch_jump(else_jump)?;
         self.emit_const(Value::Bool(false))?;
@@ -395,27 +445,32 @@ impl<'a> Compiler<'a> {
         Ok(())
     }
 
-    fn compile_or(&mut self, args: &[KlExpr]) -> Result<(), String> {
+    fn compile_or(&mut self, args: &[KlExpr], tail: bool) -> Result<(), String> {
         if args.len() != 2 {
             return Err("or: expected 2 args".into());
         }
-        self.compile_expr(&args[0])?;
+        self.compile_expr(&args[0], false)?;
         let eval_b = self.emit_jump(Op::JumpFalse);
         self.emit_const(Value::Bool(true))?;
         let end_jump = self.emit_jump(Op::Jump);
         self.patch_jump(eval_b)?;
-        self.compile_expr(&args[1])?;
+        // Second arg's value is the value of the `or` on the false
+        // path, so it inherits tail-ness.
+        self.compile_expr(&args[1], tail)?;
         self.patch_jump(end_jump)?;
         Ok(())
     }
 
-    fn compile_do(&mut self, args: &[KlExpr]) -> Result<(), String> {
+    fn compile_do(&mut self, args: &[KlExpr], tail: bool) -> Result<(), String> {
         if args.is_empty() {
             return self.emit_const(Value::Nil);
         }
         let last = args.len() - 1;
         for (i, e) in args.iter().enumerate() {
-            self.compile_expr(e)?;
+            // Only the last expression carries the do's value, so only
+            // that one inherits tail-ness.
+            let sub_tail = i == last && tail;
+            self.compile_expr(e, sub_tail)?;
             if i != last {
                 self.emit(Op::Pop);
             }
@@ -423,16 +478,17 @@ impl<'a> Compiler<'a> {
         Ok(())
     }
 
-    fn compile_cond(&mut self, args: &[KlExpr]) -> Result<(), String> {
+    fn compile_cond(&mut self, args: &[KlExpr], tail: bool) -> Result<(), String> {
         let mut end_jumps: Vec<usize> = Vec::with_capacity(args.len());
         for clause in args {
             let pair = match clause {
                 KlExpr::App(items) if items.len() == 2 => items,
                 _ => return Err("cond: clauses must be 2-element lists".into()),
             };
-            self.compile_expr(&pair[0])?;
+            // Tests are not in tail position; clause bodies are.
+            self.compile_expr(&pair[0], false)?;
             let next = self.emit_jump(Op::JumpFalse);
-            self.compile_expr(&pair[1])?;
+            self.compile_expr(&pair[1], tail)?;
             end_jumps.push(self.emit_jump(Op::Jump));
             self.patch_jump(next)?;
         }
@@ -478,9 +534,15 @@ impl<'a> Compiler<'a> {
         for &p in params {
             self.add_local(p);
         }
-        // Compile the body. On error, drop the dangling frame so the
+        // Compile the body in tail position relative to the new
+        // frame. (Self-tail-call won't fire here because the new
+        // frame's `current_fn` is None — nested lambdas don't have a
+        // name to recurse to. That's correct: the SelfTailCall
+        // opcode loops to `pc=0` of the current frame, so it would be
+        // wrong to fire it on a "self" that's actually the *outer*
+        // function.) On error, drop the dangling frame so the
         // compiler isn't left in a bad state.
-        if let Err(e) = self.compile_expr(body) {
+        if let Err(e) = self.compile_expr(body, true) {
             self.frames.pop();
             return Err(e);
         }
@@ -733,6 +795,64 @@ mod tests {
         let frozen = exec(&mut interp, &bf, &[], &[Value::Int(7)]).expect("exec");
         let result = interp.apply(frozen, vec![]).expect("apply");
         assert!(matches!(result, Value::Int(49)), "got {result:?}");
+    }
+
+    #[test]
+    fn self_tail_call_deep_loop() {
+        // The B2 version of this test used `register_native` to
+        // re-enter exec, which grew the Rust stack on every iteration
+        // and limited N to ~100. With SelfTailCall in tail position,
+        // the loop stays inside one `vm::exec` invocation and can run
+        // arbitrarily deep. 100_000 iterations is well past anything
+        // the previous tree-walker handled without the 1 GB worker
+        // stack.
+        let mut interp = Interp::new();
+        let (name, params, body) = parse_defun(
+            "(defun loop-sum (N ACC) (if (= N 0) ACC (loop-sum (- N 1) (+ ACC 1))))",
+            &mut interp,
+        );
+        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        // Sanity: emitted code should contain a SelfTailCall, not a
+        // plain Call, for the recursive site.
+        assert!(
+            bf.code.iter().any(|op| matches!(op, Op::SelfTailCall(_))),
+            "expected SelfTailCall in compiled loop-sum, got code: {:?}",
+            bf.code
+        );
+        let result =
+            exec(&mut interp, &bf, &[], &[Value::Int(100_000), Value::Int(0)]).expect("exec");
+        assert!(matches!(result, Value::Int(100_000)), "got {result:?}");
+    }
+
+    #[test]
+    fn self_tail_call_only_in_outermost_frame() {
+        // Inside a `(lambda ...)`, a call back to the outer defun's
+        // name is NOT a self-tail-call (the SelfTailCall opcode would
+        // wrongly loop to the lambda's pc=0). The compiler should
+        // emit a regular `Call` here, not `SelfTailCall`.
+        let mut interp = Interp::new();
+        let (name, params, body) =
+            parse_defun("(defun outer (X) (lambda Y (outer X)))", &mut interp);
+        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        // Outer frame should not have a SelfTailCall — just MakeClosure
+        // and Return.
+        assert!(
+            !bf.code.iter().any(|op| matches!(op, Op::SelfTailCall(_))),
+            "outer frame should not contain SelfTailCall, got code: {:?}",
+            bf.code
+        );
+        // The inner lambda's code (in bf.fn_consts[0]) shouldn't have
+        // one either — it's a `Call`, not `SelfTailCall`, because the
+        // lambda has no `current_fn`.
+        let inner = &bf.fn_consts[0];
+        assert!(
+            !inner
+                .code
+                .iter()
+                .any(|op| matches!(op, Op::SelfTailCall(_))),
+            "inner lambda should not contain SelfTailCall, got code: {:?}",
+            inner.code
+        );
     }
 
     #[test]
