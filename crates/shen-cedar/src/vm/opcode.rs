@@ -62,4 +62,45 @@ pub enum Op {
     /// `consts[fn_idx]` (a `BytecodeFn` constant) into a new closure
     /// value, push the closure.
     MakeClosure { fn_idx: u16, n_upvals: u8 },
+
+    // ---- Inlined primitives -------------------------------------------
+    // Mirror klcompile's `inlinable()` table: when the compiler sees a
+    // bare reference to one of these primitives (not shadowed by a
+    // local), it emits the dedicated opcode instead of
+    // `LoadGlobal + args + Call(n)`. Semantics are identical to the
+    // matching `aot::runtime::*` helpers (`rt::add`, `rt::hd`, etc.).
+    /// Pop b, a; push `a + b`. Int+Int with overflow → Float.
+    Add,
+    /// Pop b, a; push `a - b`.
+    Sub,
+    /// Pop b, a; push `a * b`.
+    Mul,
+    /// Pop b, a; push `a / b`. Int/Int yielding integer result stays Int.
+    Div,
+    /// Pop b, a; push `Bool(a < b)`. Errors on NaN.
+    Lt,
+    /// Pop b, a; push `Bool(a <= b)`.
+    Le,
+    /// Pop b, a; push `Bool(a > b)`.
+    Gt,
+    /// Pop b, a; push `Bool(a >= b)`.
+    Ge,
+    /// Pop b, a; push `Bool(shen_eq(a, b))`. Infallible.
+    Eq,
+    /// Pop b, a; push `Cons(a, b)`. Infallible.
+    Cons,
+    /// Pop a; push `head(a)`. Errors if a is not a cons.
+    Hd,
+    /// Pop a; push `tail(a)`. Errors if a is not a cons.
+    Tl,
+    /// Pop a; push `Bool(is_cons(a))`. Infallible.
+    IsCons,
+    /// Pop a; push `Bool(is_number(a))`.
+    IsNumber,
+    /// Pop a; push `Bool(is_string(a))`.
+    IsString,
+    /// Pop a; push `Bool(is_symbol(a))`.
+    IsSymbol,
+    /// Pop a; push `Bool(is_absvector(a))`. `vector?` aliases here too.
+    IsAbsvector,
 }

@@ -184,8 +184,28 @@ pub fn exec(
                 }
                 pc = 0;
             }
-            // Cross-tier TailCall lands in B5/B6. Numeric fast-path
-            // opcodes land in B4b.
+            // ---- Inlined primitives (B4b) ----------------------------
+            // Each one mirrors the `aot::runtime::*` helper of the
+            // same name; we keep the helpers as the single source of
+            // truth for the semantics.
+            Op::Add => binop_fallible(&mut stack, crate::aot::runtime::add)?,
+            Op::Sub => binop_fallible(&mut stack, crate::aot::runtime::sub)?,
+            Op::Mul => binop_fallible(&mut stack, crate::aot::runtime::mul)?,
+            Op::Div => binop_fallible(&mut stack, crate::aot::runtime::div)?,
+            Op::Lt => binop_fallible(&mut stack, crate::aot::runtime::lt)?,
+            Op::Le => binop_fallible(&mut stack, crate::aot::runtime::lte)?,
+            Op::Gt => binop_fallible(&mut stack, crate::aot::runtime::gt)?,
+            Op::Ge => binop_fallible(&mut stack, crate::aot::runtime::gte)?,
+            Op::Eq => binop_infallible(&mut stack, crate::aot::runtime::eq)?,
+            Op::Cons => binop_infallible(&mut stack, crate::aot::runtime::cons)?,
+            Op::Hd => unop_fallible(&mut stack, crate::aot::runtime::hd)?,
+            Op::Tl => unop_fallible(&mut stack, crate::aot::runtime::tl)?,
+            Op::IsCons => unop_infallible(&mut stack, crate::aot::runtime::is_cons)?,
+            Op::IsNumber => unop_infallible(&mut stack, crate::aot::runtime::is_number)?,
+            Op::IsString => unop_infallible(&mut stack, crate::aot::runtime::is_string)?,
+            Op::IsSymbol => unop_infallible(&mut stack, crate::aot::runtime::is_symbol)?,
+            Op::IsAbsvector => unop_infallible(&mut stack, crate::aot::runtime::is_absvector)?,
+            // Cross-tier TailCall lands in B5/B6.
             Op::TailCall(_) => {
                 return Err(ShenError::new(format!(
                     "vm: opcode {op:?} not implemented in this phase"
@@ -193,6 +213,55 @@ pub fn exec(
             }
         }
     }
+}
+
+#[inline]
+fn binop_fallible(
+    stack: &mut Vec<Value>,
+    f: fn(&Value, &Value) -> ShenResult<Value>,
+) -> ShenResult<()> {
+    let b = stack
+        .pop()
+        .ok_or_else(|| ShenError::new("vm: stack underflow on binop"))?;
+    let a = stack
+        .pop()
+        .ok_or_else(|| ShenError::new("vm: stack underflow on binop"))?;
+    let v = f(&a, &b)?;
+    stack.push(v);
+    Ok(())
+}
+
+#[inline]
+fn binop_infallible(stack: &mut Vec<Value>, f: fn(&Value, &Value) -> Value) -> ShenResult<()> {
+    let b = stack
+        .pop()
+        .ok_or_else(|| ShenError::new("vm: stack underflow on binop"))?;
+    let a = stack
+        .pop()
+        .ok_or_else(|| ShenError::new("vm: stack underflow on binop"))?;
+    let v = f(&a, &b);
+    stack.push(v);
+    Ok(())
+}
+
+#[inline]
+fn unop_fallible(stack: &mut Vec<Value>, f: fn(&Value) -> ShenResult<Value>) -> ShenResult<()> {
+    let a = stack
+        .pop()
+        .ok_or_else(|| ShenError::new("vm: stack underflow on unop"))?;
+    let v = f(&a)?;
+    stack.push(v);
+    Ok(())
+}
+
+#[inline]
+fn unop_infallible(stack: &mut Vec<Value>, f: fn(&Value) -> Value) -> ShenResult<()> {
+    let a = stack
+        .pop()
+        .ok_or_else(|| ShenError::new("vm: stack underflow on unop"))?;
+    let v = f(&a);
+    stack.push(v);
+    Ok(())
 }
 
 /// Compute the new `pc` after a Jump/JumpFalse. `pc` here is the value

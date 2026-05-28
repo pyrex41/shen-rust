@@ -199,6 +199,27 @@ impl<'a> Compiler<'a> {
         Ok(())
     }
 
+    /// Non-mutating check: would `sym` resolve to a lexical binding
+    /// (local in this frame, existing upval, or any binding in an
+    /// outer frame) at the current compilation point? Used to decide
+    /// whether emitting an inlined primitive opcode is safe — if the
+    /// primitive's name is shadowed by a lexical binding, the value
+    /// from that binding wins, so we must fall back to a normal call.
+    ///
+    /// Doesn't mutate any frame (unlike `resolve_var`, which registers
+    /// upvals on its way out).
+    fn peek_shadowed(&self, sym: SymId) -> bool {
+        for frame in self.frames.iter().rev() {
+            if frame.locals.contains_key(&sym) {
+                return true;
+            }
+            if frame.upvals.iter().any(|uv| uv.name == sym) {
+                return true;
+            }
+        }
+        false
+    }
+
     /// Resolve `sym` for the frame at `frame_idx`. Returns where it
     /// came from in *that* frame's terms (`Local(slot)` or
     /// `Upval(idx)`), or `None` if the variable isn't bound in any
@@ -306,6 +327,32 @@ impl<'a> Compiler<'a> {
             }
         }
 
+        let n_args = items.len() - 1;
+        if n_args > u8::MAX as usize {
+            return Err(format!(
+                "vm: more than u8::MAX args at call site ({n_args})"
+            ));
+        }
+
+        // Inlined-primitive detection: emit a dedicated opcode for the
+        // 18 hot primitives klcompile already special-cases (`+`, `-`,
+        // `*`, `/`, comparisons, `cons`, `hd`, `tl`, type predicates),
+        // BUT only when the head isn't lexically shadowed by a local
+        // or upval. The shadowing check is non-mutating — we don't
+        // want to register a phantom upval for a probe.
+        if let KlExpr::Sym(head_sym) = &items[0] {
+            if !self.peek_shadowed(*head_sym) {
+                let head_name = self.interp.resolve(*head_sym);
+                if let Some(prim) = inlinable_op(head_name, n_args) {
+                    for arg in &items[1..] {
+                        self.compile_expr(arg, false)?;
+                    }
+                    self.emit(prim);
+                    return Ok(());
+                }
+            }
+        }
+
         // Self-tail-call detection. Only fires when:
         //   1. We're in tail position.
         //   2. We're in the outermost frame (`frames.len() == 1`) — inner
@@ -315,12 +362,6 @@ impl<'a> Compiler<'a> {
         //   4. The head isn't shadowed by a local (would resolve to a
         //      local binding instead of the global function).
         //   5. The argument count matches the function's declared arity.
-        let n_args = items.len() - 1;
-        if n_args > u8::MAX as usize {
-            return Err(format!(
-                "vm: more than u8::MAX args at call site ({n_args})"
-            ));
-        }
         if tail && self.frames.len() == 1 {
             if let KlExpr::Sym(head_sym) = &items[0] {
                 let f = &self.frames[0];
@@ -578,6 +619,33 @@ impl<'a> Compiler<'a> {
         self.emit(Op::MakeClosure { fn_idx, n_upvals });
         Ok(())
     }
+}
+
+/// klcompile's `inlinable()` table, ported to bytecode opcodes. Returns
+/// the opcode that implements `(name args...)` directly, bypassing the
+/// generic dispatch, when (name, arity) matches a known primitive.
+fn inlinable_op(name: &str, arity: usize) -> Option<Op> {
+    Some(match (name, arity) {
+        ("+", 2) => Op::Add,
+        ("-", 2) => Op::Sub,
+        ("*", 2) => Op::Mul,
+        ("/", 2) => Op::Div,
+        ("<", 2) => Op::Lt,
+        (">", 2) => Op::Gt,
+        ("<=", 2) => Op::Le,
+        (">=", 2) => Op::Ge,
+        ("=", 2) => Op::Eq,
+        ("cons", 2) => Op::Cons,
+        ("hd", 1) => Op::Hd,
+        ("tl", 1) => Op::Tl,
+        ("cons?", 1) => Op::IsCons,
+        ("number?", 1) => Op::IsNumber,
+        ("string?", 1) => Op::IsString,
+        ("symbol?", 1) => Op::IsSymbol,
+        // `vector?` aliases `absvector?` in klcompile too.
+        ("absvector?", 1) | ("vector?", 1) => Op::IsAbsvector,
+        _ => return None,
+    })
 }
 
 #[cfg(test)]
@@ -853,6 +921,137 @@ mod tests {
             "inner lambda should not contain SelfTailCall, got code: {:?}",
             inner.code
         );
+    }
+
+    // ---- B4b tests: inlined-primitive opcodes ----
+
+    #[test]
+    fn arithmetic_emits_inline_opcodes() {
+        // `(+ X 1)` should emit `Op::Add`, not `LoadGlobal + Call`.
+        let mut interp = Interp::new();
+        let (name, params, body) = parse_defun("(defun inc (X) (+ X 1))", &mut interp);
+        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        assert!(
+            bf.code.iter().any(|op| matches!(op, Op::Add)),
+            "expected Op::Add in compiled (+ X 1), got code: {:?}",
+            bf.code
+        );
+        assert!(
+            !bf.code.iter().any(|op| matches!(op, Op::LoadGlobal(_))),
+            "(+ X 1) should not need LoadGlobal: {:?}",
+            bf.code
+        );
+        let result = exec(&mut interp, &bf, &[], &[Value::Int(41)]).expect("exec");
+        assert!(matches!(result, Value::Int(42)));
+    }
+
+    #[test]
+    fn cons_hd_tl_inline() {
+        let mut interp = Interp::new();
+        // (defun first (X Y) (hd (cons X Y))) — exercises Cons + Hd.
+        let (name, params, body) = parse_defun("(defun first (X Y) (hd (cons X Y)))", &mut interp);
+        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        assert!(bf.code.iter().any(|op| matches!(op, Op::Cons)));
+        assert!(bf.code.iter().any(|op| matches!(op, Op::Hd)));
+        let result = exec(&mut interp, &bf, &[], &[Value::Int(7), Value::Int(8)]).expect("exec");
+        assert!(matches!(result, Value::Int(7)));
+    }
+
+    #[test]
+    fn predicates_inline() {
+        let mut interp = Interp::new();
+        // (defun foo? (X) (cons? X)) — should emit Op::IsCons.
+        let (name, params, body) = parse_defun("(defun foo? (X) (cons? X))", &mut interp);
+        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        assert!(bf.code.iter().any(|op| matches!(op, Op::IsCons)));
+        let yes = exec(
+            &mut interp,
+            &bf,
+            &[],
+            &[Value::cons(Value::Int(1), Value::Nil)],
+        )
+        .expect("exec");
+        assert!(matches!(yes, Value::Bool(true)));
+        let no = exec(&mut interp, &bf, &[], &[Value::Int(5)]).expect("exec");
+        assert!(matches!(no, Value::Bool(false)));
+    }
+
+    #[test]
+    fn comparisons_inline_and_error_on_bad_args() {
+        let mut interp = Interp::new();
+        let (name, params, body) = parse_defun("(defun cmp (A B) (< A B))", &mut interp);
+        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        assert!(bf.code.iter().any(|op| matches!(op, Op::Lt)));
+        let r = exec(&mut interp, &bf, &[], &[Value::Int(3), Value::Int(5)]).expect("exec");
+        assert!(matches!(r, Value::Bool(true)));
+        let r2 = exec(&mut interp, &bf, &[], &[Value::Int(9), Value::Int(5)]).expect("exec");
+        assert!(matches!(r2, Value::Bool(false)));
+        // Non-numeric should error.
+        let err = exec(&mut interp, &bf, &[], &[Value::Nil, Value::Int(5)]);
+        assert!(err.is_err(), "expected < on Nil to error, got {err:?}");
+    }
+
+    #[test]
+    fn shadowed_primitive_falls_back_to_call() {
+        // If a local binding shadows `+`, the inline `Op::Add` must
+        // NOT fire — we must call the local (a closure value) via the
+        // regular Call path.
+        let mut interp = Interp::new();
+        let (name, params, body) = parse_defun("(defun apply-plus (+ X Y) (+ X Y))", &mut interp);
+        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        assert!(
+            !bf.code.iter().any(|op| matches!(op, Op::Add)),
+            "+ shadowed by local; should not emit Op::Add: {:?}",
+            bf.code
+        );
+        // Verify it actually calls the locally-bound +.
+        let plus_sym = interp.intern("+");
+        let plus = interp.env.get_fn(plus_sym).cloned().expect("+ registered");
+        let result = exec(
+            &mut interp,
+            &bf,
+            &[],
+            &[plus, Value::Int(10), Value::Int(32)],
+        )
+        .expect("exec");
+        assert!(matches!(result, Value::Int(42)));
+    }
+
+    #[test]
+    fn fact_with_inline_arithmetic_no_load_global_for_arith() {
+        // After B4b, `fact`'s body should use Op::Eq / Op::Mul /
+        // Op::Sub directly and never need LoadGlobal for `=`/`*`/`-`.
+        // (It still needs LoadGlobal for the recursive `fact` call,
+        // since fact isn't an inlinable.)
+        let mut interp = Interp::new();
+        let (name, params, body) = parse_defun(
+            "(defun fact (N) (if (= N 0) 1 (* N (fact (- N 1)))))",
+            &mut interp,
+        );
+        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        assert!(bf.code.iter().any(|op| matches!(op, Op::Eq)));
+        assert!(bf.code.iter().any(|op| matches!(op, Op::Mul)));
+        assert!(bf.code.iter().any(|op| matches!(op, Op::Sub)));
+        // The one LoadGlobal should be for `fact` itself (recursive
+        // call is not in tail position, so it's a regular Call).
+        let n_load_global = bf
+            .code
+            .iter()
+            .filter(|op| matches!(op, Op::LoadGlobal(_)))
+            .count();
+        assert_eq!(
+            n_load_global, 1,
+            "expected exactly 1 LoadGlobal (for `fact`), got {n_load_global}: {:?}",
+            bf.code
+        );
+        // Also verify it still computes correctly.
+        let bf_rc = Rc::new(bf);
+        let bf_for_native = bf_rc.clone();
+        interp.register_native("fact", 1, move |interp, args| {
+            exec(interp, &bf_for_native, &[], args)
+        });
+        let result = exec(&mut interp, &bf_rc, &[], &[Value::Int(10)]).expect("exec");
+        assert!(matches!(result, Value::Int(3628800)));
     }
 
     #[test]
