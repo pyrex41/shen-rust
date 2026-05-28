@@ -45,6 +45,7 @@ pub fn compile_fn(
         n_locals: c.n_locals as usize,
         code: c.code,
         consts: c.consts,
+        fn_consts: c.fn_consts,
     })
 }
 
@@ -60,6 +61,7 @@ struct Compiler<'a> {
     n_locals: u16,
     code: Vec<Op>,
     consts: Vec<Value>,
+    fn_consts: Vec<std::rc::Rc<BytecodeFn>>,
 }
 
 impl<'a> Compiler<'a> {
@@ -70,6 +72,7 @@ impl<'a> Compiler<'a> {
             n_locals: 0,
             code: Vec::new(),
             consts: Vec::new(),
+            fn_consts: Vec::new(),
         }
     }
 

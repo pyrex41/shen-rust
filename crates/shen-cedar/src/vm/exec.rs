@@ -12,19 +12,22 @@
 //! numeric fast-paths) are stubs that return an error so any path that
 //! reaches them is loudly diagnosable during the staged rollout.
 
+use std::rc::Rc;
+
 use crate::error::{ShenError, ShenResult};
 use crate::interp::eval::Interp;
-use crate::value::Value;
+use crate::value::{Closure, ClosureKind, Value};
 use crate::vm::bytecode::BytecodeFn;
 use crate::vm::opcode::Op;
 
 /// Execute a compiled function. `args` is placed in `locals[0..arity)`
-/// and the rest of `locals` is filled with `Value::Nil`. Returns the
-/// value the function evaluates to.
+/// and the rest of `locals` is filled with `Value::Nil`. `upvals` are
+/// the values captured at closure creation time (`MakeClosure`).
+/// Returns the value the function evaluates to.
 pub fn exec(
     interp: &mut Interp,
     bf: &BytecodeFn,
-    _upvals: &[Value],
+    upvals: &[Value],
     args: &[Value],
 ) -> ShenResult<Value> {
     if args.len() != bf.arity {
@@ -134,10 +137,34 @@ pub fn exec(
                     pc = jump_target(pc, delta)?;
                 }
             }
-            // Remaining opcodes (closures, tail calls, numeric fast
-            // paths) land in later B-phases. Loudly reject so a stray
-            // emission can't silently produce nonsense.
-            Op::LoadUpval(_) | Op::TailCall(_) | Op::SelfTailCall(_) | Op::MakeClosure { .. } => {
+            Op::LoadUpval(idx) => {
+                let v = upvals
+                    .get(idx as usize)
+                    .cloned()
+                    .ok_or_else(|| ShenError::new("vm: bad upval index"))?;
+                stack.push(v);
+            }
+            Op::MakeClosure { fn_idx, n_upvals } => {
+                let n = n_upvals as usize;
+                if stack.len() < n {
+                    return Err(ShenError::new("vm: stack underflow on MakeClosure"));
+                }
+                let captured: Vec<Value> = stack.drain(stack.len() - n..).collect();
+                let inner = bf
+                    .fn_consts
+                    .get(fn_idx as usize)
+                    .cloned()
+                    .ok_or_else(|| ShenError::new("vm: bad fn_idx on MakeClosure"))?;
+                let closure = Closure {
+                    name: inner.name,
+                    arity: inner.arity,
+                    partial: Vec::new(),
+                    kind: ClosureKind::Bytecode(inner, captured),
+                };
+                stack.push(Value::Closure(Rc::new(closure)));
+            }
+            // Tail calls and numeric fast paths land in B4.
+            Op::TailCall(_) | Op::SelfTailCall(_) => {
                 return Err(ShenError::new(format!(
                     "vm: opcode {op:?} not implemented in this phase"
                 )));
@@ -199,6 +226,7 @@ mod tests {
             n_locals: 1,
             code: vec![Op::LoadLocal(0), Op::Return],
             consts: vec![],
+            fn_consts: vec![],
         };
         let f = bytecode_closure(bf, Some(name));
         let r = interp.apply(f, vec![Value::Int(7)]).expect("apply");
@@ -219,6 +247,7 @@ mod tests {
             n_locals: 1,
             code: vec![Op::LoadLocal(0), Op::Return],
             consts: vec![],
+            fn_consts: vec![],
         };
         interp.env.set_fn(sym, bytecode_closure(bf, Some(sym)));
         let r = crate::aot::runtime::apply_named(&mut interp, "id-vm", &[Value::Int(99)])
@@ -239,6 +268,7 @@ mod tests {
             n_locals: 1,
             code: vec![Op::LoadLocal(0), Op::Return],
             consts: vec![],
+            fn_consts: vec![],
         };
         let result = exec(&mut interp, &bf, &[], &[Value::Int(42)]).expect("exec");
         assert!(matches!(result, Value::Int(42)));
@@ -256,6 +286,7 @@ mod tests {
             n_locals: 0,
             code: vec![Op::LoadConst(0), Op::Return],
             consts: vec![Value::Int(42)],
+            fn_consts: vec![],
         };
         let result = exec(&mut interp, &bf, &[], &[]).expect("exec");
         assert!(matches!(result, Value::Int(42)));
@@ -280,6 +311,7 @@ mod tests {
                 Op::Return,
             ],
             consts: vec![],
+            fn_consts: vec![],
         };
         let result = exec(&mut interp, &bf, &[], &[Value::Int(7)]).expect("exec");
         assert!(matches!(result, Value::Int(7)));
@@ -313,9 +345,97 @@ mod tests {
                 Op::Return,
             ],
             consts: vec![plus, Value::Int(1)],
+            fn_consts: vec![],
         };
         let result = exec(&mut interp, &bf, &[], &[Value::Int(41)]).expect("exec");
         assert!(matches!(result, Value::Int(42)));
+    }
+
+    #[test]
+    fn make_closure_zero_upvals() {
+        // Outer creates an inner `(lambda X X)` (no upvals captured),
+        // calls it with 42, returns the result.
+        // Inner code:  LoadLocal(0), Return       (just returns its arg)
+        // Outer code:  MakeClosure{fn_idx=0, n_upvals=0}  -> stack: [closure]
+        //              LoadConst(0)              -> stack: [closure, 42]
+        //              Call(1)                   -> stack: [42]
+        //              Return
+        let mut interp = fresh_interp();
+        let inner = Rc::new(BytecodeFn {
+            name: None,
+            arity: 1,
+            n_locals: 1,
+            code: vec![Op::LoadLocal(0), Op::Return],
+            consts: vec![],
+            fn_consts: vec![],
+        });
+        let outer = BytecodeFn {
+            name: Some(interp.intern("outer")),
+            arity: 0,
+            n_locals: 0,
+            code: vec![
+                Op::MakeClosure {
+                    fn_idx: 0,
+                    n_upvals: 0,
+                },
+                Op::LoadConst(0),
+                Op::Call(1),
+                Op::Return,
+            ],
+            consts: vec![Value::Int(42)],
+            fn_consts: vec![inner],
+        };
+        let result = exec(&mut interp, &outer, &[], &[]).expect("exec");
+        assert!(matches!(result, Value::Int(42)));
+    }
+
+    #[test]
+    fn make_closure_with_upval() {
+        // Outer captures Y=10 into an inner `(lambda X (+ Y X))`, calls
+        // it with X=5, returns 15. Exercises LoadUpval inside the inner
+        // body and MakeClosure popping captures off the outer stack.
+        let mut interp = fresh_interp();
+        // Inner: LoadGlobal(0)  -- push `+`
+        //        LoadUpval(0)   -- push Y
+        //        LoadLocal(0)   -- push X
+        //        Call(2); Return
+        let inner = Rc::new(BytecodeFn {
+            name: Some(interp.intern("inner-add")),
+            arity: 1,
+            n_locals: 1,
+            code: vec![
+                Op::LoadGlobal(0),
+                Op::LoadUpval(0),
+                Op::LoadLocal(0),
+                Op::Call(2),
+                Op::Return,
+            ],
+            consts: vec![Value::Sym(interp.intern("+"))],
+            fn_consts: vec![],
+        });
+        // Outer: LoadConst(0)              -- push 10  (will become upval)
+        //        MakeClosure{0, 1}         -- pop 1 upval, push closure
+        //        LoadConst(1)              -- push 5   (call arg)
+        //        Call(1); Return
+        let outer = BytecodeFn {
+            name: Some(interp.intern("outer-add")),
+            arity: 0,
+            n_locals: 0,
+            code: vec![
+                Op::LoadConst(0),
+                Op::MakeClosure {
+                    fn_idx: 0,
+                    n_upvals: 1,
+                },
+                Op::LoadConst(1),
+                Op::Call(1),
+                Op::Return,
+            ],
+            consts: vec![Value::Int(10), Value::Int(5)],
+            fn_consts: vec![inner],
+        };
+        let result = exec(&mut interp, &outer, &[], &[]).expect("exec");
+        assert!(matches!(result, Value::Int(15)), "got {result:?}");
     }
 
     #[test]
@@ -327,6 +447,7 @@ mod tests {
             n_locals: 1,
             code: vec![Op::LoadLocal(0), Op::Return],
             consts: vec![],
+            fn_consts: vec![],
         };
         assert!(exec(&mut interp, &bf, &[], &[]).is_err());
     }
