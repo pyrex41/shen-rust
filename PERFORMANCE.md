@@ -1,4 +1,73 @@
-# shen-cedar performance handoff
+# shen-cedar performance
+
+> **Current state (2026-05-28):** `--kernel-tests` runs in **~5.7s warm**
+> (134/0 passing, all 8 gates green), down from the 17.5s starting baseline
+> documented below — **≈3.1× faster** through ten stacked surgical wins. The
+> goal is now **sub-2s** (within 2× of shen-cl's ~1s). The path there is a
+> bytecode VM + Value-representation overhaul + cons arena. The original
+> profile and Tier roadmap from the handoff are preserved below for
+> historical context.
+
+## Status
+
+**Done (committed at this baseline):**
+
+| Optimization | Effect |
+|---|---|
+| Locals-by-reference + `Scope` COW (T1a/T1b) | killed the quadratic per-arg `locals.clone()` |
+| Vec-indexed function/global tables (T2a) | replaced HashMap probes with SymId indexing |
+| Single-allocation cons (`Value::Cons(Rc<(Value, Value)>)`) | halved per-cell allocations |
+| `opt-level = 1 → 2` | ~15% on the kernel-test workload |
+| **A1 — no-alloc dispatch** (skip `total` Vec rebuild when `partial` is empty) | ~31% — killed the #1 profile hotspot |
+| FNV interner | ~5%, zero-risk |
+| Zero-alloc call ABI (`rt::apply_named` / `apply_value` take `&[Value]`) | enabled the slice-arg path |
+| Pointer-keyed `intern_static` (per-`Interner` cache) | ~15% — killed the residual SipHash on AOT call sites |
+| `SmallVec<[Value; 4]>` `ArgVec` (T1d) | no-heap arg vectors for ≤4 args |
+| Direct AOT fn-pointer table (`apply_direct` + `Interp::aot_direct`) | true SymId pre-intern: codegen emits `rt::apply_direct(interp, "name", &[..])` which hits a fn-pointer table at install time |
+| klcompile `SLOW_DEFUNS` skip list | leaves ~4 known-slow boot-only defuns tree-walked (saves >5min of LLVM time) |
+
+**Where the wall is.** Post-fix profile is led by:
+
+- `drop_in_place<Value>` ≈ 857 samples — cons + value churn (intrinsic to refcounted `Rc<(Value, Value)>` traversal)
+- Tree-walker: `eval_in` ≈ 376 + `lookup_local` ≈ 241 — the **type-checker** running runtime-built `freeze`/`lambda` continuations
+- Diffuse allocation: captured envs (`locals.to_vec()` snapshots whole scope), per-call SmallVec spills
+
+71% of the suite is `(tc +)` then `(load …)` on two user files (`interpreter.shen` 6.6s, `c-minus.shen` 1.8s). The hot loop is the Shen type-checker proving theorems about **runtime-defined** user code — those defuns/lambdas/freezes are *never* AOT-compiled and run through the tree-walker. `apply_direct` accelerates AOT-to-AOT but cannot help once a Lambda closure (tree-walked body) is invoked.
+
+## Roadmap to sub-2s
+
+**Phase 1 — surgical consolidation** (≈1–2 weeks):
+- 1a. **Free-variable analysis** for `build_lambda`/`build_freeze` — capture only syms the body references, not the entire visible scope. Applies to both the tree-walker (`crates/shen-cedar/src/interp/eval.rs`) and klcompile (`crates/klcompile/src/main.rs`). Shrinks captured envs and the subsequent `lookup_local` scans.
+- 1b. **More shen-cl hot overrides** in `register_hot_overrides` (`crates/shen-cedar/src/primitives.rs`): `shen.str->bytes` / `shen.bytes->string` / `shen.rfas-h` (reader O(N²)→O(N)), `shen.macroexpand-h` (`Rc::ptr_eq` fast path), `shen.analyse-symbol?` / `symbol?` / `variable?` (char-class checks). Priority by re-profile after 1a.
+- 1c. **Pattern factorization** in klcompile (mirror shen-cl `factorise-defun` from `../shen-cl/src/overwrite.lsp`): group cascading `(cond ((and X …) …))` clauses sharing a leading test into a nested cond.
+- 1d. Delete the dead `Control` enum left in `eval.rs` from an exploratory refactor.
+
+**Phase 2 — bytecode VM** (the architectural play, multi-week):
+
+Compile user defuns/lambdas/freezes to bytecode at definition time. This is the only way to escape the tree-walker tax for the dominant type-checker workload. shen-go's design reports 4–8× from the VM alone + 2–3× from numeric fast-paths.
+
+- New module `crates/shen-cedar/src/vm/{opcode, bytecode, compiler, exec}.rs`.
+- ~22 opcodes mirroring shen-go (`../shen-go/kl/vm.go:10-34`): `LoadLocal`, `StoreLocal`, `LoadUpval`, `LoadConst`, `LoadGlobal`, `Jump(i16)`, `JumpFalse(i16)`, `Call(u8)`, `TailCall(u8)`, **`SelfTailCall(u8)`** (in-place loop, no Rust stack growth), `MakeClosure(u16, u8)`, plus fixnum-fast-path numeric ops (`Add`/`Sub`/`Mul`/`Lt`/`Le`/`Gt`/`Ge`/`Eq`/`Not`) and Shen-specific `Cons`/`Hd`/`Tl`/`IsCons`/`Truthy`.
+- Flat per-call frames: `Vec<Value>` locals indexed by integer slot (parameters in `[0..arity)`, lets in `[arity..n_locals)`). Upvalues snapshot by value at closure creation.
+- Compiler (per shen-go's `../shen-go/kl/compiler.go`): per-fn `locals: FxHashMap<SymId, u16>` + `upvals: Vec<UpvalInfo>` + `outer: Option<&Compiler>` chain. `resolve_var(sym)` returns `Local`/`Upval`/`Global`; nested lambdas register upvals upward.
+- New `ClosureKind::Bytecode(Rc<BytecodeFn>, Vec<Value>)` variant in `crates/shen-cedar/src/value.rs`. `rt::call_or_apply` dispatches it.
+- Phased commits (B1 skeleton, B2 special forms, B3 closures, B4 self-tail + numeric, B5 wire into `do_defun`/`build_lambda`/`build_freeze` with `SHEN_CEDAR_NO_VM` fallback, B6 retire the 1 GB stack workaround, B7 AOT/VM split decision).
+
+**Phase 3 — Value representation overhaul** (after VM lands):
+
+Replace `enum Value` (24 bytes) with `struct Value(u64)` NaN-boxed (8 bytes). Halves memory traffic on every move/clone/drop, makes Int/Bool/Nil/Sym immediates zero-overhead, shrinks cons cells from 48-byte payload to 16-byte. Generated kernel code is **insulated** from this via `rt::` helpers (`hd`/`tl`/`is_cons`/etc.) — only the helpers and ~30–50 hand-written match arms change. Phased: define sibling type, switch `rt::` helpers, convert hand-written matches file-by-file, retire the enum.
+
+**Phase 4 — cons arena:** Per-`Interp` bump arena for cons cells with inline refcount + freelist. Eliminates global allocator traffic on the dominant data type. Phased: `ConsArena` + `ConsRef`, switch `Value::cons`, per-`Interp` init thread-through, freelist + optional compaction.
+
+**Phase 5 — validation + stretch:** revisit mimalloc (the prior attempt broke under SmallVec/`apply_direct` because of TLS init on the spawned 1 GB-stack thread — the VM retires that workaround), thin LTO, AOT pattern decision trees, `LoadGlobal` inline caches.
+
+## Verification
+
+Every commit must hold all 8 gates green (`scripts/gates.sh`) and be re-timed with 3 warm runs of `--kernel-tests` (median + variance). Hotspot validation via `/usr/bin/sample $PID 8 1` on the two heavy `(tc +)`/`(load …)` cases.
+
+---
+
+## Original handoff (preserved for historical reference)
 
 Status at handoff: **all 134 kernel tests pass**, but shen-cedar (release)
 runs the kernel test suite in **~17.5 s vs shen-cl's ~1.0 s — ~17× slower**.
