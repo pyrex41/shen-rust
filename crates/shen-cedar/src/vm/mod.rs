@@ -25,9 +25,11 @@
 //! and integration land in later phases.
 
 pub mod bytecode;
+pub mod compiler;
 pub mod exec;
 pub mod opcode;
 
 pub use bytecode::BytecodeFn;
+pub use compiler::compile_fn;
 pub use exec::exec;
 pub use opcode::Op;

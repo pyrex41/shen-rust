@@ -94,20 +94,72 @@ pub fn exec(
                 let result = interp.apply(callee, args)?;
                 stack.push(result);
             }
-            // The remaining opcodes land in later B-phases (closures,
-            // jumps, tail calls, numeric fast paths). Loudly reject so
-            // a stray emission can't silently produce nonsense.
-            Op::LoadUpval(_)
-            | Op::Jump(_)
-            | Op::JumpFalse(_)
-            | Op::TailCall(_)
-            | Op::SelfTailCall(_)
-            | Op::MakeClosure { .. } => {
+            Op::LoadGlobal(idx) => {
+                let v = bf
+                    .consts
+                    .get(idx as usize)
+                    .cloned()
+                    .ok_or_else(|| ShenError::new("vm: bad const index for LoadGlobal"))?;
+                let sym = match v {
+                    Value::Sym(s) => s,
+                    other => {
+                        return Err(ShenError::new(format!(
+                            "vm: LoadGlobal const must be a Sym, got {other:?}"
+                        )))
+                    }
+                };
+                let f = interp.env.get_fn(sym).cloned().ok_or_else(|| {
+                    ShenError::new(format!("vm: undefined function `{}`", interp.resolve(sym)))
+                })?;
+                stack.push(f);
+            }
+            Op::Jump(delta) => {
+                pc = jump_target(pc, delta)?;
+            }
+            Op::JumpFalse(delta) => {
+                let v = stack
+                    .pop()
+                    .ok_or_else(|| ShenError::new("vm: stack underflow on JumpFalse"))?;
+                let truthy = match v {
+                    Value::Bool(b) => b,
+                    Value::Sym(s) if s == interp.well_known.k_true => true,
+                    Value::Sym(s) if s == interp.well_known.k_false => false,
+                    other => {
+                        return Err(ShenError::new(format!(
+                            "vm: JumpFalse on non-boolean: {other:?}"
+                        )))
+                    }
+                };
+                if !truthy {
+                    pc = jump_target(pc, delta)?;
+                }
+            }
+            // Remaining opcodes (closures, tail calls, numeric fast
+            // paths) land in later B-phases. Loudly reject so a stray
+            // emission can't silently produce nonsense.
+            Op::LoadUpval(_) | Op::TailCall(_) | Op::SelfTailCall(_) | Op::MakeClosure { .. } => {
                 return Err(ShenError::new(format!(
                     "vm: opcode {op:?} not implemented in this phase"
                 )));
             }
         }
+    }
+}
+
+/// Compute the new `pc` after a Jump/JumpFalse. `pc` here is the value
+/// *already past* the jump instruction (we increment before dispatch),
+/// so the absolute target is `pc + delta`. Errors only on a target
+/// that would be negative — out-of-range past-end errors are caught by
+/// the next iteration's bounds check.
+#[inline]
+fn jump_target(pc: usize, delta: i16) -> ShenResult<usize> {
+    let target = (pc as i32) + (delta as i32);
+    if target < 0 {
+        Err(ShenError::new(format!(
+            "vm: jump target out of range ({target})"
+        )))
+    } else {
+        Ok(target as usize)
     }
 }
 

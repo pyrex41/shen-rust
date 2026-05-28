@@ -25,6 +25,10 @@ pub enum Op {
     StoreLocal(u16),
     /// Push the closure's upvalue at `idx` onto the stack.
     LoadUpval(u16),
+    /// Resolve `consts[idx]` (which must be a `Value::Sym`) through the
+    /// function namespace and push the resulting `Value::Closure`. Used
+    /// for the head position of a call to a globally-bound function.
+    LoadGlobal(u16),
     /// Discard the top of stack.
     Pop,
 
