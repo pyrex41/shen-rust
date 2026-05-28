@@ -447,6 +447,12 @@ impl Interp {
                     *current = body.body.clone();
                     return Ok(StepOutcome::Continue);
                 }
+                ClosureKind::Bytecode(bf, upvals) => {
+                    let bf = Rc::clone(bf);
+                    let upvals = upvals.clone();
+                    let v = crate::vm::exec::exec(self, &bf, &upvals, &total_args)?;
+                    return Ok(StepOutcome::Done(v));
+                }
             }
         }
 
@@ -469,6 +475,11 @@ impl Interp {
                     locals.push((*p, a));
                 }
                 self.eval_in(&body.body, &locals)
+            }
+            ClosureKind::Bytecode(bf, upvals) => {
+                let bf = Rc::clone(bf);
+                let upvals = upvals.clone();
+                crate::vm::exec::exec(self, &bf, &upvals, &args)
             }
         }
     }
@@ -775,6 +786,7 @@ fn clone_kind(kind: &ClosureKind) -> ClosureKind {
     match kind {
         ClosureKind::Native(f) => ClosureKind::Native(Rc::clone(f)),
         ClosureKind::Lambda(b) => ClosureKind::Lambda(Rc::clone(b)),
+        ClosureKind::Bytecode(bf, upvals) => ClosureKind::Bytecode(Rc::clone(bf), upvals.clone()),
     }
 }
 

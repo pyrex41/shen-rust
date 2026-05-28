@@ -69,6 +69,10 @@ pub enum ClosureKind {
     /// interpreter knows how to evaluate it. Stored as `Rc` so cloning a
     /// closure value is cheap.
     Lambda(Rc<LambdaBody>),
+    /// User-defined function compiled to bytecode (the VM path). Upvals
+    /// are captured at closure creation (`MakeClosure`) and stored
+    /// by-value, matching shen-go's `scmBytecodeFunc { fn, upvals }`.
+    Bytecode(Rc<crate::vm::bytecode::BytecodeFn>, Vec<Value>),
 }
 
 /// User-defined lambda body: captured lexical env, formal parameter

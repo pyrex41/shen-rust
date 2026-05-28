@@ -166,9 +166,64 @@ fn jump_target(pc: usize, delta: i16) -> ShenResult<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::value::{Closure, ClosureKind};
+    use std::rc::Rc;
 
     fn fresh_interp() -> Interp {
         Interp::new()
+    }
+
+    /// Wrap a BytecodeFn as a `Value::Closure` with `ClosureKind::Bytecode`,
+    /// no captured upvals. Used by B3a tests to verify the dispatch path
+    /// (`call_or_apply` → `vm::exec`, `Interp::apply` / `call_strict` →
+    /// `vm::exec`).
+    fn bytecode_closure(bf: BytecodeFn, name: Option<crate::symbol::SymId>) -> Value {
+        let arity = bf.arity;
+        Value::Closure(Rc::new(Closure {
+            name,
+            arity,
+            partial: Vec::new(),
+            kind: ClosureKind::Bytecode(Rc::new(bf), Vec::new()),
+        }))
+    }
+
+    #[test]
+    fn dispatch_via_interp_apply() {
+        // (defun id (X) X) — wrap as ClosureKind::Bytecode and call
+        // through `Interp::apply`. Exercises the call_strict path.
+        let mut interp = fresh_interp();
+        let name = interp.intern("id-vm");
+        let bf = BytecodeFn {
+            name: Some(name),
+            arity: 1,
+            n_locals: 1,
+            code: vec![Op::LoadLocal(0), Op::Return],
+            consts: vec![],
+        };
+        let f = bytecode_closure(bf, Some(name));
+        let r = interp.apply(f, vec![Value::Int(7)]).expect("apply");
+        assert!(matches!(r, Value::Int(7)));
+    }
+
+    #[test]
+    fn dispatch_via_apply_named_fast_path() {
+        // Register a bytecode-backed closure in the env, then call
+        // through rt::apply_named which routes through `call_or_apply`.
+        // The Fast::Bytecode arm of call_or_apply is the path under test.
+        let mut interp = fresh_interp();
+        let name = "id-vm";
+        let sym = interp.intern(name);
+        let bf = BytecodeFn {
+            name: Some(sym),
+            arity: 1,
+            n_locals: 1,
+            code: vec![Op::LoadLocal(0), Op::Return],
+            consts: vec![],
+        };
+        interp.env.set_fn(sym, bytecode_closure(bf, Some(sym)));
+        let r = crate::aot::runtime::apply_named(&mut interp, "id-vm", &[Value::Int(99)])
+            .expect("apply_named");
+        assert!(matches!(r, Value::Int(99)));
     }
 
     #[test]

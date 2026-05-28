@@ -54,15 +54,25 @@ pub fn apply_value(interp: &mut Interp, f: Value, args: &[Value]) -> ShenResult<
 /// back to the general `Interp::apply`, materialising the args only then.
 #[inline]
 fn call_or_apply(interp: &mut Interp, f: Value, args: &[Value]) -> ShenResult<Value> {
-    let native = match &f {
+    // Fast path: full-arity, no partial, dispatch directly on the kind.
+    // Avoids the `args.to_vec()` allocation that `Interp::apply` would do.
+    enum Fast {
+        Native(Rc<crate::value::NativeFn>),
+        Bytecode(Rc<crate::vm::bytecode::BytecodeFn>, Vec<Value>),
+    }
+    let fast = match &f {
         Value::Closure(c) if c.partial.is_empty() && args.len() == c.arity => match &c.kind {
-            ClosureKind::Native(nf) => Some(Rc::clone(nf)),
+            ClosureKind::Native(nf) => Some(Fast::Native(Rc::clone(nf))),
+            ClosureKind::Bytecode(bf, upvals) => {
+                Some(Fast::Bytecode(Rc::clone(bf), upvals.clone()))
+            }
             ClosureKind::Lambda(_) => None,
         },
         _ => None,
     };
-    match native {
-        Some(nf) => nf(interp, args),
+    match fast {
+        Some(Fast::Native(nf)) => nf(interp, args),
+        Some(Fast::Bytecode(bf, upvals)) => crate::vm::exec::exec(interp, &bf, &upvals, args),
         None => interp.apply(f, args.to_vec()), // boundary: public apply still takes Vec
     }
 }
