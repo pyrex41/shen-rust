@@ -1,0 +1,33 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/shen-cedar",
+    "crates/shengen-rust",
+    "crates/klcompile",
+    "bin/shen-cedar",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+license = "BSD-3-Clause"
+authors = ["Reuben Brooks"]
+repository = "https://github.com/pyrex41/shen-cedar"
+
+[workspace.dependencies]
+shen-cedar = { path = "crates/shen-cedar" }
+shengen-rust = { path = "crates/shengen-rust" }
+cedar-policy = "4"
+
+# Release profile tuned for the AOT kernel modules (~12 MB generated).
+# opt-level=2 is the sweet spot: ~15% faster kernel-tests than opt-level=1
+# while keeping the shen-cedar crate build at ~1 min. opt-level=3 (no LTO)
+# adds ~35s of build for no measurable runtime gain — the hot path is
+# malloc-bound, which optimization can't eliminate. opt-level=3 *with* LTO
+# costs 8+ min and >8 GB RSS, making gates impractical, so LTO stays off.
+# The `#[inline(always)]` rt:: hot helpers still inline at any opt-level.
+[profile.release]
+lto = false
+opt-level = 2
+codegen-units = 16

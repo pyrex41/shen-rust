@@ -1,0 +1,12 @@
+[package]
+name = "shengen-rust"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Codegen tool that compiles Shen sequent-calculus specs into Rust guard types"
+
+[[bin]]
+name = "shengen-rust"
+path = "src/main.rs"

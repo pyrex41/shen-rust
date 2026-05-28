@@ -1,0 +1,15 @@
+[package]
+name = "shen-cedar-bin"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "REPL and CLI for shen-cedar"
+
+[[bin]]
+name = "shen-cedar"
+path = "src/main.rs"
+
+[dependencies]
+shen-cedar = { workspace = true }

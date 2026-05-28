@@ -1,0 +1,13 @@
+[package]
+name = "shen-cedar"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Shen language port hosted in Rust with first-class AWS Cedar integration"
+
+[dependencies]
+cedar-policy = { workspace = true }
+smallvec = "1"
+
