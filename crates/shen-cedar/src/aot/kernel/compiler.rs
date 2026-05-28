@@ -4490,9 +4490,6 @@ pub fn aot_shen_x2d_cl_x2e_emit_x2d_partial_x2d_application(
                 {
                     let v_W497 = {
                         let __t2378 = {
-                            let v_V493 = v_V493.clone();
-                            let v_V494 = v_V494.clone();
-                            let v_V495 = v_V495.clone();
                             let v_V496 = v_V496.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
@@ -4569,11 +4566,7 @@ pub fn aot_shen_x2d_cl_x2e_emit_x2d_partial_x2d_application(
                             {
                                 let v_W500 = {
                                     let __t2366 = {
-                                        let v_V493 = v_V493.clone();
-                                        let v_V494 = v_V494.clone();
-                                        let v_V495 = v_V495.clone();
                                         let v_V496 = v_V496.clone();
-                                        let v_W499 = v_W499.clone();
                                         rt::make_aot_closure(
                                             "<lambda>",
                                             1,
@@ -4757,8 +4750,6 @@ pub fn aot_shen_x2d_cl_x2e_emit_x2d_dynamic_x2d_application(
                         {
                             let v_W507 = {
                                 let __t2392 = {
-                                    let v_V504 = v_V504.clone();
-                                    let v_V505 = v_V505.clone();
                                     let v_V506 = v_V506.clone();
                                     rt::make_aot_closure(
                                         "<lambda>",
@@ -6857,7 +6848,6 @@ pub fn aot_shen_x2d_cl_x2e_emit_x2d_static_x2d_application(
                                 {
                                     let v_Freeze550 = {
                                         let v_V536 = v_V536.clone();
-                                        let v_V537 = v_V537.clone();
                                         let v_V538 = v_V538.clone();
                                         let v_V539 = v_V539.clone();
                                         rt::make_aot_closure(
@@ -6870,9 +6860,6 @@ pub fn aot_shen_x2d_cl_x2e_emit_x2d_static_x2d_application(
                                                         {
                                                             let v_W546 = {
                                                                 let __t2879 = {
-                                                                    let v_V536 = v_V536.clone();
-                                                                    let v_V537 = v_V537.clone();
-                                                                    let v_V538 = v_V538.clone();
                                                                     let v_V539 = v_V539.clone();
                                                                     rt::make_aot_closure(
                                                                         "<lambda>",
@@ -6939,9 +6926,6 @@ pub fn aot_shen_x2d_cl_x2e_emit_x2d_static_x2d_application(
                                                         )?
                                                     };
                                                     let __t2895 = {
-                                                        let v_Freeze550 = v_Freeze550.clone();
-                                                        let v_V536 = v_V536.clone();
-                                                        let v_V537 = v_V537.clone();
                                                         let v_V538 = v_V538.clone();
                                                         let v_V539 = v_V539.clone();
                                                         rt::make_aot_closure(
@@ -6952,18 +6936,8 @@ pub fn aot_shen_x2d_cl_x2e_emit_x2d_static_x2d_application(
                                                                 Ok({
                                                                     let v_W544 = {
                                                                         let __t2891 = {
-                                                                            let v_Freeze550 =
-                                                                                v_Freeze550.clone();
-                                                                            let v_V536 =
-                                                                                v_V536.clone();
-                                                                            let v_V537 =
-                                                                                v_V537.clone();
-                                                                            let v_V538 =
-                                                                                v_V538.clone();
                                                                             let v_V539 =
                                                                                 v_V539.clone();
-                                                                            let v_Z543 =
-                                                                                v_Z543.clone();
                                                                             rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z545 = args[0].clone(); Ok({ let __t2889 = v_Z545.clone(); let __t2890 = v_V539.clone(); rt::apply_direct(interp, "shen-cl.compile-expression", &[__t2889, __t2890])? }) }, interp)
                                                                         };
                                                                         let __t2892 =
@@ -7041,9 +7015,6 @@ pub fn aot_shen_x2d_cl_x2e_emit_x2d_static_x2d_application(
                                 rt::apply_direct(interp, "shen-cl.binary-op-mapping", &[__t2904])?
                             };
                             let __t2912 = {
-                                let v_Freeze548 = v_Freeze548.clone();
-                                let v_V536 = v_V536.clone();
-                                let v_V537 = v_V537.clone();
                                 let v_V538 = v_V538.clone();
                                 let v_V539 = v_V539.clone();
                                 rt::make_aot_closure(
@@ -7054,12 +7025,7 @@ pub fn aot_shen_x2d_cl_x2e_emit_x2d_static_x2d_application(
                                         Ok({
                                             let v_W541 = {
                                                 let __t2908 = {
-                                                    let v_Freeze548 = v_Freeze548.clone();
-                                                    let v_V536 = v_V536.clone();
-                                                    let v_V537 = v_V537.clone();
-                                                    let v_V538 = v_V538.clone();
                                                     let v_V539 = v_V539.clone();
-                                                    let v_Z540 = v_Z540.clone();
                                                     rt::make_aot_closure(
                                                         "<lambda>",
                                                         1,

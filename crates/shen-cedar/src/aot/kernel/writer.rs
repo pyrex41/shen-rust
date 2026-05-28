@@ -153,8 +153,6 @@ pub fn aot_shen_x2e_string_x2d__x3e_byte(interp: &mut Interp, args: &[Value]) ->
                 Ok(v) => v,
                 Err(e) => {
                     let __h = {
-                        let v_V6784 = v_V6784.clone();
-                        let v_V6785 = v_V6785.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -2925,10 +2923,6 @@ pub fn aot_shen_x2e_iter_x2d_vector(interp: &mut Interp, args: &[Value]) -> Shen
                                 Ok(v) => v,
                                 Err(e) => {
                                     let __h = {
-                                        let v_V6871 = v_V6871.clone();
-                                        let v_V6872 = v_V6872.clone();
-                                        let v_V6873 = v_V6873.clone();
-                                        let v_V6874 = v_V6874.clone();
                                         rt::make_aot_closure(
                                             "<lambda>",
                                             1,
@@ -2958,11 +2952,6 @@ pub fn aot_shen_x2e_iter_x2d_vector(interp: &mut Interp, args: &[Value]) -> Shen
                                     Ok(v) => v,
                                     Err(e) => {
                                         let __h = {
-                                            let v_V6871 = v_V6871.clone();
-                                            let v_V6872 = v_V6872.clone();
-                                            let v_V6873 = v_V6873.clone();
-                                            let v_V6874 = v_V6874.clone();
-                                            let v_W6875 = v_W6875.clone();
                                             rt::make_aot_closure(
                                                 "<lambda>",
                                                 1,
@@ -3098,7 +3087,6 @@ pub fn aot_shen_x2e_atom_x2d__x3e_str(interp: &mut Interp, args: &[Value]) -> Sh
                 Ok(v) => v,
                 Err(e) => {
                     let __h = {
-                        let v_V6879 = v_V6879.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,

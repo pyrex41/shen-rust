@@ -2618,7 +2618,6 @@ pub fn aot_shen_x2e_get_x2d_profile(interp: &mut Interp, args: &[Value]) -> Shen
                 Ok(v) => v,
                 Err(e) => {
                     let __h = {
-                        let v_V5841 = v_V5841.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,

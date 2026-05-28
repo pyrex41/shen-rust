@@ -268,11 +268,6 @@ impl Interp {
             KlExpr::App(_) => {}
         }
 
-        // Proven trampoline structure (restored for correctness after
-        // exploratory Control enum attempt). The big allocation wins for
-        // this release are the SmallVec ArgVec change (item 1) plus the
-        // direct AOT table (item 3). A true zero-copy Control for the
-        // remaining AST Rc bumps can be a follow-up.
         let mut current: KlExpr = expr.clone();
         let mut scope = Scope::Borrowed(locals);
         loop {
@@ -659,7 +654,7 @@ impl Interp {
             }
         };
         let body = LambdaBody {
-            captured: locals.to_vec(),
+            captured: capture_used(&args[1], locals),
             params: vec![param],
             body: args[1].clone(),
         };
@@ -679,7 +674,7 @@ impl Interp {
         // (freeze E) ~ (lambda V E) with V fresh and ignored. We model
         // freeze as a 0-arity lambda so `(thaw f)` calls it with no args.
         let body = LambdaBody {
-            captured: locals.to_vec(),
+            captured: capture_used(&args[0], locals),
             params: Vec::new(),
             body: args[0].clone(),
         };
@@ -780,6 +775,49 @@ fn clone_kind(kind: &ClosureKind) -> ClosureKind {
     match kind {
         ClosureKind::Native(f) => ClosureKind::Native(Rc::clone(f)),
         ClosureKind::Lambda(b) => ClosureKind::Lambda(Rc::clone(b)),
+    }
+}
+
+/// Filter `locals` to only the entries the closure body might look up.
+///
+/// The kernel type-checker builds many `freeze`/`lambda` continuations
+/// whose body references a handful of variables out of a 20–50 entry
+/// outer scope. Capturing everything inflates both the snapshot clone
+/// here and every subsequent `lookup_local` scan inside the body.
+///
+/// Conservative: any `KlExpr::Sym(s)` reference in the body marks `s` as
+/// possibly looked up. Inner `let`/`lambda` shadowing isn't tracked here —
+/// they bind at evaluation, and the innermost-wins reverse scan handles
+/// it. Worst case we keep a slot that gets shadowed; never wrong.
+fn capture_used(body: &KlExpr, locals: &[(SymId, Value)]) -> Vec<(SymId, Value)> {
+    if locals.is_empty() {
+        return Vec::new();
+    }
+    let mut used: SmallVec<[SymId; 16]> = SmallVec::new();
+    collect_used_syms(body, &mut used);
+    if used.is_empty() {
+        return Vec::new();
+    }
+    locals
+        .iter()
+        .filter(|(s, _)| used.contains(s))
+        .cloned()
+        .collect()
+}
+
+fn collect_used_syms(expr: &KlExpr, out: &mut SmallVec<[SymId; 16]>) {
+    match expr {
+        KlExpr::Sym(s) => {
+            if !out.contains(s) {
+                out.push(*s);
+            }
+        }
+        KlExpr::App(items) => {
+            for child in items.iter() {
+                collect_used_syms(child, out);
+            }
+        }
+        _ => {}
     }
 }
 

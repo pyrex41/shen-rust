@@ -966,7 +966,7 @@ pub fn aot_maths_x2e_maths_x2d_macro(interp: &mut Interp, args: &[Value]) -> She
                                                                                         };
                                                                                         if !rt::is_truthy(interp, &__t936)? { Value::Bool(false) } else { let __t937 = { let __t934 = { let __t923 = Value::Sym(interp.intern("sinh")); let __t925 = { let __t924 = v_V8.clone(); rt::hd(&__t924)? }; rt::eq(&__t923, &__t925) }; if !rt::is_truthy(interp, &__t934)? { Value::Bool(false) } else { let __t935 = { let __t932 = { let __t927 = { let __t926 = v_V8.clone(); rt::tl(&__t926)? }; rt::is_cons(&__t927) }; if !rt::is_truthy(interp, &__t932)? { Value::Bool(false) } else { let __t933 = { let __t928 = Value::Nil; let __t931 = { let __t930 = { let __t929 = v_V8.clone(); rt::tl(&__t929)? }; rt::tl(&__t930)? }; rt::eq(&__t928, &__t931) }; Value::Bool(rt::is_truthy(interp, &__t933)?) } }; Value::Bool(rt::is_truthy(interp, &__t935)?) } }; Value::Bool(rt::is_truthy(interp, &__t937)?) }
                                                                                     };
-                                                                                    if match rt::is_truthy(interp, &__t948) { Ok(b) => b, Err(e) => break Err(e), } { break Ok({ let __t938 = Value::Sym(interp.intern("sinh")); let __t947 = { let __t941 = { let __t940 = { let __t939 = v_V8.clone(); rt::tl(&__t939)? }; rt::hd(&__t940)? }; let __t946 = { let __t944 = { let __t942 = Value::Sym(interp.intern("tolerance")); let __t943 = Value::Nil; rt::cons(&__t942, &__t943) }; let __t945 = Value::Nil; rt::cons(&__t944, &__t945) }; rt::cons(&__t941, &__t946) }; rt::cons(&__t938, &__t947) }); } else { { let __t921 = { let __t909 = { let __t895 = v_V8.clone(); rt::is_cons(&__t895) }; if !rt::is_truthy(interp, &__t909)? { Value::Bool(false) } else { let __t910 = { let __t907 = { let __t896 = Value::Sym(interp.intern("sech")); let __t898 = { let __t897 = v_V8.clone(); rt::hd(&__t897)? }; rt::eq(&__t896, &__t898) }; if !rt::is_truthy(interp, &__t907)? { Value::Bool(false) } else { let __t908 = { let __t905 = { let __t900 = { let __t899 = v_V8.clone(); rt::tl(&__t899)? }; rt::is_cons(&__t900) }; if !rt::is_truthy(interp, &__t905)? { Value::Bool(false) } else { let __t906 = { let __t901 = Value::Nil; let __t904 = { let __t903 = { let __t902 = v_V8.clone(); rt::tl(&__t902)? }; rt::tl(&__t903)? }; rt::eq(&__t901, &__t904) }; Value::Bool(rt::is_truthy(interp, &__t906)?) } }; Value::Bool(rt::is_truthy(interp, &__t908)?) } }; Value::Bool(rt::is_truthy(interp, &__t910)?) } }; if match rt::is_truthy(interp, &__t921) { Ok(b) => b, Err(e) => break Err(e), } { break Ok({ let __t911 = Value::Sym(interp.intern("sech")); let __t920 = { let __t914 = { let __t913 = { let __t912 = v_V8.clone(); rt::tl(&__t912)? }; rt::hd(&__t913)? }; let __t919 = { let __t917 = { let __t915 = Value::Sym(interp.intern("tolerance")); let __t916 = Value::Nil; rt::cons(&__t915, &__t916) }; let __t918 = Value::Nil; rt::cons(&__t917, &__t918) }; rt::cons(&__t914, &__t919) }; rt::cons(&__t911, &__t920) }); } else { { let __t894 = { let __t882 = { let __t868 = v_V8.clone(); rt::is_cons(&__t868) }; if !rt::is_truthy(interp, &__t882)? { Value::Bool(false) } else { let __t883 = { let __t880 = { let __t869 = Value::Sym(interp.intern("csch")); let __t871 = { let __t870 = v_V8.clone(); rt::hd(&__t870)? }; rt::eq(&__t869, &__t871) }; if !rt::is_truthy(interp, &__t880)? { Value::Bool(false) } else { let __t881 = { let __t878 = { let __t873 = { let __t872 = v_V8.clone(); rt::tl(&__t872)? }; rt::is_cons(&__t873) }; if !rt::is_truthy(interp, &__t878)? { Value::Bool(false) } else { let __t879 = { let __t874 = Value::Nil; let __t877 = { let __t876 = { let __t875 = v_V8.clone(); rt::tl(&__t875)? }; rt::tl(&__t876)? }; rt::eq(&__t874, &__t877) }; Value::Bool(rt::is_truthy(interp, &__t879)?) } }; Value::Bool(rt::is_truthy(interp, &__t881)?) } }; Value::Bool(rt::is_truthy(interp, &__t883)?) } }; if match rt::is_truthy(interp, &__t894) { Ok(b) => b, Err(e) => break Err(e), } { break Ok({ let __t884 = Value::Sym(interp.intern("csch")); let __t893 = { let __t887 = { let __t886 = { let __t885 = v_V8.clone(); rt::tl(&__t885)? }; rt::hd(&__t886)? }; let __t892 = { let __t890 = { let __t888 = Value::Sym(interp.intern("tolerance")); let __t889 = Value::Nil; rt::cons(&__t888, &__t889) }; let __t891 = Value::Nil; rt::cons(&__t890, &__t891) }; rt::cons(&__t887, &__t892) }; rt::cons(&__t884, &__t893) }); } else { { let __t867 = { let __t855 = { let __t841 = v_V8.clone(); rt::is_cons(&__t841) }; if !rt::is_truthy(interp, &__t855)? { Value::Bool(false) } else { let __t856 = { let __t853 = { let __t842 = Value::Sym(interp.intern("coth")); let __t844 = { let __t843 = v_V8.clone(); rt::hd(&__t843)? }; rt::eq(&__t842, &__t844) }; if !rt::is_truthy(interp, &__t853)? { Value::Bool(false) } else { let __t854 = { let __t851 = { let __t846 = { let __t845 = v_V8.clone(); rt::tl(&__t845)? }; rt::is_cons(&__t846) }; if !rt::is_truthy(interp, &__t851)? { Value::Bool(false) } else { let __t852 = { let __t847 = Value::Nil; let __t850 = { let __t849 = { let __t848 = v_V8.clone(); rt::tl(&__t848)? }; rt::tl(&__t849)? }; rt::eq(&__t847, &__t850) }; Value::Bool(rt::is_truthy(interp, &__t852)?) } }; Value::Bool(rt::is_truthy(interp, &__t854)?) } }; Value::Bool(rt::is_truthy(interp, &__t856)?) } }; if match rt::is_truthy(interp, &__t867) { Ok(b) => b, Err(e) => break Err(e), } { break Ok({ let __t857 = Value::Sym(interp.intern("coth")); let __t866 = { let __t860 = { let __t859 = { let __t858 = v_V8.clone(); rt::tl(&__t858)? }; rt::hd(&__t859)? }; let __t865 = { let __t863 = { let __t861 = Value::Sym(interp.intern("tolerance")); let __t862 = Value::Nil; rt::cons(&__t861, &__t862) }; let __t864 = Value::Nil; rt::cons(&__t863, &__t864) }; rt::cons(&__t860, &__t865) }; rt::cons(&__t857, &__t866) }); } else { { let __t840 = { let __t823 = { let __t803 = v_V8.clone(); rt::is_cons(&__t803) }; if !rt::is_truthy(interp, &__t823)? { Value::Bool(false) } else { let __t824 = { let __t821 = { let __t804 = Value::Sym(interp.intern("nthrt")); let __t806 = { let __t805 = v_V8.clone(); rt::hd(&__t805)? }; rt::eq(&__t804, &__t806) }; if !rt::is_truthy(interp, &__t821)? { Value::Bool(false) } else { let __t822 = { let __t819 = { let __t808 = { let __t807 = v_V8.clone(); rt::tl(&__t807)? }; rt::is_cons(&__t808) }; if !rt::is_truthy(interp, &__t819)? { Value::Bool(false) } else { let __t820 = { let __t817 = { let __t811 = { let __t810 = { let __t809 = v_V8.clone(); rt::tl(&__t809)? }; rt::tl(&__t810)? }; rt::is_cons(&__t811) }; if !rt::is_truthy(interp, &__t817)? { Value::Bool(false) } else { let __t818 = { let __t812 = Value::Nil; let __t816 = { let __t815 = { let __t814 = { let __t813 = v_V8.clone(); rt::tl(&__t813)? }; rt::tl(&__t814)? }; rt::tl(&__t815)? }; rt::eq(&__t812, &__t816) }; Value::Bool(rt::is_truthy(interp, &__t818)?) } }; Value::Bool(rt::is_truthy(interp, &__t820)?) } }; Value::Bool(rt::is_truthy(interp, &__t822)?) } }; Value::Bool(rt::is_truthy(interp, &__t824)?) } }; if match rt::is_truthy(interp, &__t840) { Ok(b) => b, Err(e) => break Err(e), } { break Ok({ let __t825 = Value::Sym(interp.intern("nthrt")); let __t839 = { let __t828 = { let __t827 = { let __t826 = v_V8.clone(); rt::tl(&__t826)? }; rt::hd(&__t827)? }; let __t838 = { let __t832 = { let __t831 = { let __t830 = { let __t829 = v_V8.clone(); rt::tl(&__t829)? }; rt::tl(&__t830)? }; rt::hd(&__t831)? }; let __t837 = { let __t835 = { let __t833 = Value::Sym(interp.intern("tolerance")); let __t834 = Value::Nil; rt::cons(&__t833, &__t834) }; let __t836 = Value::Nil; rt::cons(&__t835, &__t836) }; rt::cons(&__t832, &__t837) }; rt::cons(&__t828, &__t838) }; rt::cons(&__t825, &__t839) }); } else { { let __t802 = { let __t790 = { let __t776 = v_V8.clone(); rt::is_cons(&__t776) }; if !rt::is_truthy(interp, &__t790)? { Value::Bool(false) } else { let __t791 = { let __t788 = { let __t777 = Value::Sym(interp.intern("sqrt")); let __t779 = { let __t778 = v_V8.clone(); rt::hd(&__t778)? }; rt::eq(&__t777, &__t779) }; if !rt::is_truthy(interp, &__t788)? { Value::Bool(false) } else { let __t789 = { let __t786 = { let __t781 = { let __t780 = v_V8.clone(); rt::tl(&__t780)? }; rt::is_cons(&__t781) }; if !rt::is_truthy(interp, &__t786)? { Value::Bool(false) } else { let __t787 = { let __t782 = Value::Nil; let __t785 = { let __t784 = { let __t783 = v_V8.clone(); rt::tl(&__t783)? }; rt::tl(&__t784)? }; rt::eq(&__t782, &__t785) }; Value::Bool(rt::is_truthy(interp, &__t787)?) } }; Value::Bool(rt::is_truthy(interp, &__t789)?) } }; Value::Bool(rt::is_truthy(interp, &__t791)?) } }; if match rt::is_truthy(interp, &__t802) { Ok(b) => b, Err(e) => break Err(e), } { break Ok({ let __t792 = Value::Sym(interp.intern("sqrt")); let __t801 = { let __t795 = { let __t794 = { let __t793 = v_V8.clone(); rt::tl(&__t793)? }; rt::hd(&__t794)? }; let __t800 = { let __t798 = { let __t796 = Value::Sym(interp.intern("tolerance")); let __t797 = Value::Nil; rt::cons(&__t796, &__t797) }; let __t799 = Value::Nil; rt::cons(&__t798, &__t799) }; rt::cons(&__t795, &__t800) }; rt::cons(&__t792, &__t801) }); } else { { let __t775 = { let __t758 = { let __t738 = v_V8.clone(); rt::is_cons(&__t738) }; if !rt::is_truthy(interp, &__t758)? { Value::Bool(false) } else { let __t759 = { let __t756 = { let __t739 = Value::Sym(interp.intern("expt")); let __t741 = { let __t740 = v_V8.clone(); rt::hd(&__t740)? }; rt::eq(&__t739, &__t741) }; if !rt::is_truthy(interp, &__t756)? { Value::Bool(false) } else { let __t757 = { let __t754 = { let __t743 = { let __t742 = v_V8.clone(); rt::tl(&__t742)? }; rt::is_cons(&__t743) }; if !rt::is_truthy(interp, &__t754)? { Value::Bool(false) } else { let __t755 = { let __t752 = { let __t746 = { let __t745 = { let __t744 = v_V8.clone(); rt::tl(&__t744)? }; rt::tl(&__t745)? }; rt::is_cons(&__t746) }; if !rt::is_truthy(interp, &__t752)? { Value::Bool(false) } else { let __t753 = { let __t747 = Value::Nil; let __t751 = { let __t750 = { let __t749 = { let __t748 = v_V8.clone(); rt::tl(&__t748)? }; rt::tl(&__t749)? }; rt::tl(&__t750)? }; rt::eq(&__t747, &__t751) }; Value::Bool(rt::is_truthy(interp, &__t753)?) } }; Value::Bool(rt::is_truthy(interp, &__t755)?) } }; Value::Bool(rt::is_truthy(interp, &__t757)?) } }; Value::Bool(rt::is_truthy(interp, &__t759)?) } }; if match rt::is_truthy(interp, &__t775) { Ok(b) => b, Err(e) => break Err(e), } { break Ok({ let __t760 = Value::Sym(interp.intern("expt")); let __t774 = { let __t763 = { let __t762 = { let __t761 = v_V8.clone(); rt::tl(&__t761)? }; rt::hd(&__t762)? }; let __t773 = { let __t767 = { let __t766 = { let __t765 = { let __t764 = v_V8.clone(); rt::tl(&__t764)? }; rt::tl(&__t765)? }; rt::hd(&__t766)? }; let __t772 = { let __t770 = { let __t768 = Value::Sym(interp.intern("tolerance")); let __t769 = Value::Nil; rt::cons(&__t768, &__t769) }; let __t771 = Value::Nil; rt::cons(&__t770, &__t771) }; rt::cons(&__t767, &__t772) }; rt::cons(&__t763, &__t773) }; rt::cons(&__t760, &__t774) }); } else { { let __t737 = { let __t723 = { let __t704 = v_V8.clone(); rt::is_cons(&__t704) }; if !rt::is_truthy(interp, &__t723)? { Value::Bool(false) } else { let __t724 = { let __t721 = { let __t705 = Value::Sym(interp.intern("max")); let __t707 = { let __t706 = v_V8.clone(); rt::hd(&__t706)? }; rt::eq(&__t705, &__t707) }; if !rt::is_truthy(interp, &__t721)? { Value::Bool(false) } else { let __t722 = { let __t719 = { let __t709 = { let __t708 = v_V8.clone(); rt::tl(&__t708)? }; rt::is_cons(&__t709) }; if !rt::is_truthy(interp, &__t719)? { Value::Bool(false) } else { let __t720 = { let __t717 = { let __t712 = { let __t711 = { let __t710 = v_V8.clone(); rt::tl(&__t710)? }; rt::tl(&__t711)? }; rt::is_cons(&__t712) }; if !rt::is_truthy(interp, &__t717)? { Value::Bool(false) } else { let __t718 = { let __t716 = { let __t715 = { let __t714 = { let __t713 = v_V8.clone(); rt::tl(&__t713)? }; rt::tl(&__t714)? }; rt::tl(&__t715)? }; rt::is_cons(&__t716) }; Value::Bool(rt::is_truthy(interp, &__t718)?) } }; Value::Bool(rt::is_truthy(interp, &__t720)?) } }; Value::Bool(rt::is_truthy(interp, &__t722)?) } }; Value::Bool(rt::is_truthy(interp, &__t724)?) } }; if match rt::is_truthy(interp, &__t737) { Ok(b) => b, Err(e) => break Err(e), } { break Ok({ let __t725 = Value::Sym(interp.intern("max")); let __t736 = { let __t728 = { let __t727 = { let __t726 = v_V8.clone(); rt::tl(&__t726)? }; rt::hd(&__t727)? }; let __t735 = { let __t733 = { let __t729 = Value::Sym(interp.intern("max")); let __t732 = { let __t731 = { let __t730 = v_V8.clone(); rt::tl(&__t730)? }; rt::tl(&__t731)? }; rt::cons(&__t729, &__t732) }; let __t734 = Value::Nil; rt::cons(&__t733, &__t734) }; rt::cons(&__t728, &__t735) }; rt::cons(&__t725, &__t736) }); } else { { let __t703 = { let __t689 = { let __t670 = v_V8.clone(); rt::is_cons(&__t670) }; if !rt::is_truthy(interp, &__t689)? { Value::Bool(false) } else { let __t690 = { let __t687 = { let __t671 = Value::Sym(interp.intern("min")); let __t673 = { let __t672 = v_V8.clone(); rt::hd(&__t672)? }; rt::eq(&__t671, &__t673) }; if !rt::is_truthy(interp, &__t687)? { Value::Bool(false) } else { let __t688 = { let __t685 = { let __t675 = { let __t674 = v_V8.clone(); rt::tl(&__t674)? }; rt::is_cons(&__t675) }; if !rt::is_truthy(interp, &__t685)? { Value::Bool(false) } else { let __t686 = { let __t683 = { let __t678 = { let __t677 = { let __t676 = v_V8.clone(); rt::tl(&__t676)? }; rt::tl(&__t677)? }; rt::is_cons(&__t678) }; if !rt::is_truthy(interp, &__t683)? { Value::Bool(false) } else { let __t684 = { let __t682 = { let __t681 = { let __t680 = { let __t679 = v_V8.clone(); rt::tl(&__t679)? }; rt::tl(&__t680)? }; rt::tl(&__t681)? }; rt::is_cons(&__t682) }; Value::Bool(rt::is_truthy(interp, &__t684)?) } }; Value::Bool(rt::is_truthy(interp, &__t686)?) } }; Value::Bool(rt::is_truthy(interp, &__t688)?) } }; Value::Bool(rt::is_truthy(interp, &__t690)?) } }; if match rt::is_truthy(interp, &__t703) { Ok(b) => b, Err(e) => break Err(e), } { break Ok({ let __t691 = Value::Sym(interp.intern("min")); let __t702 = { let __t694 = { let __t693 = { let __t692 = v_V8.clone(); rt::tl(&__t692)? }; rt::hd(&__t693)? }; let __t701 = { let __t699 = { let __t695 = Value::Sym(interp.intern("min")); let __t698 = { let __t697 = { let __t696 = v_V8.clone(); rt::tl(&__t696)? }; rt::tl(&__t697)? }; rt::cons(&__t695, &__t698) }; let __t700 = Value::Nil; rt::cons(&__t699, &__t700) }; rt::cons(&__t694, &__t701) }; rt::cons(&__t691, &__t702) }); } else { { let __t669 = { let __t664 = { let __t650 = v_V8.clone(); rt::is_cons(&__t650) }; if !rt::is_truthy(interp, &__t664)? { Value::Bool(false) } else { let __t665 = { let __t662 = { let __t651 = Value::Sym(interp.intern("tolerance")); let __t653 = { let __t652 = v_V8.clone(); rt::hd(&__t652)? }; rt::eq(&__t651, &__t653) }; if !rt::is_truthy(interp, &__t662)? { Value::Bool(false) } else { let __t663 = { let __t660 = { let __t655 = { let __t654 = v_V8.clone(); rt::tl(&__t654)? }; rt::is_cons(&__t655) }; if !rt::is_truthy(interp, &__t660)? { Value::Bool(false) } else { let __t661 = { let __t656 = Value::Nil; let __t659 = { let __t658 = { let __t657 = v_V8.clone(); rt::tl(&__t657)? }; rt::tl(&__t658)? }; rt::eq(&__t656, &__t659) }; Value::Bool(rt::is_truthy(interp, &__t661)?) } }; Value::Bool(rt::is_truthy(interp, &__t663)?) } }; Value::Bool(rt::is_truthy(interp, &__t665)?) } }; if match rt::is_truthy(interp, &__t669) { Ok(b) => b, Err(e) => break Err(e), } { break Ok({ let __t666 = Value::Sym(interp.intern("maths.tolerance=n")); let __t668 = { let __t667 = v_V8.clone(); rt::tl(&__t667)? }; rt::cons(&__t666, &__t668) }); } else { { let __t649 = { let __t594 = { let __t510 = v_V8.clone(); rt::is_cons(&__t510) }; if !rt::is_truthy(interp, &__t594)? { Value::Bool(false) } else { let __t595 = { let __t592 = { let __t511 = Value::Sym(interp.intern("for")); let __t513 = { let __t512 = v_V8.clone(); rt::hd(&__t512)? }; rt::eq(&__t511, &__t513) }; if !rt::is_truthy(interp, &__t592)? { Value::Bool(false) } else { let __t593 = { let __t590 = { let __t515 = { let __t514 = v_V8.clone(); rt::tl(&__t514)? }; rt::is_cons(&__t515) }; if !rt::is_truthy(interp, &__t590)? { Value::Bool(false) } else { let __t591 = { let __t588 = { let __t518 = { let __t517 = { let __t516 = v_V8.clone(); rt::tl(&__t516)? }; rt::tl(&__t517)? }; rt::is_cons(&__t518) }; if !rt::is_truthy(interp, &__t588)? { Value::Bool(false) } else { let __t589 = { let __t586 = { let __t519 = Value::Sym(interp.intern("=")); let __t523 = { let __t522 = { let __t521 = { let __t520 = v_V8.clone(); rt::tl(&__t520)? }; rt::tl(&__t521)? }; rt::hd(&__t522)? }; rt::eq(&__t519, &__t523) }; if !rt::is_truthy(interp, &__t586)? { Value::Bool(false) } else { let __t587 = { let __t584 = { let __t527 = { let __t526 = { let __t525 = { let __t524 = v_V8.clone(); rt::tl(&__t524)? }; rt::tl(&__t525)? }; rt::tl(&__t526)? }; rt::is_cons(&__t527) }; if !rt::is_truthy(interp, &__t584)? { Value::Bool(false) } else { let __t585 = { let __t582 = { let __t532 = { let __t531 = { let __t530 = { let __t529 = { let __t528 = v_V8.clone(); rt::tl(&__t528)? }; rt::tl(&__t529)? }; rt::tl(&__t530)? }; rt::tl(&__t531)? }; rt::is_cons(&__t532) }; if !rt::is_truthy(interp, &__t582)? { Value::Bool(false) } else { let __t583 = { let __t580 = { let __t538 = { let __t537 = { let __t536 = { let __t535 = { let __t534 = { let __t533 = v_V8.clone(); rt::tl(&__t533)? }; rt::tl(&__t534)? }; rt::tl(&__t535)? }; rt::tl(&__t536)? }; rt::tl(&__t537)? }; rt::is_cons(&__t538) }; if !rt::is_truthy(interp, &__t580)? { Value::Bool(false) } else { let __t581 = { let __t578 = { let __t545 = { let __t544 = { let __t543 = { let __t542 = { let __t541 = { let __t540 = { let __t539 = v_V8.clone(); rt::tl(&__t539)? }; rt::tl(&__t540)? }; rt::tl(&__t541)? }; rt::tl(&__t542)? }; rt::tl(&__t543)? }; rt::tl(&__t544)? }; rt::is_cons(&__t545) }; if !rt::is_truthy(interp, &__t578)? { Value::Bool(false) } else { let __t579 = { let __t576 = { let __t553 = { let __t552 = { let __t551 = { let __t550 = { let __t549 = { let __t548 = { let __t547 = { let __t546 = v_V8.clone(); rt::tl(&__t546)? }; rt::tl(&__t547)? }; rt::tl(&__t548)? }; rt::tl(&__t549)? }; rt::tl(&__t550)? }; rt::tl(&__t551)? }; rt::tl(&__t552)? }; rt::is_cons(&__t553) }; if !rt::is_truthy(interp, &__t576)? { Value::Bool(false) } else { let __t577 = { let __t574 = { let __t554 = Value::Sym(interp.intern("and")); let __t563 = { let __t562 = { let __t561 = { let __t560 = { let __t559 = { let __t558 = { let __t557 = { let __t556 = { let __t555 = v_V8.clone(); rt::tl(&__t555)? }; rt::tl(&__t556)? }; rt::tl(&__t557)? }; rt::tl(&__t558)? }; rt::tl(&__t559)? }; rt::tl(&__t560)? }; rt::tl(&__t561)? }; rt::hd(&__t562)? }; rt::eq(&__t554, &__t563) }; if !rt::is_truthy(interp, &__t574)? { Value::Bool(false) } else { let __t575 = { let __t564 = Value::Nil; let __t573 = { let __t572 = { let __t571 = { let __t570 = { let __t569 = { let __t568 = { let __t567 = { let __t566 = { let __t565 = v_V8.clone(); rt::tl(&__t565)? }; rt::tl(&__t566)? }; rt::tl(&__t567)? }; rt::tl(&__t568)? }; rt::tl(&__t569)? }; rt::tl(&__t570)? }; rt::tl(&__t571)? }; rt::tl(&__t572)? }; rt::eq(&__t564, &__t573) }; Value::Bool(rt::is_truthy(interp, &__t575)?) } }; Value::Bool(rt::is_truthy(interp, &__t577)?) } }; Value::Bool(rt::is_truthy(interp, &__t579)?) } }; Value::Bool(rt::is_truthy(interp, &__t581)?) } }; Value::Bool(rt::is_truthy(interp, &__t583)?) } }; Value::Bool(rt::is_truthy(interp, &__t585)?) } }; Value::Bool(rt::is_truthy(interp, &__t587)?) } }; Value::Bool(rt::is_truthy(interp, &__t589)?) } }; Value::Bool(rt::is_truthy(interp, &__t591)?) } }; Value::Bool(rt::is_truthy(interp, &__t593)?) } }; Value::Bool(rt::is_truthy(interp, &__t595)?) } }; if match rt::is_truthy(interp, &__t649) { Ok(b) => b, Err(e) => break Err(e), } { { let v_W9 = { let v_V8 = v_V8.clone(); rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z10 = args[0].clone(); Ok({ let v_V8 = v_V8.clone(); let v_Z10 = v_Z10.clone(); rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z11 = args[0].clone(); Ok({ let __t606 = { let __t598 = { let __t596 = v_Z10.clone(); let __t597 = v_Z11.clone(); rt::apply_direct(interp, "occurrences", &[__t596, __t597])? }; let __t599 = Value::Int(0i64); rt::gt(&__t598, &__t599)? }; if rt::is_truthy(interp, &__t606)? { { let __t600 = Value::Sym(interp.intern("/.")); let __t605 = { let __t601 = v_Z10.clone(); let __t604 = { let __t602 = v_Z11.clone(); let __t603 = Value::Nil; rt::cons(&__t602, &__t603) }; rt::cons(&__t601, &__t604) }; rt::cons(&__t600, &__t605) } } else { v_Z11.clone() } }) }, interp) }) }, interp) }; break Ok({ let __t607 = Value::Sym(interp.intern("maths.lazyfor-and")); let __t648 = { let __t612 = { let __t611 = { let __t610 = { let __t609 = { let __t608 = v_V8.clone(); rt::tl(&__t608)? }; rt::tl(&__t609)? }; rt::tl(&__t610)? }; rt::hd(&__t611)? }; let __t647 = { let __t623 = { let __t616 = { let __t615 = { let __t614 = { let __t613 = v_V8.clone(); rt::tl(&__t613)? }; rt::hd(&__t614)? }; rt::apply_value(interp, v_W9.clone(), &[__t615])? }; let __t622 = { let __t621 = { let __t620 = { let __t619 = { let __t618 = { let __t617 = v_V8.clone(); rt::tl(&__t617)? }; rt::tl(&__t618)? }; rt::tl(&__t619)? }; rt::tl(&__t620)? }; rt::hd(&__t621)? }; rt::apply_value(interp, __t616, &[__t622])? }; let __t646 = { let __t635 = { let __t627 = { let __t626 = { let __t625 = { let __t624 = v_V8.clone(); rt::tl(&__t624)? }; rt::hd(&__t625)? }; rt::apply_value(interp, v_W9.clone(), &[__t626])? }; let __t634 = { let __t633 = { let __t632 = { let __t631 = { let __t630 = { let __t629 = { let __t628 = v_V8.clone(); rt::tl(&__t628)? }; rt::tl(&__t629)? }; rt::tl(&__t630)? }; rt::tl(&__t631)? }; rt::tl(&__t632)? }; rt::hd(&__t633)? }; rt::apply_value(interp, __t627, &[__t634])? }; let __t645 = { let __t643 = { let __t642 = { let __t641 = { let __t640 = { let __t639 = { let __t638 = { let __t637 = { let __t636 = v_V8.clone(); rt::tl(&__t636)? }; rt::tl(&__t637)? }; rt::tl(&__t638)? }; rt::tl(&__t639)? }; rt::tl(&__t640)? }; rt::tl(&__t641)? }; rt::hd(&__t642)? }; let __t644 = Value::Nil; rt::cons(&__t643, &__t644) }; rt::cons(&__t635, &__t645) }; rt::cons(&__t623, &__t646) }; rt::cons(&__t612, &__t647) }; rt::cons(&__t607, &__t648) }); } } else { { let __t509 = { let __t454 = { let __t370 = v_V8.clone(); rt::is_cons(&__t370) }; if !rt::is_truthy(interp, &__t454)? { Value::Bool(false) } else { let __t455 = { let __t452 = { let __t371 = Value::Sym(interp.intern("for")); let __t373 = { let __t372 = v_V8.clone(); rt::hd(&__t372)? }; rt::eq(&__t371, &__t373) }; if !rt::is_truthy(interp, &__t452)? { Value::Bool(false) } else { let __t453 = { let __t450 = { let __t375 = { let __t374 = v_V8.clone(); rt::tl(&__t374)? }; rt::is_cons(&__t375) }; if !rt::is_truthy(interp, &__t450)? { Value::Bool(false) } else { let __t451 = { let __t448 = { let __t378 = { let __t377 = { let __t376 = v_V8.clone(); rt::tl(&__t376)? }; rt::tl(&__t377)? }; rt::is_cons(&__t378) }; if !rt::is_truthy(interp, &__t448)? { Value::Bool(false) } else { let __t449 = { let __t446 = { let __t379 = Value::Sym(interp.intern("=")); let __t383 = { let __t382 = { let __t381 = { let __t380 = v_V8.clone(); rt::tl(&__t380)? }; rt::tl(&__t381)? }; rt::hd(&__t382)? }; rt::eq(&__t379, &__t383) }; if !rt::is_truthy(interp, &__t446)? { Value::Bool(false) } else { let __t447 = { let __t444 = { let __t387 = { let __t386 = { let __t385 = { let __t384 = v_V8.clone(); rt::tl(&__t384)? }; rt::tl(&__t385)? }; rt::tl(&__t386)? }; rt::is_cons(&__t387) }; if !rt::is_truthy(interp, &__t444)? { Value::Bool(false) } else { let __t445 = { let __t442 = { let __t392 = { let __t391 = { let __t390 = { let __t389 = { let __t388 = v_V8.clone(); rt::tl(&__t388)? }; rt::tl(&__t389)? }; rt::tl(&__t390)? }; rt::tl(&__t391)? }; rt::is_cons(&__t392) }; if !rt::is_truthy(interp, &__t442)? { Value::Bool(false) } else { let __t443 = { let __t440 = { let __t398 = { let __t397 = { let __t396 = { let __t395 = { let __t394 = { let __t393 = v_V8.clone(); rt::tl(&__t393)? }; rt::tl(&__t394)? }; rt::tl(&__t395)? }; rt::tl(&__t396)? }; rt::tl(&__t397)? }; rt::is_cons(&__t398) }; if !rt::is_truthy(interp, &__t440)? { Value::Bool(false) } else { let __t441 = { let __t438 = { let __t405 = { let __t404 = { let __t403 = { let __t402 = { let __t401 = { let __t400 = { let __t399 = v_V8.clone(); rt::tl(&__t399)? }; rt::tl(&__t400)? }; rt::tl(&__t401)? }; rt::tl(&__t402)? }; rt::tl(&__t403)? }; rt::tl(&__t404)? }; rt::is_cons(&__t405) }; if !rt::is_truthy(interp, &__t438)? { Value::Bool(false) } else { let __t439 = { let __t436 = { let __t413 = { let __t412 = { let __t411 = { let __t410 = { let __t409 = { let __t408 = { let __t407 = { let __t406 = v_V8.clone(); rt::tl(&__t406)? }; rt::tl(&__t407)? }; rt::tl(&__t408)? }; rt::tl(&__t409)? }; rt::tl(&__t410)? }; rt::tl(&__t411)? }; rt::tl(&__t412)? }; rt::is_cons(&__t413) }; if !rt::is_truthy(interp, &__t436)? { Value::Bool(false) } else { let __t437 = { let __t434 = { let __t414 = Value::Sym(interp.intern("or")); let __t423 = { let __t422 = { let __t421 = { let __t420 = { let __t419 = { let __t418 = { let __t417 = { let __t416 = { let __t415 = v_V8.clone(); rt::tl(&__t415)? }; rt::tl(&__t416)? }; rt::tl(&__t417)? }; rt::tl(&__t418)? }; rt::tl(&__t419)? }; rt::tl(&__t420)? }; rt::tl(&__t421)? }; rt::hd(&__t422)? }; rt::eq(&__t414, &__t423) }; if !rt::is_truthy(interp, &__t434)? { Value::Bool(false) } else { let __t435 = { let __t424 = Value::Nil; let __t433 = { let __t432 = { let __t431 = { let __t430 = { let __t429 = { let __t428 = { let __t427 = { let __t426 = { let __t425 = v_V8.clone(); rt::tl(&__t425)? }; rt::tl(&__t426)? }; rt::tl(&__t427)? }; rt::tl(&__t428)? }; rt::tl(&__t429)? }; rt::tl(&__t430)? }; rt::tl(&__t431)? }; rt::tl(&__t432)? }; rt::eq(&__t424, &__t433) }; Value::Bool(rt::is_truthy(interp, &__t435)?) } }; Value::Bool(rt::is_truthy(interp, &__t437)?) } }; Value::Bool(rt::is_truthy(interp, &__t439)?) } }; Value::Bool(rt::is_truthy(interp, &__t441)?) } }; Value::Bool(rt::is_truthy(interp, &__t443)?) } }; Value::Bool(rt::is_truthy(interp, &__t445)?) } }; Value::Bool(rt::is_truthy(interp, &__t447)?) } }; Value::Bool(rt::is_truthy(interp, &__t449)?) } }; Value::Bool(rt::is_truthy(interp, &__t451)?) } }; Value::Bool(rt::is_truthy(interp, &__t453)?) } }; Value::Bool(rt::is_truthy(interp, &__t455)?) } }; if match rt::is_truthy(interp, &__t509) { Ok(b) => b, Err(e) => break Err(e), } { { let v_W12 = { let v_V8 = v_V8.clone(); rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z13 = args[0].clone(); Ok({ let v_V8 = v_V8.clone(); let v_Z13 = v_Z13.clone(); rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z14 = args[0].clone(); Ok({ let __t466 = { let __t458 = { let __t456 = v_Z13.clone(); let __t457 = v_Z14.clone(); rt::apply_direct(interp, "occurrences", &[__t456, __t457])? }; let __t459 = Value::Int(0i64); rt::gt(&__t458, &__t459)? }; if rt::is_truthy(interp, &__t466)? { { let __t460 = Value::Sym(interp.intern("/.")); let __t465 = { let __t461 = v_Z13.clone(); let __t464 = { let __t462 = v_Z14.clone(); let __t463 = Value::Nil; rt::cons(&__t462, &__t463) }; rt::cons(&__t461, &__t464) }; rt::cons(&__t460, &__t465) } } else { v_Z14.clone() } }) }, interp) }) }, interp) }; break Ok({ let __t467 = Value::Sym(interp.intern("maths.lazyfor-or")); let __t508 = { let __t472 = { let __t471 = { let __t470 = { let __t469 = { let __t468 = v_V8.clone(); rt::tl(&__t468)? }; rt::tl(&__t469)? }; rt::tl(&__t470)? }; rt::hd(&__t471)? }; let __t507 = { let __t483 = { let __t476 = { let __t475 = { let __t474 = { let __t473 = v_V8.clone(); rt::tl(&__t473)? }; rt::hd(&__t474)? }; rt::apply_value(interp, v_W12.clone(), &[__t475])? }; let __t482 = { let __t481 = { let __t480 = { let __t479 = { let __t478 = { let __t477 = v_V8.clone(); rt::tl(&__t477)? }; rt::tl(&__t478)? }; rt::tl(&__t479)? }; rt::tl(&__t480)? }; rt::hd(&__t481)? }; rt::apply_value(interp, __t476, &[__t482])? }; let __t506 = { let __t495 = { let __t487 = { let __t486 = { let __t485 = { let __t484 = v_V8.clone(); rt::tl(&__t484)? }; rt::hd(&__t485)? }; rt::apply_value(interp, v_W12.clone(), &[__t486])? }; let __t494 = { let __t493 = { let __t492 = { let __t491 = { let __t490 = { let __t489 = { let __t488 = v_V8.clone(); rt::tl(&__t488)? }; rt::tl(&__t489)? }; rt::tl(&__t490)? }; rt::tl(&__t491)? }; rt::tl(&__t492)? }; rt::hd(&__t493)? }; rt::apply_value(interp, __t487, &[__t494])? }; let __t505 = { let __t503 = { let __t502 = { let __t501 = { let __t500 = { let __t499 = { let __t498 = { let __t497 = { let __t496 = v_V8.clone(); rt::tl(&__t496)? }; rt::tl(&__t497)? }; rt::tl(&__t498)? }; rt::tl(&__t499)? }; rt::tl(&__t500)? }; rt::tl(&__t501)? }; rt::hd(&__t502)? }; let __t504 = Value::Nil; rt::cons(&__t503, &__t504) }; rt::cons(&__t495, &__t505) }; rt::cons(&__t483, &__t506) }; rt::cons(&__t472, &__t507) }; rt::cons(&__t467, &__t508) }); } } else { { let __t369 = { let __t317 = { let __t245 = v_V8.clone(); rt::is_cons(&__t245) }; if !rt::is_truthy(interp, &__t317)? { Value::Bool(false) } else { let __t318 = { let __t315 = { let __t246 = Value::Sym(interp.intern("for")); let __t248 = { let __t247 = v_V8.clone(); rt::hd(&__t247)? }; rt::eq(&__t246, &__t248) }; if !rt::is_truthy(interp, &__t315)? { Value::Bool(false) } else { let __t316 = { let __t313 = { let __t250 = { let __t249 = v_V8.clone(); rt::tl(&__t249)? }; rt::is_cons(&__t250) }; if !rt::is_truthy(interp, &__t313)? { Value::Bool(false) } else { let __t314 = { let __t311 = { let __t253 = { let __t252 = { let __t251 = v_V8.clone(); rt::tl(&__t251)? }; rt::tl(&__t252)? }; rt::is_cons(&__t253) }; if !rt::is_truthy(interp, &__t311)? { Value::Bool(false) } else { let __t312 = { let __t309 = { let __t254 = Value::Sym(interp.intern("=")); let __t258 = { let __t257 = { let __t256 = { let __t255 = v_V8.clone(); rt::tl(&__t255)? }; rt::tl(&__t256)? }; rt::hd(&__t257)? }; rt::eq(&__t254, &__t258) }; if !rt::is_truthy(interp, &__t309)? { Value::Bool(false) } else { let __t310 = { let __t307 = { let __t262 = { let __t261 = { let __t260 = { let __t259 = v_V8.clone(); rt::tl(&__t259)? }; rt::tl(&__t260)? }; rt::tl(&__t261)? }; rt::is_cons(&__t262) }; if !rt::is_truthy(interp, &__t307)? { Value::Bool(false) } else { let __t308 = { let __t305 = { let __t267 = { let __t266 = { let __t265 = { let __t264 = { let __t263 = v_V8.clone(); rt::tl(&__t263)? }; rt::tl(&__t264)? }; rt::tl(&__t265)? }; rt::tl(&__t266)? }; rt::is_cons(&__t267) }; if !rt::is_truthy(interp, &__t305)? { Value::Bool(false) } else { let __t306 = { let __t303 = { let __t273 = { let __t272 = { let __t271 = { let __t270 = { let __t269 = { let __t268 = v_V8.clone(); rt::tl(&__t268)? }; rt::tl(&__t269)? }; rt::tl(&__t270)? }; rt::tl(&__t271)? }; rt::tl(&__t272)? }; rt::is_cons(&__t273) }; if !rt::is_truthy(interp, &__t303)? { Value::Bool(false) } else { let __t304 = { let __t301 = { let __t280 = { let __t279 = { let __t278 = { let __t277 = { let __t276 = { let __t275 = { let __t274 = v_V8.clone(); rt::tl(&__t274)? }; rt::tl(&__t275)? }; rt::tl(&__t276)? }; rt::tl(&__t277)? }; rt::tl(&__t278)? }; rt::tl(&__t279)? }; rt::is_cons(&__t280) }; if !rt::is_truthy(interp, &__t301)? { Value::Bool(false) } else { let __t302 = { let __t299 = { let __t288 = { let __t287 = { let __t286 = { let __t285 = { let __t284 = { let __t283 = { let __t282 = { let __t281 = v_V8.clone(); rt::tl(&__t281)? }; rt::tl(&__t282)? }; rt::tl(&__t283)? }; rt::tl(&__t284)? }; rt::tl(&__t285)? }; rt::tl(&__t286)? }; rt::tl(&__t287)? }; rt::is_cons(&__t288) }; if !rt::is_truthy(interp, &__t299)? { Value::Bool(false) } else { let __t300 = { let __t289 = Value::Nil; let __t298 = { let __t297 = { let __t296 = { let __t295 = { let __t294 = { let __t293 = { let __t292 = { let __t291 = { let __t290 = v_V8.clone(); rt::tl(&__t290)? }; rt::tl(&__t291)? }; rt::tl(&__t292)? }; rt::tl(&__t293)? }; rt::tl(&__t294)? }; rt::tl(&__t295)? }; rt::tl(&__t296)? }; rt::tl(&__t297)? }; rt::eq(&__t289, &__t298) }; Value::Bool(rt::is_truthy(interp, &__t300)?) } }; Value::Bool(rt::is_truthy(interp, &__t302)?) } }; Value::Bool(rt::is_truthy(interp, &__t304)?) } }; Value::Bool(rt::is_truthy(interp, &__t306)?) } }; Value::Bool(rt::is_truthy(interp, &__t308)?) } }; Value::Bool(rt::is_truthy(interp, &__t310)?) } }; Value::Bool(rt::is_truthy(interp, &__t312)?) } }; Value::Bool(rt::is_truthy(interp, &__t314)?) } }; Value::Bool(rt::is_truthy(interp, &__t316)?) } }; Value::Bool(rt::is_truthy(interp, &__t318)?) } }; if match rt::is_truthy(interp, &__t369) { Ok(b) => b, Err(e) => break Err(e), } { { let v_W15 = { let v_V8 = v_V8.clone(); rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z16 = args[0].clone(); Ok({ let v_V8 = v_V8.clone(); let v_Z16 = v_Z16.clone(); rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z17 = args[0].clone(); Ok({ let __t329 = { let __t321 = { let __t319 = v_Z16.clone(); let __t320 = v_Z17.clone(); rt::apply_direct(interp, "occurrences", &[__t319, __t320])? }; let __t322 = Value::Int(0i64); rt::gt(&__t321, &__t322)? }; if rt::is_truthy(interp, &__t329)? { { let __t323 = Value::Sym(interp.intern("/.")); let __t328 = { let __t324 = v_Z16.clone(); let __t327 = { let __t325 = v_Z17.clone(); let __t326 = Value::Nil; rt::cons(&__t325, &__t326) }; rt::cons(&__t324, &__t327) }; rt::cons(&__t323, &__t328) } } else { v_Z17.clone() } }) }, interp) }) }, interp) }; break Ok({ let __t330 = Value::Sym(interp.intern("for")); let __t368 = { let __t335 = { let __t334 = { let __t333 = { let __t332 = { let __t331 = v_V8.clone(); rt::tl(&__t331)? }; rt::tl(&__t332)? }; rt::tl(&__t333)? }; rt::hd(&__t334)? }; let __t367 = { let __t346 = { let __t339 = { let __t338 = { let __t337 = { let __t336 = v_V8.clone(); rt::tl(&__t336)? }; rt::hd(&__t337)? }; rt::apply_value(interp, v_W15.clone(), &[__t338])? }; let __t345 = { let __t344 = { let __t343 = { let __t342 = { let __t341 = { let __t340 = v_V8.clone(); rt::tl(&__t340)? }; rt::tl(&__t341)? }; rt::tl(&__t342)? }; rt::tl(&__t343)? }; rt::hd(&__t344)? }; rt::apply_value(interp, __t339, &[__t345])? }; let __t366 = { let __t358 = { let __t350 = { let __t349 = { let __t348 = { let __t347 = v_V8.clone(); rt::tl(&__t347)? }; rt::hd(&__t348)? }; rt::apply_value(interp, v_W15.clone(), &[__t349])? }; let __t357 = { let __t356 = { let __t355 = { let __t354 = { let __t353 = { let __t352 = { let __t351 = v_V8.clone(); rt::tl(&__t351)? }; rt::tl(&__t352)? }; rt::tl(&__t353)? }; rt::tl(&__t354)? }; rt::tl(&__t355)? }; rt::hd(&__t356)? }; rt::apply_value(interp, __t350, &[__t357])? }; let __t365 = { let __t364 = { let __t363 = { let __t362 = { let __t361 = { let __t360 = { let __t359 = v_V8.clone(); rt::tl(&__t359)? }; rt::tl(&__t360)? }; rt::tl(&__t361)? }; rt::tl(&__t362)? }; rt::tl(&__t363)? }; rt::tl(&__t364)? }; rt::cons(&__t358, &__t365) }; rt::cons(&__t346, &__t366) }; rt::cons(&__t335, &__t367) }; rt::cons(&__t330, &__t368) }); } } else { { let __t244 = { let __t183 = { let __t122 = v_V8.clone(); rt::is_cons(&__t122) }; if !rt::is_truthy(interp, &__t183)? { Value::Bool(false) } else { let __t184 = { let __t181 = { let __t123 = Value::Sym(interp.intern("for")); let __t125 = { let __t124 = v_V8.clone(); rt::hd(&__t124)? }; rt::eq(&__t123, &__t125) }; if !rt::is_truthy(interp, &__t181)? { Value::Bool(false) } else { let __t182 = { let __t179 = { let __t127 = { let __t126 = v_V8.clone(); rt::tl(&__t126)? }; rt::is_cons(&__t127) }; if !rt::is_truthy(interp, &__t179)? { Value::Bool(false) } else { let __t180 = { let __t177 = { let __t130 = { let __t129 = { let __t128 = v_V8.clone(); rt::tl(&__t128)? }; rt::tl(&__t129)? }; rt::is_cons(&__t130) }; if !rt::is_truthy(interp, &__t177)? { Value::Bool(false) } else { let __t178 = { let __t175 = { let __t131 = Value::Sym(interp.intern("=")); let __t135 = { let __t134 = { let __t133 = { let __t132 = v_V8.clone(); rt::tl(&__t132)? }; rt::tl(&__t133)? }; rt::hd(&__t134)? }; rt::eq(&__t131, &__t135) }; if !rt::is_truthy(interp, &__t175)? { Value::Bool(false) } else { let __t176 = { let __t173 = { let __t139 = { let __t138 = { let __t137 = { let __t136 = v_V8.clone(); rt::tl(&__t136)? }; rt::tl(&__t137)? }; rt::tl(&__t138)? }; rt::is_cons(&__t139) }; if !rt::is_truthy(interp, &__t173)? { Value::Bool(false) } else { let __t174 = { let __t171 = { let __t144 = { let __t143 = { let __t142 = { let __t141 = { let __t140 = v_V8.clone(); rt::tl(&__t140)? }; rt::tl(&__t141)? }; rt::tl(&__t142)? }; rt::tl(&__t143)? }; rt::is_cons(&__t144) }; if !rt::is_truthy(interp, &__t171)? { Value::Bool(false) } else { let __t172 = { let __t169 = { let __t150 = { let __t149 = { let __t148 = { let __t147 = { let __t146 = { let __t145 = v_V8.clone(); rt::tl(&__t145)? }; rt::tl(&__t146)? }; rt::tl(&__t147)? }; rt::tl(&__t148)? }; rt::tl(&__t149)? }; rt::is_cons(&__t150) }; if !rt::is_truthy(interp, &__t169)? { Value::Bool(false) } else { let __t170 = { let __t167 = { let __t157 = { let __t156 = { let __t155 = { let __t154 = { let __t153 = { let __t152 = { let __t151 = v_V8.clone(); rt::tl(&__t151)? }; rt::tl(&__t152)? }; rt::tl(&__t153)? }; rt::tl(&__t154)? }; rt::tl(&__t155)? }; rt::tl(&__t156)? }; rt::is_cons(&__t157) }; if !rt::is_truthy(interp, &__t167)? { Value::Bool(false) } else { let __t168 = { let __t158 = Value::Nil; let __t166 = { let __t165 = { let __t164 = { let __t163 = { let __t162 = { let __t161 = { let __t160 = { let __t159 = v_V8.clone(); rt::tl(&__t159)? }; rt::tl(&__t160)? }; rt::tl(&__t161)? }; rt::tl(&__t162)? }; rt::tl(&__t163)? }; rt::tl(&__t164)? }; rt::tl(&__t165)? }; rt::eq(&__t158, &__t166) }; Value::Bool(rt::is_truthy(interp, &__t168)?) } }; Value::Bool(rt::is_truthy(interp, &__t170)?) } }; Value::Bool(rt::is_truthy(interp, &__t172)?) } }; Value::Bool(rt::is_truthy(interp, &__t174)?) } }; Value::Bool(rt::is_truthy(interp, &__t176)?) } }; Value::Bool(rt::is_truthy(interp, &__t178)?) } }; Value::Bool(rt::is_truthy(interp, &__t180)?) } }; Value::Bool(rt::is_truthy(interp, &__t182)?) } }; Value::Bool(rt::is_truthy(interp, &__t184)?) } }; if match rt::is_truthy(interp, &__t244) { Ok(b) => b, Err(e) => break Err(e), } { { let v_W18 = { let v_V8 = v_V8.clone(); rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z19 = args[0].clone(); Ok({ let v_V8 = v_V8.clone(); let v_Z19 = v_Z19.clone(); rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z20 = args[0].clone(); Ok({ let __t195 = { let __t187 = { let __t185 = v_Z19.clone(); let __t186 = v_Z20.clone(); rt::apply_direct(interp, "occurrences", &[__t185, __t186])? }; let __t188 = Value::Int(0i64); rt::gt(&__t187, &__t188)? }; if rt::is_truthy(interp, &__t195)? { { let __t189 = Value::Sym(interp.intern("/.")); let __t194 = { let __t190 = v_Z19.clone(); let __t193 = { let __t191 = v_Z20.clone(); let __t192 = Value::Nil; rt::cons(&__t191, &__t192) }; rt::cons(&__t190, &__t193) }; rt::cons(&__t189, &__t194) } } else { v_Z20.clone() } }) }, interp) }) }, interp) }; break Ok({ let __t196 = Value::Sym(interp.intern("for")); let __t243 = { let __t201 = { let __t200 = { let __t199 = { let __t198 = { let __t197 = v_V8.clone(); rt::tl(&__t197)? }; rt::tl(&__t198)? }; rt::tl(&__t199)? }; rt::hd(&__t200)? }; let __t242 = { let __t212 = { let __t205 = { let __t204 = { let __t203 = { let __t202 = v_V8.clone(); rt::tl(&__t202)? }; rt::hd(&__t203)? }; rt::apply_value(interp, v_W18.clone(), &[__t204])? }; let __t211 = { let __t210 = { let __t209 = { let __t208 = { let __t207 = { let __t206 = v_V8.clone(); rt::tl(&__t206)? }; rt::tl(&__t207)? }; rt::tl(&__t208)? }; rt::tl(&__t209)? }; rt::hd(&__t210)? }; rt::apply_value(interp, __t205, &[__t211])? }; let __t241 = { let __t224 = { let __t216 = { let __t215 = { let __t214 = { let __t213 = v_V8.clone(); rt::tl(&__t213)? }; rt::hd(&__t214)? }; rt::apply_value(interp, v_W18.clone(), &[__t215])? }; let __t223 = { let __t222 = { let __t221 = { let __t220 = { let __t219 = { let __t218 = { let __t217 = v_V8.clone(); rt::tl(&__t217)? }; rt::tl(&__t218)? }; rt::tl(&__t219)? }; rt::tl(&__t220)? }; rt::tl(&__t221)? }; rt::hd(&__t222)? }; rt::apply_value(interp, __t216, &[__t223])? }; let __t240 = { let __t232 = { let __t231 = { let __t230 = { let __t229 = { let __t228 = { let __t227 = { let __t226 = { let __t225 = v_V8.clone(); rt::tl(&__t225)? }; rt::tl(&__t226)? }; rt::tl(&__t227)? }; rt::tl(&__t228)? }; rt::tl(&__t229)? }; rt::tl(&__t230)? }; rt::hd(&__t231)? }; let __t239 = { let __t237 = { let __t233 = Value::Sym(interp.intern("fn")); let __t236 = { let __t234 = Value::Sym(interp.intern("do")); let __t235 = Value::Nil; rt::cons(&__t234, &__t235) }; rt::cons(&__t233, &__t236) }; let __t238 = Value::Nil; rt::cons(&__t237, &__t238) }; rt::cons(&__t232, &__t239) }; rt::cons(&__t224, &__t240) }; rt::cons(&__t212, &__t241) }; rt::cons(&__t201, &__t242) }; rt::cons(&__t196, &__t243) }); } } else { { let __t121 = { let __t63 = { let __t12 = v_V8.clone(); rt::is_cons(&__t12) }; if !rt::is_truthy(interp, &__t63)? { Value::Bool(false) } else { let __t64 = { let __t61 = { let __t13 = Value::Sym(interp.intern("for")); let __t15 = { let __t14 = v_V8.clone(); rt::hd(&__t14)? }; rt::eq(&__t13, &__t15) }; if !rt::is_truthy(interp, &__t61)? { Value::Bool(false) } else { let __t62 = { let __t59 = { let __t17 = { let __t16 = v_V8.clone(); rt::tl(&__t16)? }; rt::is_cons(&__t17) }; if !rt::is_truthy(interp, &__t59)? { Value::Bool(false) } else { let __t60 = { let __t57 = { let __t20 = { let __t19 = { let __t18 = v_V8.clone(); rt::tl(&__t18)? }; rt::tl(&__t19)? }; rt::is_cons(&__t20) }; if !rt::is_truthy(interp, &__t57)? { Value::Bool(false) } else { let __t58 = { let __t55 = { let __t21 = Value::Sym(interp.intern("=")); let __t25 = { let __t24 = { let __t23 = { let __t22 = v_V8.clone(); rt::tl(&__t22)? }; rt::tl(&__t23)? }; rt::hd(&__t24)? }; rt::eq(&__t21, &__t25) }; if !rt::is_truthy(interp, &__t55)? { Value::Bool(false) } else { let __t56 = { let __t53 = { let __t29 = { let __t28 = { let __t27 = { let __t26 = v_V8.clone(); rt::tl(&__t26)? }; rt::tl(&__t27)? }; rt::tl(&__t28)? }; rt::is_cons(&__t29) }; if !rt::is_truthy(interp, &__t53)? { Value::Bool(false) } else { let __t54 = { let __t51 = { let __t34 = { let __t33 = { let __t32 = { let __t31 = { let __t30 = v_V8.clone(); rt::tl(&__t30)? }; rt::tl(&__t31)? }; rt::tl(&__t32)? }; rt::tl(&__t33)? }; rt::is_cons(&__t34) }; if !rt::is_truthy(interp, &__t51)? { Value::Bool(false) } else { let __t52 = { let __t49 = { let __t40 = { let __t39 = { let __t38 = { let __t37 = { let __t36 = { let __t35 = v_V8.clone(); rt::tl(&__t35)? }; rt::tl(&__t36)? }; rt::tl(&__t37)? }; rt::tl(&__t38)? }; rt::tl(&__t39)? }; rt::is_cons(&__t40) }; if !rt::is_truthy(interp, &__t49)? { Value::Bool(false) } else { let __t50 = { let __t41 = Value::Nil; let __t48 = { let __t47 = { let __t46 = { let __t45 = { let __t44 = { let __t43 = { let __t42 = v_V8.clone(); rt::tl(&__t42)? }; rt::tl(&__t43)? }; rt::tl(&__t44)? }; rt::tl(&__t45)? }; rt::tl(&__t46)? }; rt::tl(&__t47)? }; rt::eq(&__t41, &__t48) }; Value::Bool(rt::is_truthy(interp, &__t50)?) } }; Value::Bool(rt::is_truthy(interp, &__t52)?) } }; Value::Bool(rt::is_truthy(interp, &__t54)?) } }; Value::Bool(rt::is_truthy(interp, &__t56)?) } }; Value::Bool(rt::is_truthy(interp, &__t58)?) } }; Value::Bool(rt::is_truthy(interp, &__t60)?) } }; Value::Bool(rt::is_truthy(interp, &__t62)?) } }; Value::Bool(rt::is_truthy(interp, &__t64)?) } }; if match rt::is_truthy(interp, &__t121) { Ok(b) => b, Err(e) => break Err(e), } { { let v_W21 = { let v_V8 = v_V8.clone(); rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z22 = args[0].clone(); Ok({ let v_V8 = v_V8.clone(); let v_Z22 = v_Z22.clone(); rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z23 = args[0].clone(); Ok({ let __t75 = { let __t67 = { let __t65 = v_Z22.clone(); let __t66 = v_Z23.clone(); rt::apply_direct(interp, "occurrences", &[__t65, __t66])? }; let __t68 = Value::Int(0i64); rt::gt(&__t67, &__t68)? }; if rt::is_truthy(interp, &__t75)? { { let __t69 = Value::Sym(interp.intern("/.")); let __t74 = { let __t70 = v_Z22.clone(); let __t73 = { let __t71 = v_Z23.clone(); let __t72 = Value::Nil; rt::cons(&__t71, &__t72) }; rt::cons(&__t70, &__t73) }; rt::cons(&__t69, &__t74) } } else { v_Z23.clone() } }) }, interp) }) }, interp) }; break Ok({ let __t76 = Value::Sym(interp.intern("for")); let __t120 = { let __t81 = { let __t80 = { let __t79 = { let __t78 = { let __t77 = v_V8.clone(); rt::tl(&__t77)? }; rt::tl(&__t78)? }; rt::tl(&__t79)? }; rt::hd(&__t80)? }; let __t119 = { let __t92 = { let __t85 = { let __t84 = { let __t83 = { let __t82 = v_V8.clone(); rt::tl(&__t82)? }; rt::hd(&__t83)? }; rt::apply_value(interp, v_W21.clone(), &[__t84])? }; let __t91 = { let __t90 = { let __t89 = { let __t88 = { let __t87 = { let __t86 = v_V8.clone(); rt::tl(&__t86)? }; rt::tl(&__t87)? }; rt::tl(&__t88)? }; rt::tl(&__t89)? }; rt::hd(&__t90)? }; rt::apply_value(interp, __t85, &[__t91])? }; let __t118 = { let __t104 = { let __t93 = Value::Sym(interp.intern("/.")); let __t103 = { let __t96 = { let __t95 = { let __t94 = v_V8.clone(); rt::tl(&__t94)? }; rt::hd(&__t95)? }; let __t102 = { let __t101 = { let __t100 = { let __t99 = { let __t98 = { let __t97 = v_V8.clone(); rt::tl(&__t97)? }; rt::tl(&__t98)? }; rt::tl(&__t99)? }; rt::tl(&__t100)? }; rt::tl(&__t101)? }; rt::cons(&__t96, &__t102) }; rt::cons(&__t93, &__t103) }; let __t117 = { let __t109 = { let __t105 = Value::Sym(interp.intern("+")); let __t108 = { let __t106 = Value::Int(1i64); let __t107 = Value::Nil; rt::cons(&__t106, &__t107) }; rt::cons(&__t105, &__t108) }; let __t116 = { let __t114 = { let __t110 = Value::Sym(interp.intern("fn")); let __t113 = { let __t111 = Value::Sym(interp.intern("do")); let __t112 = Value::Nil; rt::cons(&__t111, &__t112) }; rt::cons(&__t110, &__t113) }; let __t115 = Value::Nil; rt::cons(&__t114, &__t115) }; rt::cons(&__t109, &__t116) }; rt::cons(&__t104, &__t117) }; rt::cons(&__t92, &__t118) }; rt::cons(&__t81, &__t119) }; rt::cons(&__t76, &__t120) }); } } else { { let __t11 = Value::Bool(true); if match rt::is_truthy(interp, &__t11) { Ok(b) => b, Err(e) => break Err(e), } { break Ok(v_V8.clone()); } else { break Err(ShenError::new("cond: no clause matched")); } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } }
+                                                                                    if match rt::is_truthy(interp, &__t948) { Ok(b) => b, Err(e) => break Err(e), } { break Ok({ let __t938 = Value::Sym(interp.intern("sinh")); let __t947 = { let __t941 = { let __t940 = { let __t939 = v_V8.clone(); rt::tl(&__t939)? }; rt::hd(&__t940)? }; let __t946 = { let __t944 = { let __t942 = Value::Sym(interp.intern("tolerance")); let __t943 = Value::Nil; rt::cons(&__t942, &__t943) }; let __t945 = Value::Nil; rt::cons(&__t944, &__t945) }; rt::cons(&__t941, &__t946) }; rt::cons(&__t938, &__t947) }); } else { { let __t921 = { let __t909 = { let __t895 = v_V8.clone(); rt::is_cons(&__t895) }; if !rt::is_truthy(interp, &__t909)? { Value::Bool(false) } else { let __t910 = { let __t907 = { let __t896 = Value::Sym(interp.intern("sech")); let __t898 = { let __t897 = v_V8.clone(); rt::hd(&__t897)? }; rt::eq(&__t896, &__t898) }; if !rt::is_truthy(interp, &__t907)? { Value::Bool(false) } else { let __t908 = { let __t905 = { let __t900 = { let __t899 = v_V8.clone(); rt::tl(&__t899)? }; rt::is_cons(&__t900) }; if !rt::is_truthy(interp, &__t905)? { Value::Bool(false) } else { let __t906 = { let __t901 = Value::Nil; let __t904 = { let __t903 = { let __t902 = v_V8.clone(); rt::tl(&__t902)? }; rt::tl(&__t903)? }; rt::eq(&__t901, &__t904) }; Value::Bool(rt::is_truthy(interp, &__t906)?) } }; Value::Bool(rt::is_truthy(interp, &__t908)?) } }; Value::Bool(rt::is_truthy(interp, &__t910)?) } }; if match rt::is_truthy(interp, &__t921) { Ok(b) => b, Err(e) => break Err(e), } { break Ok({ let __t911 = Value::Sym(interp.intern("sech")); let __t920 = { let __t914 = { let __t913 = { let __t912 = v_V8.clone(); rt::tl(&__t912)? }; rt::hd(&__t913)? }; let __t919 = { let __t917 = { let __t915 = Value::Sym(interp.intern("tolerance")); let __t916 = Value::Nil; rt::cons(&__t915, &__t916) }; let __t918 = Value::Nil; rt::cons(&__t917, &__t918) }; rt::cons(&__t914, &__t919) }; rt::cons(&__t911, &__t920) }); } else { { let __t894 = { let __t882 = { let __t868 = v_V8.clone(); rt::is_cons(&__t868) }; if !rt::is_truthy(interp, &__t882)? { Value::Bool(false) } else { let __t883 = { let __t880 = { let __t869 = Value::Sym(interp.intern("csch")); let __t871 = { let __t870 = v_V8.clone(); rt::hd(&__t870)? }; rt::eq(&__t869, &__t871) }; if !rt::is_truthy(interp, &__t880)? { Value::Bool(false) } else { let __t881 = { let __t878 = { let __t873 = { let __t872 = v_V8.clone(); rt::tl(&__t872)? }; rt::is_cons(&__t873) }; if !rt::is_truthy(interp, &__t878)? { Value::Bool(false) } else { let __t879 = { let __t874 = Value::Nil; let __t877 = { let __t876 = { let __t875 = v_V8.clone(); rt::tl(&__t875)? }; rt::tl(&__t876)? }; rt::eq(&__t874, &__t877) }; Value::Bool(rt::is_truthy(interp, &__t879)?) } }; Value::Bool(rt::is_truthy(interp, &__t881)?) } }; Value::Bool(rt::is_truthy(interp, &__t883)?) } }; if match rt::is_truthy(interp, &__t894) { Ok(b) => b, Err(e) => break Err(e), } { break Ok({ let __t884 = Value::Sym(interp.intern("csch")); let __t893 = { let __t887 = { let __t886 = { let __t885 = v_V8.clone(); rt::tl(&__t885)? }; rt::hd(&__t886)? }; let __t892 = { let __t890 = { let __t888 = Value::Sym(interp.intern("tolerance")); let __t889 = Value::Nil; rt::cons(&__t888, &__t889) }; let __t891 = Value::Nil; rt::cons(&__t890, &__t891) }; rt::cons(&__t887, &__t892) }; rt::cons(&__t884, &__t893) }); } else { { let __t867 = { let __t855 = { let __t841 = v_V8.clone(); rt::is_cons(&__t841) }; if !rt::is_truthy(interp, &__t855)? { Value::Bool(false) } else { let __t856 = { let __t853 = { let __t842 = Value::Sym(interp.intern("coth")); let __t844 = { let __t843 = v_V8.clone(); rt::hd(&__t843)? }; rt::eq(&__t842, &__t844) }; if !rt::is_truthy(interp, &__t853)? { Value::Bool(false) } else { let __t854 = { let __t851 = { let __t846 = { let __t845 = v_V8.clone(); rt::tl(&__t845)? }; rt::is_cons(&__t846) }; if !rt::is_truthy(interp, &__t851)? { Value::Bool(false) } else { let __t852 = { let __t847 = Value::Nil; let __t850 = { let __t849 = { let __t848 = v_V8.clone(); rt::tl(&__t848)? }; rt::tl(&__t849)? }; rt::eq(&__t847, &__t850) }; Value::Bool(rt::is_truthy(interp, &__t852)?) } }; Value::Bool(rt::is_truthy(interp, &__t854)?) } }; Value::Bool(rt::is_truthy(interp, &__t856)?) } }; if match rt::is_truthy(interp, &__t867) { Ok(b) => b, Err(e) => break Err(e), } { break Ok({ let __t857 = Value::Sym(interp.intern("coth")); let __t866 = { let __t860 = { let __t859 = { let __t858 = v_V8.clone(); rt::tl(&__t858)? }; rt::hd(&__t859)? }; let __t865 = { let __t863 = { let __t861 = Value::Sym(interp.intern("tolerance")); let __t862 = Value::Nil; rt::cons(&__t861, &__t862) }; let __t864 = Value::Nil; rt::cons(&__t863, &__t864) }; rt::cons(&__t860, &__t865) }; rt::cons(&__t857, &__t866) }); } else { { let __t840 = { let __t823 = { let __t803 = v_V8.clone(); rt::is_cons(&__t803) }; if !rt::is_truthy(interp, &__t823)? { Value::Bool(false) } else { let __t824 = { let __t821 = { let __t804 = Value::Sym(interp.intern("nthrt")); let __t806 = { let __t805 = v_V8.clone(); rt::hd(&__t805)? }; rt::eq(&__t804, &__t806) }; if !rt::is_truthy(interp, &__t821)? { Value::Bool(false) } else { let __t822 = { let __t819 = { let __t808 = { let __t807 = v_V8.clone(); rt::tl(&__t807)? }; rt::is_cons(&__t808) }; if !rt::is_truthy(interp, &__t819)? { Value::Bool(false) } else { let __t820 = { let __t817 = { let __t811 = { let __t810 = { let __t809 = v_V8.clone(); rt::tl(&__t809)? }; rt::tl(&__t810)? }; rt::is_cons(&__t811) }; if !rt::is_truthy(interp, &__t817)? { Value::Bool(false) } else { let __t818 = { let __t812 = Value::Nil; let __t816 = { let __t815 = { let __t814 = { let __t813 = v_V8.clone(); rt::tl(&__t813)? }; rt::tl(&__t814)? }; rt::tl(&__t815)? }; rt::eq(&__t812, &__t816) }; Value::Bool(rt::is_truthy(interp, &__t818)?) } }; Value::Bool(rt::is_truthy(interp, &__t820)?) } }; Value::Bool(rt::is_truthy(interp, &__t822)?) } }; Value::Bool(rt::is_truthy(interp, &__t824)?) } }; if match rt::is_truthy(interp, &__t840) { Ok(b) => b, Err(e) => break Err(e), } { break Ok({ let __t825 = Value::Sym(interp.intern("nthrt")); let __t839 = { let __t828 = { let __t827 = { let __t826 = v_V8.clone(); rt::tl(&__t826)? }; rt::hd(&__t827)? }; let __t838 = { let __t832 = { let __t831 = { let __t830 = { let __t829 = v_V8.clone(); rt::tl(&__t829)? }; rt::tl(&__t830)? }; rt::hd(&__t831)? }; let __t837 = { let __t835 = { let __t833 = Value::Sym(interp.intern("tolerance")); let __t834 = Value::Nil; rt::cons(&__t833, &__t834) }; let __t836 = Value::Nil; rt::cons(&__t835, &__t836) }; rt::cons(&__t832, &__t837) }; rt::cons(&__t828, &__t838) }; rt::cons(&__t825, &__t839) }); } else { { let __t802 = { let __t790 = { let __t776 = v_V8.clone(); rt::is_cons(&__t776) }; if !rt::is_truthy(interp, &__t790)? { Value::Bool(false) } else { let __t791 = { let __t788 = { let __t777 = Value::Sym(interp.intern("sqrt")); let __t779 = { let __t778 = v_V8.clone(); rt::hd(&__t778)? }; rt::eq(&__t777, &__t779) }; if !rt::is_truthy(interp, &__t788)? { Value::Bool(false) } else { let __t789 = { let __t786 = { let __t781 = { let __t780 = v_V8.clone(); rt::tl(&__t780)? }; rt::is_cons(&__t781) }; if !rt::is_truthy(interp, &__t786)? { Value::Bool(false) } else { let __t787 = { let __t782 = Value::Nil; let __t785 = { let __t784 = { let __t783 = v_V8.clone(); rt::tl(&__t783)? }; rt::tl(&__t784)? }; rt::eq(&__t782, &__t785) }; Value::Bool(rt::is_truthy(interp, &__t787)?) } }; Value::Bool(rt::is_truthy(interp, &__t789)?) } }; Value::Bool(rt::is_truthy(interp, &__t791)?) } }; if match rt::is_truthy(interp, &__t802) { Ok(b) => b, Err(e) => break Err(e), } { break Ok({ let __t792 = Value::Sym(interp.intern("sqrt")); let __t801 = { let __t795 = { let __t794 = { let __t793 = v_V8.clone(); rt::tl(&__t793)? }; rt::hd(&__t794)? }; let __t800 = { let __t798 = { let __t796 = Value::Sym(interp.intern("tolerance")); let __t797 = Value::Nil; rt::cons(&__t796, &__t797) }; let __t799 = Value::Nil; rt::cons(&__t798, &__t799) }; rt::cons(&__t795, &__t800) }; rt::cons(&__t792, &__t801) }); } else { { let __t775 = { let __t758 = { let __t738 = v_V8.clone(); rt::is_cons(&__t738) }; if !rt::is_truthy(interp, &__t758)? { Value::Bool(false) } else { let __t759 = { let __t756 = { let __t739 = Value::Sym(interp.intern("expt")); let __t741 = { let __t740 = v_V8.clone(); rt::hd(&__t740)? }; rt::eq(&__t739, &__t741) }; if !rt::is_truthy(interp, &__t756)? { Value::Bool(false) } else { let __t757 = { let __t754 = { let __t743 = { let __t742 = v_V8.clone(); rt::tl(&__t742)? }; rt::is_cons(&__t743) }; if !rt::is_truthy(interp, &__t754)? { Value::Bool(false) } else { let __t755 = { let __t752 = { let __t746 = { let __t745 = { let __t744 = v_V8.clone(); rt::tl(&__t744)? }; rt::tl(&__t745)? }; rt::is_cons(&__t746) }; if !rt::is_truthy(interp, &__t752)? { Value::Bool(false) } else { let __t753 = { let __t747 = Value::Nil; let __t751 = { let __t750 = { let __t749 = { let __t748 = v_V8.clone(); rt::tl(&__t748)? }; rt::tl(&__t749)? }; rt::tl(&__t750)? }; rt::eq(&__t747, &__t751) }; Value::Bool(rt::is_truthy(interp, &__t753)?) } }; Value::Bool(rt::is_truthy(interp, &__t755)?) } }; Value::Bool(rt::is_truthy(interp, &__t757)?) } }; Value::Bool(rt::is_truthy(interp, &__t759)?) } }; if match rt::is_truthy(interp, &__t775) { Ok(b) => b, Err(e) => break Err(e), } { break Ok({ let __t760 = Value::Sym(interp.intern("expt")); let __t774 = { let __t763 = { let __t762 = { let __t761 = v_V8.clone(); rt::tl(&__t761)? }; rt::hd(&__t762)? }; let __t773 = { let __t767 = { let __t766 = { let __t765 = { let __t764 = v_V8.clone(); rt::tl(&__t764)? }; rt::tl(&__t765)? }; rt::hd(&__t766)? }; let __t772 = { let __t770 = { let __t768 = Value::Sym(interp.intern("tolerance")); let __t769 = Value::Nil; rt::cons(&__t768, &__t769) }; let __t771 = Value::Nil; rt::cons(&__t770, &__t771) }; rt::cons(&__t767, &__t772) }; rt::cons(&__t763, &__t773) }; rt::cons(&__t760, &__t774) }); } else { { let __t737 = { let __t723 = { let __t704 = v_V8.clone(); rt::is_cons(&__t704) }; if !rt::is_truthy(interp, &__t723)? { Value::Bool(false) } else { let __t724 = { let __t721 = { let __t705 = Value::Sym(interp.intern("max")); let __t707 = { let __t706 = v_V8.clone(); rt::hd(&__t706)? }; rt::eq(&__t705, &__t707) }; if !rt::is_truthy(interp, &__t721)? { Value::Bool(false) } else { let __t722 = { let __t719 = { let __t709 = { let __t708 = v_V8.clone(); rt::tl(&__t708)? }; rt::is_cons(&__t709) }; if !rt::is_truthy(interp, &__t719)? { Value::Bool(false) } else { let __t720 = { let __t717 = { let __t712 = { let __t711 = { let __t710 = v_V8.clone(); rt::tl(&__t710)? }; rt::tl(&__t711)? }; rt::is_cons(&__t712) }; if !rt::is_truthy(interp, &__t717)? { Value::Bool(false) } else { let __t718 = { let __t716 = { let __t715 = { let __t714 = { let __t713 = v_V8.clone(); rt::tl(&__t713)? }; rt::tl(&__t714)? }; rt::tl(&__t715)? }; rt::is_cons(&__t716) }; Value::Bool(rt::is_truthy(interp, &__t718)?) } }; Value::Bool(rt::is_truthy(interp, &__t720)?) } }; Value::Bool(rt::is_truthy(interp, &__t722)?) } }; Value::Bool(rt::is_truthy(interp, &__t724)?) } }; if match rt::is_truthy(interp, &__t737) { Ok(b) => b, Err(e) => break Err(e), } { break Ok({ let __t725 = Value::Sym(interp.intern("max")); let __t736 = { let __t728 = { let __t727 = { let __t726 = v_V8.clone(); rt::tl(&__t726)? }; rt::hd(&__t727)? }; let __t735 = { let __t733 = { let __t729 = Value::Sym(interp.intern("max")); let __t732 = { let __t731 = { let __t730 = v_V8.clone(); rt::tl(&__t730)? }; rt::tl(&__t731)? }; rt::cons(&__t729, &__t732) }; let __t734 = Value::Nil; rt::cons(&__t733, &__t734) }; rt::cons(&__t728, &__t735) }; rt::cons(&__t725, &__t736) }); } else { { let __t703 = { let __t689 = { let __t670 = v_V8.clone(); rt::is_cons(&__t670) }; if !rt::is_truthy(interp, &__t689)? { Value::Bool(false) } else { let __t690 = { let __t687 = { let __t671 = Value::Sym(interp.intern("min")); let __t673 = { let __t672 = v_V8.clone(); rt::hd(&__t672)? }; rt::eq(&__t671, &__t673) }; if !rt::is_truthy(interp, &__t687)? { Value::Bool(false) } else { let __t688 = { let __t685 = { let __t675 = { let __t674 = v_V8.clone(); rt::tl(&__t674)? }; rt::is_cons(&__t675) }; if !rt::is_truthy(interp, &__t685)? { Value::Bool(false) } else { let __t686 = { let __t683 = { let __t678 = { let __t677 = { let __t676 = v_V8.clone(); rt::tl(&__t676)? }; rt::tl(&__t677)? }; rt::is_cons(&__t678) }; if !rt::is_truthy(interp, &__t683)? { Value::Bool(false) } else { let __t684 = { let __t682 = { let __t681 = { let __t680 = { let __t679 = v_V8.clone(); rt::tl(&__t679)? }; rt::tl(&__t680)? }; rt::tl(&__t681)? }; rt::is_cons(&__t682) }; Value::Bool(rt::is_truthy(interp, &__t684)?) } }; Value::Bool(rt::is_truthy(interp, &__t686)?) } }; Value::Bool(rt::is_truthy(interp, &__t688)?) } }; Value::Bool(rt::is_truthy(interp, &__t690)?) } }; if match rt::is_truthy(interp, &__t703) { Ok(b) => b, Err(e) => break Err(e), } { break Ok({ let __t691 = Value::Sym(interp.intern("min")); let __t702 = { let __t694 = { let __t693 = { let __t692 = v_V8.clone(); rt::tl(&__t692)? }; rt::hd(&__t693)? }; let __t701 = { let __t699 = { let __t695 = Value::Sym(interp.intern("min")); let __t698 = { let __t697 = { let __t696 = v_V8.clone(); rt::tl(&__t696)? }; rt::tl(&__t697)? }; rt::cons(&__t695, &__t698) }; let __t700 = Value::Nil; rt::cons(&__t699, &__t700) }; rt::cons(&__t694, &__t701) }; rt::cons(&__t691, &__t702) }); } else { { let __t669 = { let __t664 = { let __t650 = v_V8.clone(); rt::is_cons(&__t650) }; if !rt::is_truthy(interp, &__t664)? { Value::Bool(false) } else { let __t665 = { let __t662 = { let __t651 = Value::Sym(interp.intern("tolerance")); let __t653 = { let __t652 = v_V8.clone(); rt::hd(&__t652)? }; rt::eq(&__t651, &__t653) }; if !rt::is_truthy(interp, &__t662)? { Value::Bool(false) } else { let __t663 = { let __t660 = { let __t655 = { let __t654 = v_V8.clone(); rt::tl(&__t654)? }; rt::is_cons(&__t655) }; if !rt::is_truthy(interp, &__t660)? { Value::Bool(false) } else { let __t661 = { let __t656 = Value::Nil; let __t659 = { let __t658 = { let __t657 = v_V8.clone(); rt::tl(&__t657)? }; rt::tl(&__t658)? }; rt::eq(&__t656, &__t659) }; Value::Bool(rt::is_truthy(interp, &__t661)?) } }; Value::Bool(rt::is_truthy(interp, &__t663)?) } }; Value::Bool(rt::is_truthy(interp, &__t665)?) } }; if match rt::is_truthy(interp, &__t669) { Ok(b) => b, Err(e) => break Err(e), } { break Ok({ let __t666 = Value::Sym(interp.intern("maths.tolerance=n")); let __t668 = { let __t667 = v_V8.clone(); rt::tl(&__t667)? }; rt::cons(&__t666, &__t668) }); } else { { let __t649 = { let __t594 = { let __t510 = v_V8.clone(); rt::is_cons(&__t510) }; if !rt::is_truthy(interp, &__t594)? { Value::Bool(false) } else { let __t595 = { let __t592 = { let __t511 = Value::Sym(interp.intern("for")); let __t513 = { let __t512 = v_V8.clone(); rt::hd(&__t512)? }; rt::eq(&__t511, &__t513) }; if !rt::is_truthy(interp, &__t592)? { Value::Bool(false) } else { let __t593 = { let __t590 = { let __t515 = { let __t514 = v_V8.clone(); rt::tl(&__t514)? }; rt::is_cons(&__t515) }; if !rt::is_truthy(interp, &__t590)? { Value::Bool(false) } else { let __t591 = { let __t588 = { let __t518 = { let __t517 = { let __t516 = v_V8.clone(); rt::tl(&__t516)? }; rt::tl(&__t517)? }; rt::is_cons(&__t518) }; if !rt::is_truthy(interp, &__t588)? { Value::Bool(false) } else { let __t589 = { let __t586 = { let __t519 = Value::Sym(interp.intern("=")); let __t523 = { let __t522 = { let __t521 = { let __t520 = v_V8.clone(); rt::tl(&__t520)? }; rt::tl(&__t521)? }; rt::hd(&__t522)? }; rt::eq(&__t519, &__t523) }; if !rt::is_truthy(interp, &__t586)? { Value::Bool(false) } else { let __t587 = { let __t584 = { let __t527 = { let __t526 = { let __t525 = { let __t524 = v_V8.clone(); rt::tl(&__t524)? }; rt::tl(&__t525)? }; rt::tl(&__t526)? }; rt::is_cons(&__t527) }; if !rt::is_truthy(interp, &__t584)? { Value::Bool(false) } else { let __t585 = { let __t582 = { let __t532 = { let __t531 = { let __t530 = { let __t529 = { let __t528 = v_V8.clone(); rt::tl(&__t528)? }; rt::tl(&__t529)? }; rt::tl(&__t530)? }; rt::tl(&__t531)? }; rt::is_cons(&__t532) }; if !rt::is_truthy(interp, &__t582)? { Value::Bool(false) } else { let __t583 = { let __t580 = { let __t538 = { let __t537 = { let __t536 = { let __t535 = { let __t534 = { let __t533 = v_V8.clone(); rt::tl(&__t533)? }; rt::tl(&__t534)? }; rt::tl(&__t535)? }; rt::tl(&__t536)? }; rt::tl(&__t537)? }; rt::is_cons(&__t538) }; if !rt::is_truthy(interp, &__t580)? { Value::Bool(false) } else { let __t581 = { let __t578 = { let __t545 = { let __t544 = { let __t543 = { let __t542 = { let __t541 = { let __t540 = { let __t539 = v_V8.clone(); rt::tl(&__t539)? }; rt::tl(&__t540)? }; rt::tl(&__t541)? }; rt::tl(&__t542)? }; rt::tl(&__t543)? }; rt::tl(&__t544)? }; rt::is_cons(&__t545) }; if !rt::is_truthy(interp, &__t578)? { Value::Bool(false) } else { let __t579 = { let __t576 = { let __t553 = { let __t552 = { let __t551 = { let __t550 = { let __t549 = { let __t548 = { let __t547 = { let __t546 = v_V8.clone(); rt::tl(&__t546)? }; rt::tl(&__t547)? }; rt::tl(&__t548)? }; rt::tl(&__t549)? }; rt::tl(&__t550)? }; rt::tl(&__t551)? }; rt::tl(&__t552)? }; rt::is_cons(&__t553) }; if !rt::is_truthy(interp, &__t576)? { Value::Bool(false) } else { let __t577 = { let __t574 = { let __t554 = Value::Sym(interp.intern("and")); let __t563 = { let __t562 = { let __t561 = { let __t560 = { let __t559 = { let __t558 = { let __t557 = { let __t556 = { let __t555 = v_V8.clone(); rt::tl(&__t555)? }; rt::tl(&__t556)? }; rt::tl(&__t557)? }; rt::tl(&__t558)? }; rt::tl(&__t559)? }; rt::tl(&__t560)? }; rt::tl(&__t561)? }; rt::hd(&__t562)? }; rt::eq(&__t554, &__t563) }; if !rt::is_truthy(interp, &__t574)? { Value::Bool(false) } else { let __t575 = { let __t564 = Value::Nil; let __t573 = { let __t572 = { let __t571 = { let __t570 = { let __t569 = { let __t568 = { let __t567 = { let __t566 = { let __t565 = v_V8.clone(); rt::tl(&__t565)? }; rt::tl(&__t566)? }; rt::tl(&__t567)? }; rt::tl(&__t568)? }; rt::tl(&__t569)? }; rt::tl(&__t570)? }; rt::tl(&__t571)? }; rt::tl(&__t572)? }; rt::eq(&__t564, &__t573) }; Value::Bool(rt::is_truthy(interp, &__t575)?) } }; Value::Bool(rt::is_truthy(interp, &__t577)?) } }; Value::Bool(rt::is_truthy(interp, &__t579)?) } }; Value::Bool(rt::is_truthy(interp, &__t581)?) } }; Value::Bool(rt::is_truthy(interp, &__t583)?) } }; Value::Bool(rt::is_truthy(interp, &__t585)?) } }; Value::Bool(rt::is_truthy(interp, &__t587)?) } }; Value::Bool(rt::is_truthy(interp, &__t589)?) } }; Value::Bool(rt::is_truthy(interp, &__t591)?) } }; Value::Bool(rt::is_truthy(interp, &__t593)?) } }; Value::Bool(rt::is_truthy(interp, &__t595)?) } }; if match rt::is_truthy(interp, &__t649) { Ok(b) => b, Err(e) => break Err(e), } { { let v_W9 = { rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z10 = args[0].clone(); Ok({ let v_Z10 = v_Z10.clone(); rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z11 = args[0].clone(); Ok({ let __t606 = { let __t598 = { let __t596 = v_Z10.clone(); let __t597 = v_Z11.clone(); rt::apply_direct(interp, "occurrences", &[__t596, __t597])? }; let __t599 = Value::Int(0i64); rt::gt(&__t598, &__t599)? }; if rt::is_truthy(interp, &__t606)? { { let __t600 = Value::Sym(interp.intern("/.")); let __t605 = { let __t601 = v_Z10.clone(); let __t604 = { let __t602 = v_Z11.clone(); let __t603 = Value::Nil; rt::cons(&__t602, &__t603) }; rt::cons(&__t601, &__t604) }; rt::cons(&__t600, &__t605) } } else { v_Z11.clone() } }) }, interp) }) }, interp) }; break Ok({ let __t607 = Value::Sym(interp.intern("maths.lazyfor-and")); let __t648 = { let __t612 = { let __t611 = { let __t610 = { let __t609 = { let __t608 = v_V8.clone(); rt::tl(&__t608)? }; rt::tl(&__t609)? }; rt::tl(&__t610)? }; rt::hd(&__t611)? }; let __t647 = { let __t623 = { let __t616 = { let __t615 = { let __t614 = { let __t613 = v_V8.clone(); rt::tl(&__t613)? }; rt::hd(&__t614)? }; rt::apply_value(interp, v_W9.clone(), &[__t615])? }; let __t622 = { let __t621 = { let __t620 = { let __t619 = { let __t618 = { let __t617 = v_V8.clone(); rt::tl(&__t617)? }; rt::tl(&__t618)? }; rt::tl(&__t619)? }; rt::tl(&__t620)? }; rt::hd(&__t621)? }; rt::apply_value(interp, __t616, &[__t622])? }; let __t646 = { let __t635 = { let __t627 = { let __t626 = { let __t625 = { let __t624 = v_V8.clone(); rt::tl(&__t624)? }; rt::hd(&__t625)? }; rt::apply_value(interp, v_W9.clone(), &[__t626])? }; let __t634 = { let __t633 = { let __t632 = { let __t631 = { let __t630 = { let __t629 = { let __t628 = v_V8.clone(); rt::tl(&__t628)? }; rt::tl(&__t629)? }; rt::tl(&__t630)? }; rt::tl(&__t631)? }; rt::tl(&__t632)? }; rt::hd(&__t633)? }; rt::apply_value(interp, __t627, &[__t634])? }; let __t645 = { let __t643 = { let __t642 = { let __t641 = { let __t640 = { let __t639 = { let __t638 = { let __t637 = { let __t636 = v_V8.clone(); rt::tl(&__t636)? }; rt::tl(&__t637)? }; rt::tl(&__t638)? }; rt::tl(&__t639)? }; rt::tl(&__t640)? }; rt::tl(&__t641)? }; rt::hd(&__t642)? }; let __t644 = Value::Nil; rt::cons(&__t643, &__t644) }; rt::cons(&__t635, &__t645) }; rt::cons(&__t623, &__t646) }; rt::cons(&__t612, &__t647) }; rt::cons(&__t607, &__t648) }); } } else { { let __t509 = { let __t454 = { let __t370 = v_V8.clone(); rt::is_cons(&__t370) }; if !rt::is_truthy(interp, &__t454)? { Value::Bool(false) } else { let __t455 = { let __t452 = { let __t371 = Value::Sym(interp.intern("for")); let __t373 = { let __t372 = v_V8.clone(); rt::hd(&__t372)? }; rt::eq(&__t371, &__t373) }; if !rt::is_truthy(interp, &__t452)? { Value::Bool(false) } else { let __t453 = { let __t450 = { let __t375 = { let __t374 = v_V8.clone(); rt::tl(&__t374)? }; rt::is_cons(&__t375) }; if !rt::is_truthy(interp, &__t450)? { Value::Bool(false) } else { let __t451 = { let __t448 = { let __t378 = { let __t377 = { let __t376 = v_V8.clone(); rt::tl(&__t376)? }; rt::tl(&__t377)? }; rt::is_cons(&__t378) }; if !rt::is_truthy(interp, &__t448)? { Value::Bool(false) } else { let __t449 = { let __t446 = { let __t379 = Value::Sym(interp.intern("=")); let __t383 = { let __t382 = { let __t381 = { let __t380 = v_V8.clone(); rt::tl(&__t380)? }; rt::tl(&__t381)? }; rt::hd(&__t382)? }; rt::eq(&__t379, &__t383) }; if !rt::is_truthy(interp, &__t446)? { Value::Bool(false) } else { let __t447 = { let __t444 = { let __t387 = { let __t386 = { let __t385 = { let __t384 = v_V8.clone(); rt::tl(&__t384)? }; rt::tl(&__t385)? }; rt::tl(&__t386)? }; rt::is_cons(&__t387) }; if !rt::is_truthy(interp, &__t444)? { Value::Bool(false) } else { let __t445 = { let __t442 = { let __t392 = { let __t391 = { let __t390 = { let __t389 = { let __t388 = v_V8.clone(); rt::tl(&__t388)? }; rt::tl(&__t389)? }; rt::tl(&__t390)? }; rt::tl(&__t391)? }; rt::is_cons(&__t392) }; if !rt::is_truthy(interp, &__t442)? { Value::Bool(false) } else { let __t443 = { let __t440 = { let __t398 = { let __t397 = { let __t396 = { let __t395 = { let __t394 = { let __t393 = v_V8.clone(); rt::tl(&__t393)? }; rt::tl(&__t394)? }; rt::tl(&__t395)? }; rt::tl(&__t396)? }; rt::tl(&__t397)? }; rt::is_cons(&__t398) }; if !rt::is_truthy(interp, &__t440)? { Value::Bool(false) } else { let __t441 = { let __t438 = { let __t405 = { let __t404 = { let __t403 = { let __t402 = { let __t401 = { let __t400 = { let __t399 = v_V8.clone(); rt::tl(&__t399)? }; rt::tl(&__t400)? }; rt::tl(&__t401)? }; rt::tl(&__t402)? }; rt::tl(&__t403)? }; rt::tl(&__t404)? }; rt::is_cons(&__t405) }; if !rt::is_truthy(interp, &__t438)? { Value::Bool(false) } else { let __t439 = { let __t436 = { let __t413 = { let __t412 = { let __t411 = { let __t410 = { let __t409 = { let __t408 = { let __t407 = { let __t406 = v_V8.clone(); rt::tl(&__t406)? }; rt::tl(&__t407)? }; rt::tl(&__t408)? }; rt::tl(&__t409)? }; rt::tl(&__t410)? }; rt::tl(&__t411)? }; rt::tl(&__t412)? }; rt::is_cons(&__t413) }; if !rt::is_truthy(interp, &__t436)? { Value::Bool(false) } else { let __t437 = { let __t434 = { let __t414 = Value::Sym(interp.intern("or")); let __t423 = { let __t422 = { let __t421 = { let __t420 = { let __t419 = { let __t418 = { let __t417 = { let __t416 = { let __t415 = v_V8.clone(); rt::tl(&__t415)? }; rt::tl(&__t416)? }; rt::tl(&__t417)? }; rt::tl(&__t418)? }; rt::tl(&__t419)? }; rt::tl(&__t420)? }; rt::tl(&__t421)? }; rt::hd(&__t422)? }; rt::eq(&__t414, &__t423) }; if !rt::is_truthy(interp, &__t434)? { Value::Bool(false) } else { let __t435 = { let __t424 = Value::Nil; let __t433 = { let __t432 = { let __t431 = { let __t430 = { let __t429 = { let __t428 = { let __t427 = { let __t426 = { let __t425 = v_V8.clone(); rt::tl(&__t425)? }; rt::tl(&__t426)? }; rt::tl(&__t427)? }; rt::tl(&__t428)? }; rt::tl(&__t429)? }; rt::tl(&__t430)? }; rt::tl(&__t431)? }; rt::tl(&__t432)? }; rt::eq(&__t424, &__t433) }; Value::Bool(rt::is_truthy(interp, &__t435)?) } }; Value::Bool(rt::is_truthy(interp, &__t437)?) } }; Value::Bool(rt::is_truthy(interp, &__t439)?) } }; Value::Bool(rt::is_truthy(interp, &__t441)?) } }; Value::Bool(rt::is_truthy(interp, &__t443)?) } }; Value::Bool(rt::is_truthy(interp, &__t445)?) } }; Value::Bool(rt::is_truthy(interp, &__t447)?) } }; Value::Bool(rt::is_truthy(interp, &__t449)?) } }; Value::Bool(rt::is_truthy(interp, &__t451)?) } }; Value::Bool(rt::is_truthy(interp, &__t453)?) } }; Value::Bool(rt::is_truthy(interp, &__t455)?) } }; if match rt::is_truthy(interp, &__t509) { Ok(b) => b, Err(e) => break Err(e), } { { let v_W12 = { rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z13 = args[0].clone(); Ok({ let v_Z13 = v_Z13.clone(); rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z14 = args[0].clone(); Ok({ let __t466 = { let __t458 = { let __t456 = v_Z13.clone(); let __t457 = v_Z14.clone(); rt::apply_direct(interp, "occurrences", &[__t456, __t457])? }; let __t459 = Value::Int(0i64); rt::gt(&__t458, &__t459)? }; if rt::is_truthy(interp, &__t466)? { { let __t460 = Value::Sym(interp.intern("/.")); let __t465 = { let __t461 = v_Z13.clone(); let __t464 = { let __t462 = v_Z14.clone(); let __t463 = Value::Nil; rt::cons(&__t462, &__t463) }; rt::cons(&__t461, &__t464) }; rt::cons(&__t460, &__t465) } } else { v_Z14.clone() } }) }, interp) }) }, interp) }; break Ok({ let __t467 = Value::Sym(interp.intern("maths.lazyfor-or")); let __t508 = { let __t472 = { let __t471 = { let __t470 = { let __t469 = { let __t468 = v_V8.clone(); rt::tl(&__t468)? }; rt::tl(&__t469)? }; rt::tl(&__t470)? }; rt::hd(&__t471)? }; let __t507 = { let __t483 = { let __t476 = { let __t475 = { let __t474 = { let __t473 = v_V8.clone(); rt::tl(&__t473)? }; rt::hd(&__t474)? }; rt::apply_value(interp, v_W12.clone(), &[__t475])? }; let __t482 = { let __t481 = { let __t480 = { let __t479 = { let __t478 = { let __t477 = v_V8.clone(); rt::tl(&__t477)? }; rt::tl(&__t478)? }; rt::tl(&__t479)? }; rt::tl(&__t480)? }; rt::hd(&__t481)? }; rt::apply_value(interp, __t476, &[__t482])? }; let __t506 = { let __t495 = { let __t487 = { let __t486 = { let __t485 = { let __t484 = v_V8.clone(); rt::tl(&__t484)? }; rt::hd(&__t485)? }; rt::apply_value(interp, v_W12.clone(), &[__t486])? }; let __t494 = { let __t493 = { let __t492 = { let __t491 = { let __t490 = { let __t489 = { let __t488 = v_V8.clone(); rt::tl(&__t488)? }; rt::tl(&__t489)? }; rt::tl(&__t490)? }; rt::tl(&__t491)? }; rt::tl(&__t492)? }; rt::hd(&__t493)? }; rt::apply_value(interp, __t487, &[__t494])? }; let __t505 = { let __t503 = { let __t502 = { let __t501 = { let __t500 = { let __t499 = { let __t498 = { let __t497 = { let __t496 = v_V8.clone(); rt::tl(&__t496)? }; rt::tl(&__t497)? }; rt::tl(&__t498)? }; rt::tl(&__t499)? }; rt::tl(&__t500)? }; rt::tl(&__t501)? }; rt::hd(&__t502)? }; let __t504 = Value::Nil; rt::cons(&__t503, &__t504) }; rt::cons(&__t495, &__t505) }; rt::cons(&__t483, &__t506) }; rt::cons(&__t472, &__t507) }; rt::cons(&__t467, &__t508) }); } } else { { let __t369 = { let __t317 = { let __t245 = v_V8.clone(); rt::is_cons(&__t245) }; if !rt::is_truthy(interp, &__t317)? { Value::Bool(false) } else { let __t318 = { let __t315 = { let __t246 = Value::Sym(interp.intern("for")); let __t248 = { let __t247 = v_V8.clone(); rt::hd(&__t247)? }; rt::eq(&__t246, &__t248) }; if !rt::is_truthy(interp, &__t315)? { Value::Bool(false) } else { let __t316 = { let __t313 = { let __t250 = { let __t249 = v_V8.clone(); rt::tl(&__t249)? }; rt::is_cons(&__t250) }; if !rt::is_truthy(interp, &__t313)? { Value::Bool(false) } else { let __t314 = { let __t311 = { let __t253 = { let __t252 = { let __t251 = v_V8.clone(); rt::tl(&__t251)? }; rt::tl(&__t252)? }; rt::is_cons(&__t253) }; if !rt::is_truthy(interp, &__t311)? { Value::Bool(false) } else { let __t312 = { let __t309 = { let __t254 = Value::Sym(interp.intern("=")); let __t258 = { let __t257 = { let __t256 = { let __t255 = v_V8.clone(); rt::tl(&__t255)? }; rt::tl(&__t256)? }; rt::hd(&__t257)? }; rt::eq(&__t254, &__t258) }; if !rt::is_truthy(interp, &__t309)? { Value::Bool(false) } else { let __t310 = { let __t307 = { let __t262 = { let __t261 = { let __t260 = { let __t259 = v_V8.clone(); rt::tl(&__t259)? }; rt::tl(&__t260)? }; rt::tl(&__t261)? }; rt::is_cons(&__t262) }; if !rt::is_truthy(interp, &__t307)? { Value::Bool(false) } else { let __t308 = { let __t305 = { let __t267 = { let __t266 = { let __t265 = { let __t264 = { let __t263 = v_V8.clone(); rt::tl(&__t263)? }; rt::tl(&__t264)? }; rt::tl(&__t265)? }; rt::tl(&__t266)? }; rt::is_cons(&__t267) }; if !rt::is_truthy(interp, &__t305)? { Value::Bool(false) } else { let __t306 = { let __t303 = { let __t273 = { let __t272 = { let __t271 = { let __t270 = { let __t269 = { let __t268 = v_V8.clone(); rt::tl(&__t268)? }; rt::tl(&__t269)? }; rt::tl(&__t270)? }; rt::tl(&__t271)? }; rt::tl(&__t272)? }; rt::is_cons(&__t273) }; if !rt::is_truthy(interp, &__t303)? { Value::Bool(false) } else { let __t304 = { let __t301 = { let __t280 = { let __t279 = { let __t278 = { let __t277 = { let __t276 = { let __t275 = { let __t274 = v_V8.clone(); rt::tl(&__t274)? }; rt::tl(&__t275)? }; rt::tl(&__t276)? }; rt::tl(&__t277)? }; rt::tl(&__t278)? }; rt::tl(&__t279)? }; rt::is_cons(&__t280) }; if !rt::is_truthy(interp, &__t301)? { Value::Bool(false) } else { let __t302 = { let __t299 = { let __t288 = { let __t287 = { let __t286 = { let __t285 = { let __t284 = { let __t283 = { let __t282 = { let __t281 = v_V8.clone(); rt::tl(&__t281)? }; rt::tl(&__t282)? }; rt::tl(&__t283)? }; rt::tl(&__t284)? }; rt::tl(&__t285)? }; rt::tl(&__t286)? }; rt::tl(&__t287)? }; rt::is_cons(&__t288) }; if !rt::is_truthy(interp, &__t299)? { Value::Bool(false) } else { let __t300 = { let __t289 = Value::Nil; let __t298 = { let __t297 = { let __t296 = { let __t295 = { let __t294 = { let __t293 = { let __t292 = { let __t291 = { let __t290 = v_V8.clone(); rt::tl(&__t290)? }; rt::tl(&__t291)? }; rt::tl(&__t292)? }; rt::tl(&__t293)? }; rt::tl(&__t294)? }; rt::tl(&__t295)? }; rt::tl(&__t296)? }; rt::tl(&__t297)? }; rt::eq(&__t289, &__t298) }; Value::Bool(rt::is_truthy(interp, &__t300)?) } }; Value::Bool(rt::is_truthy(interp, &__t302)?) } }; Value::Bool(rt::is_truthy(interp, &__t304)?) } }; Value::Bool(rt::is_truthy(interp, &__t306)?) } }; Value::Bool(rt::is_truthy(interp, &__t308)?) } }; Value::Bool(rt::is_truthy(interp, &__t310)?) } }; Value::Bool(rt::is_truthy(interp, &__t312)?) } }; Value::Bool(rt::is_truthy(interp, &__t314)?) } }; Value::Bool(rt::is_truthy(interp, &__t316)?) } }; Value::Bool(rt::is_truthy(interp, &__t318)?) } }; if match rt::is_truthy(interp, &__t369) { Ok(b) => b, Err(e) => break Err(e), } { { let v_W15 = { rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z16 = args[0].clone(); Ok({ let v_Z16 = v_Z16.clone(); rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z17 = args[0].clone(); Ok({ let __t329 = { let __t321 = { let __t319 = v_Z16.clone(); let __t320 = v_Z17.clone(); rt::apply_direct(interp, "occurrences", &[__t319, __t320])? }; let __t322 = Value::Int(0i64); rt::gt(&__t321, &__t322)? }; if rt::is_truthy(interp, &__t329)? { { let __t323 = Value::Sym(interp.intern("/.")); let __t328 = { let __t324 = v_Z16.clone(); let __t327 = { let __t325 = v_Z17.clone(); let __t326 = Value::Nil; rt::cons(&__t325, &__t326) }; rt::cons(&__t324, &__t327) }; rt::cons(&__t323, &__t328) } } else { v_Z17.clone() } }) }, interp) }) }, interp) }; break Ok({ let __t330 = Value::Sym(interp.intern("for")); let __t368 = { let __t335 = { let __t334 = { let __t333 = { let __t332 = { let __t331 = v_V8.clone(); rt::tl(&__t331)? }; rt::tl(&__t332)? }; rt::tl(&__t333)? }; rt::hd(&__t334)? }; let __t367 = { let __t346 = { let __t339 = { let __t338 = { let __t337 = { let __t336 = v_V8.clone(); rt::tl(&__t336)? }; rt::hd(&__t337)? }; rt::apply_value(interp, v_W15.clone(), &[__t338])? }; let __t345 = { let __t344 = { let __t343 = { let __t342 = { let __t341 = { let __t340 = v_V8.clone(); rt::tl(&__t340)? }; rt::tl(&__t341)? }; rt::tl(&__t342)? }; rt::tl(&__t343)? }; rt::hd(&__t344)? }; rt::apply_value(interp, __t339, &[__t345])? }; let __t366 = { let __t358 = { let __t350 = { let __t349 = { let __t348 = { let __t347 = v_V8.clone(); rt::tl(&__t347)? }; rt::hd(&__t348)? }; rt::apply_value(interp, v_W15.clone(), &[__t349])? }; let __t357 = { let __t356 = { let __t355 = { let __t354 = { let __t353 = { let __t352 = { let __t351 = v_V8.clone(); rt::tl(&__t351)? }; rt::tl(&__t352)? }; rt::tl(&__t353)? }; rt::tl(&__t354)? }; rt::tl(&__t355)? }; rt::hd(&__t356)? }; rt::apply_value(interp, __t350, &[__t357])? }; let __t365 = { let __t364 = { let __t363 = { let __t362 = { let __t361 = { let __t360 = { let __t359 = v_V8.clone(); rt::tl(&__t359)? }; rt::tl(&__t360)? }; rt::tl(&__t361)? }; rt::tl(&__t362)? }; rt::tl(&__t363)? }; rt::tl(&__t364)? }; rt::cons(&__t358, &__t365) }; rt::cons(&__t346, &__t366) }; rt::cons(&__t335, &__t367) }; rt::cons(&__t330, &__t368) }); } } else { { let __t244 = { let __t183 = { let __t122 = v_V8.clone(); rt::is_cons(&__t122) }; if !rt::is_truthy(interp, &__t183)? { Value::Bool(false) } else { let __t184 = { let __t181 = { let __t123 = Value::Sym(interp.intern("for")); let __t125 = { let __t124 = v_V8.clone(); rt::hd(&__t124)? }; rt::eq(&__t123, &__t125) }; if !rt::is_truthy(interp, &__t181)? { Value::Bool(false) } else { let __t182 = { let __t179 = { let __t127 = { let __t126 = v_V8.clone(); rt::tl(&__t126)? }; rt::is_cons(&__t127) }; if !rt::is_truthy(interp, &__t179)? { Value::Bool(false) } else { let __t180 = { let __t177 = { let __t130 = { let __t129 = { let __t128 = v_V8.clone(); rt::tl(&__t128)? }; rt::tl(&__t129)? }; rt::is_cons(&__t130) }; if !rt::is_truthy(interp, &__t177)? { Value::Bool(false) } else { let __t178 = { let __t175 = { let __t131 = Value::Sym(interp.intern("=")); let __t135 = { let __t134 = { let __t133 = { let __t132 = v_V8.clone(); rt::tl(&__t132)? }; rt::tl(&__t133)? }; rt::hd(&__t134)? }; rt::eq(&__t131, &__t135) }; if !rt::is_truthy(interp, &__t175)? { Value::Bool(false) } else { let __t176 = { let __t173 = { let __t139 = { let __t138 = { let __t137 = { let __t136 = v_V8.clone(); rt::tl(&__t136)? }; rt::tl(&__t137)? }; rt::tl(&__t138)? }; rt::is_cons(&__t139) }; if !rt::is_truthy(interp, &__t173)? { Value::Bool(false) } else { let __t174 = { let __t171 = { let __t144 = { let __t143 = { let __t142 = { let __t141 = { let __t140 = v_V8.clone(); rt::tl(&__t140)? }; rt::tl(&__t141)? }; rt::tl(&__t142)? }; rt::tl(&__t143)? }; rt::is_cons(&__t144) }; if !rt::is_truthy(interp, &__t171)? { Value::Bool(false) } else { let __t172 = { let __t169 = { let __t150 = { let __t149 = { let __t148 = { let __t147 = { let __t146 = { let __t145 = v_V8.clone(); rt::tl(&__t145)? }; rt::tl(&__t146)? }; rt::tl(&__t147)? }; rt::tl(&__t148)? }; rt::tl(&__t149)? }; rt::is_cons(&__t150) }; if !rt::is_truthy(interp, &__t169)? { Value::Bool(false) } else { let __t170 = { let __t167 = { let __t157 = { let __t156 = { let __t155 = { let __t154 = { let __t153 = { let __t152 = { let __t151 = v_V8.clone(); rt::tl(&__t151)? }; rt::tl(&__t152)? }; rt::tl(&__t153)? }; rt::tl(&__t154)? }; rt::tl(&__t155)? }; rt::tl(&__t156)? }; rt::is_cons(&__t157) }; if !rt::is_truthy(interp, &__t167)? { Value::Bool(false) } else { let __t168 = { let __t158 = Value::Nil; let __t166 = { let __t165 = { let __t164 = { let __t163 = { let __t162 = { let __t161 = { let __t160 = { let __t159 = v_V8.clone(); rt::tl(&__t159)? }; rt::tl(&__t160)? }; rt::tl(&__t161)? }; rt::tl(&__t162)? }; rt::tl(&__t163)? }; rt::tl(&__t164)? }; rt::tl(&__t165)? }; rt::eq(&__t158, &__t166) }; Value::Bool(rt::is_truthy(interp, &__t168)?) } }; Value::Bool(rt::is_truthy(interp, &__t170)?) } }; Value::Bool(rt::is_truthy(interp, &__t172)?) } }; Value::Bool(rt::is_truthy(interp, &__t174)?) } }; Value::Bool(rt::is_truthy(interp, &__t176)?) } }; Value::Bool(rt::is_truthy(interp, &__t178)?) } }; Value::Bool(rt::is_truthy(interp, &__t180)?) } }; Value::Bool(rt::is_truthy(interp, &__t182)?) } }; Value::Bool(rt::is_truthy(interp, &__t184)?) } }; if match rt::is_truthy(interp, &__t244) { Ok(b) => b, Err(e) => break Err(e), } { { let v_W18 = { rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z19 = args[0].clone(); Ok({ let v_Z19 = v_Z19.clone(); rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z20 = args[0].clone(); Ok({ let __t195 = { let __t187 = { let __t185 = v_Z19.clone(); let __t186 = v_Z20.clone(); rt::apply_direct(interp, "occurrences", &[__t185, __t186])? }; let __t188 = Value::Int(0i64); rt::gt(&__t187, &__t188)? }; if rt::is_truthy(interp, &__t195)? { { let __t189 = Value::Sym(interp.intern("/.")); let __t194 = { let __t190 = v_Z19.clone(); let __t193 = { let __t191 = v_Z20.clone(); let __t192 = Value::Nil; rt::cons(&__t191, &__t192) }; rt::cons(&__t190, &__t193) }; rt::cons(&__t189, &__t194) } } else { v_Z20.clone() } }) }, interp) }) }, interp) }; break Ok({ let __t196 = Value::Sym(interp.intern("for")); let __t243 = { let __t201 = { let __t200 = { let __t199 = { let __t198 = { let __t197 = v_V8.clone(); rt::tl(&__t197)? }; rt::tl(&__t198)? }; rt::tl(&__t199)? }; rt::hd(&__t200)? }; let __t242 = { let __t212 = { let __t205 = { let __t204 = { let __t203 = { let __t202 = v_V8.clone(); rt::tl(&__t202)? }; rt::hd(&__t203)? }; rt::apply_value(interp, v_W18.clone(), &[__t204])? }; let __t211 = { let __t210 = { let __t209 = { let __t208 = { let __t207 = { let __t206 = v_V8.clone(); rt::tl(&__t206)? }; rt::tl(&__t207)? }; rt::tl(&__t208)? }; rt::tl(&__t209)? }; rt::hd(&__t210)? }; rt::apply_value(interp, __t205, &[__t211])? }; let __t241 = { let __t224 = { let __t216 = { let __t215 = { let __t214 = { let __t213 = v_V8.clone(); rt::tl(&__t213)? }; rt::hd(&__t214)? }; rt::apply_value(interp, v_W18.clone(), &[__t215])? }; let __t223 = { let __t222 = { let __t221 = { let __t220 = { let __t219 = { let __t218 = { let __t217 = v_V8.clone(); rt::tl(&__t217)? }; rt::tl(&__t218)? }; rt::tl(&__t219)? }; rt::tl(&__t220)? }; rt::tl(&__t221)? }; rt::hd(&__t222)? }; rt::apply_value(interp, __t216, &[__t223])? }; let __t240 = { let __t232 = { let __t231 = { let __t230 = { let __t229 = { let __t228 = { let __t227 = { let __t226 = { let __t225 = v_V8.clone(); rt::tl(&__t225)? }; rt::tl(&__t226)? }; rt::tl(&__t227)? }; rt::tl(&__t228)? }; rt::tl(&__t229)? }; rt::tl(&__t230)? }; rt::hd(&__t231)? }; let __t239 = { let __t237 = { let __t233 = Value::Sym(interp.intern("fn")); let __t236 = { let __t234 = Value::Sym(interp.intern("do")); let __t235 = Value::Nil; rt::cons(&__t234, &__t235) }; rt::cons(&__t233, &__t236) }; let __t238 = Value::Nil; rt::cons(&__t237, &__t238) }; rt::cons(&__t232, &__t239) }; rt::cons(&__t224, &__t240) }; rt::cons(&__t212, &__t241) }; rt::cons(&__t201, &__t242) }; rt::cons(&__t196, &__t243) }); } } else { { let __t121 = { let __t63 = { let __t12 = v_V8.clone(); rt::is_cons(&__t12) }; if !rt::is_truthy(interp, &__t63)? { Value::Bool(false) } else { let __t64 = { let __t61 = { let __t13 = Value::Sym(interp.intern("for")); let __t15 = { let __t14 = v_V8.clone(); rt::hd(&__t14)? }; rt::eq(&__t13, &__t15) }; if !rt::is_truthy(interp, &__t61)? { Value::Bool(false) } else { let __t62 = { let __t59 = { let __t17 = { let __t16 = v_V8.clone(); rt::tl(&__t16)? }; rt::is_cons(&__t17) }; if !rt::is_truthy(interp, &__t59)? { Value::Bool(false) } else { let __t60 = { let __t57 = { let __t20 = { let __t19 = { let __t18 = v_V8.clone(); rt::tl(&__t18)? }; rt::tl(&__t19)? }; rt::is_cons(&__t20) }; if !rt::is_truthy(interp, &__t57)? { Value::Bool(false) } else { let __t58 = { let __t55 = { let __t21 = Value::Sym(interp.intern("=")); let __t25 = { let __t24 = { let __t23 = { let __t22 = v_V8.clone(); rt::tl(&__t22)? }; rt::tl(&__t23)? }; rt::hd(&__t24)? }; rt::eq(&__t21, &__t25) }; if !rt::is_truthy(interp, &__t55)? { Value::Bool(false) } else { let __t56 = { let __t53 = { let __t29 = { let __t28 = { let __t27 = { let __t26 = v_V8.clone(); rt::tl(&__t26)? }; rt::tl(&__t27)? }; rt::tl(&__t28)? }; rt::is_cons(&__t29) }; if !rt::is_truthy(interp, &__t53)? { Value::Bool(false) } else { let __t54 = { let __t51 = { let __t34 = { let __t33 = { let __t32 = { let __t31 = { let __t30 = v_V8.clone(); rt::tl(&__t30)? }; rt::tl(&__t31)? }; rt::tl(&__t32)? }; rt::tl(&__t33)? }; rt::is_cons(&__t34) }; if !rt::is_truthy(interp, &__t51)? { Value::Bool(false) } else { let __t52 = { let __t49 = { let __t40 = { let __t39 = { let __t38 = { let __t37 = { let __t36 = { let __t35 = v_V8.clone(); rt::tl(&__t35)? }; rt::tl(&__t36)? }; rt::tl(&__t37)? }; rt::tl(&__t38)? }; rt::tl(&__t39)? }; rt::is_cons(&__t40) }; if !rt::is_truthy(interp, &__t49)? { Value::Bool(false) } else { let __t50 = { let __t41 = Value::Nil; let __t48 = { let __t47 = { let __t46 = { let __t45 = { let __t44 = { let __t43 = { let __t42 = v_V8.clone(); rt::tl(&__t42)? }; rt::tl(&__t43)? }; rt::tl(&__t44)? }; rt::tl(&__t45)? }; rt::tl(&__t46)? }; rt::tl(&__t47)? }; rt::eq(&__t41, &__t48) }; Value::Bool(rt::is_truthy(interp, &__t50)?) } }; Value::Bool(rt::is_truthy(interp, &__t52)?) } }; Value::Bool(rt::is_truthy(interp, &__t54)?) } }; Value::Bool(rt::is_truthy(interp, &__t56)?) } }; Value::Bool(rt::is_truthy(interp, &__t58)?) } }; Value::Bool(rt::is_truthy(interp, &__t60)?) } }; Value::Bool(rt::is_truthy(interp, &__t62)?) } }; Value::Bool(rt::is_truthy(interp, &__t64)?) } }; if match rt::is_truthy(interp, &__t121) { Ok(b) => b, Err(e) => break Err(e), } { { let v_W21 = { rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z22 = args[0].clone(); Ok({ let v_Z22 = v_Z22.clone(); rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z23 = args[0].clone(); Ok({ let __t75 = { let __t67 = { let __t65 = v_Z22.clone(); let __t66 = v_Z23.clone(); rt::apply_direct(interp, "occurrences", &[__t65, __t66])? }; let __t68 = Value::Int(0i64); rt::gt(&__t67, &__t68)? }; if rt::is_truthy(interp, &__t75)? { { let __t69 = Value::Sym(interp.intern("/.")); let __t74 = { let __t70 = v_Z22.clone(); let __t73 = { let __t71 = v_Z23.clone(); let __t72 = Value::Nil; rt::cons(&__t71, &__t72) }; rt::cons(&__t70, &__t73) }; rt::cons(&__t69, &__t74) } } else { v_Z23.clone() } }) }, interp) }) }, interp) }; break Ok({ let __t76 = Value::Sym(interp.intern("for")); let __t120 = { let __t81 = { let __t80 = { let __t79 = { let __t78 = { let __t77 = v_V8.clone(); rt::tl(&__t77)? }; rt::tl(&__t78)? }; rt::tl(&__t79)? }; rt::hd(&__t80)? }; let __t119 = { let __t92 = { let __t85 = { let __t84 = { let __t83 = { let __t82 = v_V8.clone(); rt::tl(&__t82)? }; rt::hd(&__t83)? }; rt::apply_value(interp, v_W21.clone(), &[__t84])? }; let __t91 = { let __t90 = { let __t89 = { let __t88 = { let __t87 = { let __t86 = v_V8.clone(); rt::tl(&__t86)? }; rt::tl(&__t87)? }; rt::tl(&__t88)? }; rt::tl(&__t89)? }; rt::hd(&__t90)? }; rt::apply_value(interp, __t85, &[__t91])? }; let __t118 = { let __t104 = { let __t93 = Value::Sym(interp.intern("/.")); let __t103 = { let __t96 = { let __t95 = { let __t94 = v_V8.clone(); rt::tl(&__t94)? }; rt::hd(&__t95)? }; let __t102 = { let __t101 = { let __t100 = { let __t99 = { let __t98 = { let __t97 = v_V8.clone(); rt::tl(&__t97)? }; rt::tl(&__t98)? }; rt::tl(&__t99)? }; rt::tl(&__t100)? }; rt::tl(&__t101)? }; rt::cons(&__t96, &__t102) }; rt::cons(&__t93, &__t103) }; let __t117 = { let __t109 = { let __t105 = Value::Sym(interp.intern("+")); let __t108 = { let __t106 = Value::Int(1i64); let __t107 = Value::Nil; rt::cons(&__t106, &__t107) }; rt::cons(&__t105, &__t108) }; let __t116 = { let __t114 = { let __t110 = Value::Sym(interp.intern("fn")); let __t113 = { let __t111 = Value::Sym(interp.intern("do")); let __t112 = Value::Nil; rt::cons(&__t111, &__t112) }; rt::cons(&__t110, &__t113) }; let __t115 = Value::Nil; rt::cons(&__t114, &__t115) }; rt::cons(&__t109, &__t116) }; rt::cons(&__t104, &__t117) }; rt::cons(&__t92, &__t118) }; rt::cons(&__t81, &__t119) }; rt::cons(&__t76, &__t120) }); } } else { { let __t11 = Value::Bool(true); if match rt::is_truthy(interp, &__t11) { Ok(b) => b, Err(e) => break Err(e), } { break Ok(v_V8.clone()); } else { break Err(ShenError::new("cond: no clause matched")); } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } }
                                                                                 }
                                                                             }
                                                                         }
@@ -3962,18 +3962,12 @@ pub fn aot_product(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
             let __t1708 = v_V529.clone();
             let __t1709 = v_V530.clone();
             let __t1712 = {
-                let v_V528 = v_V528.clone();
-                let v_V529 = v_V529.clone();
-                let v_V530 = v_V530.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
                     move |interp, args| {
                         let v_Z531 = args[0].clone();
                         Ok({
-                            let v_V528 = v_V528.clone();
-                            let v_V529 = v_V529.clone();
-                            let v_V530 = v_V530.clone();
                             let v_Z531 = v_Z531.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
@@ -4024,18 +4018,12 @@ pub fn aot_summation(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
             let __t1714 = v_V539.clone();
             let __t1715 = v_V540.clone();
             let __t1718 = {
-                let v_V538 = v_V538.clone();
-                let v_V539 = v_V539.clone();
-                let v_V540 = v_V540.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
                     move |interp, args| {
                         let v_Z541 = args[0].clone();
                         Ok({
-                            let v_V538 = v_V538.clone();
-                            let v_V539 = v_V539.clone();
-                            let v_V540 = v_V540.clone();
                             let v_Z541 = v_Z541.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
@@ -4286,8 +4274,6 @@ pub fn aot_cos(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
             break Ok({
                 let __t1755 = Value::Int(0i64);
                 let __t1758 = {
-                    let v_V565 = v_V565.clone();
-                    let v_V566 = v_V566.clone();
                     let v_W567 = v_W567.clone();
                     rt::make_aot_closure(
                         "<lambda>",
@@ -4337,8 +4323,6 @@ pub fn aot_sin(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
             break Ok({
                 let __t1761 = Value::Int(0i64);
                 let __t1764 = {
-                    let v_V572 = v_V572.clone();
-                    let v_V573 = v_V573.clone();
                     let v_W574 = v_W574.clone();
                     rt::make_aot_closure(
                         "<lambda>",
@@ -6036,7 +6020,6 @@ pub fn aot_rational_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
                 Ok(v) => v,
                 Err(e) => {
                     let __h = {
-                        let v_V677 = v_V677.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -7422,7 +7405,6 @@ pub fn aot_complex_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value
                 Ok(v) => v,
                 Err(e) => {
                     let __h = {
-                        let v_V846 = v_V846.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -9301,18 +9283,12 @@ pub fn aot_n_x2b_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     loop {
         break Ok({
             let __t2652 = {
-                let v_V987 = v_V987.clone();
-                let v_V988 = v_V988.clone();
-                let v_V989 = v_V989.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
                     move |interp, args| {
                         let v_Z990 = args[0].clone();
                         Ok({
-                            let v_V987 = v_V987.clone();
-                            let v_V988 = v_V988.clone();
-                            let v_V989 = v_V989.clone();
                             let v_Z990 = v_Z990.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
@@ -9363,18 +9339,12 @@ pub fn aot_n_x2a_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     loop {
         break Ok({
             let __t2658 = {
-                let v_V997 = v_V997.clone();
-                let v_V998 = v_V998.clone();
-                let v_V999 = v_V999.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
                     move |interp, args| {
                         let v_Z1000 = args[0].clone();
                         Ok({
-                            let v_V997 = v_V997.clone();
-                            let v_V998 = v_V998.clone();
-                            let v_V999 = v_V999.clone();
                             let v_Z1000 = v_Z1000.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
@@ -9425,18 +9395,12 @@ pub fn aot_n_x2d_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     loop {
         break Ok({
             let __t2664 = {
-                let v_V1007 = v_V1007.clone();
-                let v_V1008 = v_V1008.clone();
-                let v_V1009 = v_V1009.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
                     move |interp, args| {
                         let v_Z1010 = args[0].clone();
                         Ok({
-                            let v_V1007 = v_V1007.clone();
-                            let v_V1008 = v_V1008.clone();
-                            let v_V1009 = v_V1009.clone();
                             let v_Z1010 = v_Z1010.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
@@ -9487,18 +9451,12 @@ pub fn aot_n_x2f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     loop {
         break Ok({
             let __t2670 = {
-                let v_V1017 = v_V1017.clone();
-                let v_V1018 = v_V1018.clone();
-                let v_V1019 = v_V1019.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
                     move |interp, args| {
                         let v_Z1020 = args[0].clone();
                         Ok({
-                            let v_V1017 = v_V1017.clone();
-                            let v_V1018 = v_V1018.clone();
-                            let v_V1019 = v_V1019.clone();
                             let v_Z1020 = v_Z1020.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
@@ -12036,7 +11994,6 @@ pub fn aot_permute(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                         let v_Z1332 = args[0].clone();
                                         Ok({
                                             let __t3108 = {
-                                                let v_V1331 = v_V1331.clone();
                                                 let v_Z1332 = v_Z1332.clone();
                                                 rt::make_aot_closure(
                                                     "<lambda>",
@@ -12105,7 +12062,6 @@ pub fn aot_count_x2d_if(interp: &mut Interp, args: &[Value]) -> ShenResult<Value
             let __t3127 = {
                 let __t3125 = {
                     let v_V1335 = v_V1335.clone();
-                    let v_V1336 = v_V1336.clone();
                     rt::make_aot_closure(
                         "<lambda>",
                         1,
@@ -12160,7 +12116,6 @@ pub fn aot_count(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
         break Ok({
             let __t3130 = {
                 let v_V1341 = v_V1341.clone();
-                let v_V1342 = v_V1342.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -12484,7 +12439,6 @@ pub fn aot_sort(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                             let __t3182 = {
                                                 let v_V1369 = v_V1369.clone();
                                                 let v_V1370 = v_V1370.clone();
-                                                let v_W1371 = v_W1371.clone();
                                                 rt::make_aot_closure(
                                                     "<lambda>",
                                                     1,
@@ -13426,7 +13380,6 @@ pub fn aot_cartprod(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                             let __t3356 = {
                                 let __t3354 = {
                                     let v_V1444 = v_V1444.clone();
-                                    let v_V1445 = v_V1445.clone();
                                     rt::make_aot_closure(
                                         "<lambda>",
                                         1,
@@ -13538,7 +13491,6 @@ pub fn aot_powerset(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                 let __t3376 = {
                                     let __t3374 = {
                                         let v_V1449 = v_V1449.clone();
-                                        let v_W1450 = v_W1450.clone();
                                         rt::make_aot_closure(
                                             "<lambda>",
                                             1,
@@ -14041,7 +13993,6 @@ pub fn aot_x_x2d__x3e_ascii(interp: &mut Interp, args: &[Value]) -> ShenResult<V
     loop {
         break Ok({
             let __t3471 = {
-                let v_V1488 = v_V1488.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -14593,10 +14544,6 @@ pub fn aot_string_x2e_s_x2d__x3e_l_x2d_h(interp: &mut Interp, args: &[Value]) ->
                                 Ok(v) => v,
                                 Err(e) => {
                                     let __h = {
-                                        let v_V1589 = v_V1589.clone();
-                                        let v_V1590 = v_V1590.clone();
-                                        let v_V1591 = v_V1591.clone();
-                                        let v_V1592 = v_V1592.clone();
                                         rt::make_aot_closure(
                                             "<lambda>",
                                             1,
@@ -14915,7 +14862,6 @@ pub fn aot_string_x2e_reverse(interp: &mut Interp, args: &[Value]) -> ShenResult
     loop {
         break Ok({
             let __t3660 = {
-                let v_V1625 = v_V1625.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -14931,7 +14877,6 @@ pub fn aot_string_x2e_reverse(interp: &mut Interp, args: &[Value]) -> ShenResult
             };
             let __t3661 = v_V1625.clone();
             let __t3663 = {
-                let v_V1625 = v_V1625.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -14972,7 +14917,6 @@ pub fn aot_string_x2e_element_x3f_(interp: &mut Interp, args: &[Value]) -> ShenR
         break Ok({
             let __t3666 = {
                 let v_V1629 = v_V1629.clone();
-                let v_V1630 = v_V1630.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -14989,8 +14933,6 @@ pub fn aot_string_x2e_element_x3f_(interp: &mut Interp, args: &[Value]) -> ShenR
             };
             let __t3667 = v_V1630.clone();
             let __t3668 = {
-                let v_V1629 = v_V1629.clone();
-                let v_V1630 = v_V1630.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15027,16 +14969,12 @@ pub fn aot_string_x2e_prefix_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRe
     loop {
         break Ok({
             let __t3671 = {
-                let v_V1637 = v_V1637.clone();
-                let v_V1638 = v_V1638.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
                     move |interp, args| {
                         let v_Z1639 = args[0].clone();
                         Ok({
-                            let v_V1637 = v_V1637.clone();
-                            let v_V1638 = v_V1638.clone();
                             let v_Z1639 = v_Z1639.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
@@ -15059,8 +14997,6 @@ pub fn aot_string_x2e_prefix_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRe
             let __t3672 = v_V1637.clone();
             let __t3673 = v_V1638.clone();
             let __t3674 = {
-                let v_V1637 = v_V1637.clone();
-                let v_V1638 = v_V1638.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15097,16 +15033,12 @@ pub fn aot_string_x2e_infix_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRes
     loop {
         break Ok({
             let __t3677 = {
-                let v_V1646 = v_V1646.clone();
-                let v_V1647 = v_V1647.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
                     move |interp, args| {
                         let v_Z1648 = args[0].clone();
                         Ok({
-                            let v_V1646 = v_V1646.clone();
-                            let v_V1647 = v_V1647.clone();
                             let v_Z1648 = v_Z1648.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
@@ -15129,8 +15061,6 @@ pub fn aot_string_x2e_infix_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRes
             let __t3678 = v_V1646.clone();
             let __t3679 = v_V1647.clone();
             let __t3680 = {
-                let v_V1646 = v_V1646.clone();
-                let v_V1647 = v_V1647.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15167,16 +15097,12 @@ pub fn aot_string_x2e_suffix_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRe
     loop {
         break Ok({
             let __t3683 = {
-                let v_V1655 = v_V1655.clone();
-                let v_V1656 = v_V1656.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
                     move |interp, args| {
                         let v_Z1657 = args[0].clone();
                         Ok({
-                            let v_V1655 = v_V1655.clone();
-                            let v_V1656 = v_V1656.clone();
                             let v_Z1657 = v_Z1657.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
@@ -15199,8 +15125,6 @@ pub fn aot_string_x2e_suffix_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRe
             let __t3684 = v_V1655.clone();
             let __t3685 = v_V1656.clone();
             let __t3686 = {
-                let v_V1655 = v_V1655.clone();
-                let v_V1656 = v_V1656.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15237,16 +15161,12 @@ pub fn aot_string_x2e_subset_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRe
     loop {
         break Ok({
             let __t3689 = {
-                let v_V1664 = v_V1664.clone();
-                let v_V1665 = v_V1665.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
                     move |interp, args| {
                         let v_Z1666 = args[0].clone();
                         Ok({
-                            let v_V1664 = v_V1664.clone();
-                            let v_V1665 = v_V1665.clone();
                             let v_Z1666 = v_Z1666.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
@@ -15269,8 +15189,6 @@ pub fn aot_string_x2e_subset_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRe
             let __t3690 = v_V1664.clone();
             let __t3691 = v_V1665.clone();
             let __t3692 = {
-                let v_V1664 = v_V1664.clone();
-                let v_V1665 = v_V1665.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15307,16 +15225,12 @@ pub fn aot_string_x2e_set_x3d__x3f_(interp: &mut Interp, args: &[Value]) -> Shen
     loop {
         break Ok({
             let __t3695 = {
-                let v_V1673 = v_V1673.clone();
-                let v_V1674 = v_V1674.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
                     move |interp, args| {
                         let v_Z1675 = args[0].clone();
                         Ok({
-                            let v_V1673 = v_V1673.clone();
-                            let v_V1674 = v_V1674.clone();
                             let v_Z1675 = v_Z1675.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
@@ -15339,8 +15253,6 @@ pub fn aot_string_x2e_set_x3d__x3f_(interp: &mut Interp, args: &[Value]) -> Shen
             let __t3696 = v_V1673.clone();
             let __t3697 = v_V1674.clone();
             let __t3698 = {
-                let v_V1673 = v_V1673.clone();
-                let v_V1674 = v_V1674.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15375,7 +15287,6 @@ pub fn aot_string_x2e_set_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResul
     loop {
         break Ok({
             let __t3700 = {
-                let v_V1681 = v_V1681.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15391,7 +15302,6 @@ pub fn aot_string_x2e_set_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResul
             };
             let __t3701 = v_V1681.clone();
             let __t3702 = {
-                let v_V1681 = v_V1681.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15559,7 +15469,6 @@ pub fn aot_string_x2e_length(interp: &mut Interp, args: &[Value]) -> ShenResult<
     loop {
         break Ok({
             let __t3726 = {
-                let v_V1694 = v_V1694.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15575,7 +15484,6 @@ pub fn aot_string_x2e_length(interp: &mut Interp, args: &[Value]) -> ShenResult<
             };
             let __t3727 = v_V1694.clone();
             let __t3728 = {
-                let v_V1694 = v_V1694.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15613,7 +15521,6 @@ pub fn aot_string_x2e_trim(interp: &mut Interp, args: &[Value]) -> ShenResult<Va
         break Ok({
             let __t3731 = {
                 let v_V1700 = v_V1700.clone();
-                let v_V1701 = v_V1701.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15630,8 +15537,6 @@ pub fn aot_string_x2e_trim(interp: &mut Interp, args: &[Value]) -> ShenResult<Va
             };
             let __t3732 = v_V1701.clone();
             let __t3734 = {
-                let v_V1700 = v_V1700.clone();
-                let v_V1701 = v_V1701.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15672,7 +15577,6 @@ pub fn aot_string_x2e_trim_x2d_if(interp: &mut Interp, args: &[Value]) -> ShenRe
         break Ok({
             let __t3737 = {
                 let v_V1708 = v_V1708.clone();
-                let v_V1709 = v_V1709.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15689,8 +15593,6 @@ pub fn aot_string_x2e_trim_x2d_if(interp: &mut Interp, args: &[Value]) -> ShenRe
             };
             let __t3738 = v_V1709.clone();
             let __t3740 = {
-                let v_V1708 = v_V1708.clone();
-                let v_V1709 = v_V1709.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15734,7 +15636,6 @@ pub fn aot_string_x2e_trim_x2d_right_x2d_if(
         break Ok({
             let __t3743 = {
                 let v_V1716 = v_V1716.clone();
-                let v_V1717 = v_V1717.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15751,8 +15652,6 @@ pub fn aot_string_x2e_trim_x2d_right_x2d_if(
             };
             let __t3744 = v_V1717.clone();
             let __t3746 = {
-                let v_V1716 = v_V1716.clone();
-                let v_V1717 = v_V1717.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15800,7 +15699,6 @@ pub fn aot_string_x2e_trim_x2d_left_x2d_if(
         break Ok({
             let __t3749 = {
                 let v_V1724 = v_V1724.clone();
-                let v_V1725 = v_V1725.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15817,8 +15715,6 @@ pub fn aot_string_x2e_trim_x2d_left_x2d_if(
             };
             let __t3750 = v_V1725.clone();
             let __t3752 = {
-                let v_V1724 = v_V1724.clone();
-                let v_V1725 = v_V1725.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15863,7 +15759,6 @@ pub fn aot_string_x2e_trim_x2d_right(interp: &mut Interp, args: &[Value]) -> She
         break Ok({
             let __t3755 = {
                 let v_V1732 = v_V1732.clone();
-                let v_V1733 = v_V1733.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15880,8 +15775,6 @@ pub fn aot_string_x2e_trim_x2d_right(interp: &mut Interp, args: &[Value]) -> She
             };
             let __t3756 = v_V1733.clone();
             let __t3758 = {
-                let v_V1732 = v_V1732.clone();
-                let v_V1733 = v_V1733.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15922,7 +15815,6 @@ pub fn aot_string_x2e_trim_x2d_left(interp: &mut Interp, args: &[Value]) -> Shen
         break Ok({
             let __t3761 = {
                 let v_V1740 = v_V1740.clone();
-                let v_V1741 = v_V1741.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -15939,8 +15831,6 @@ pub fn aot_string_x2e_trim_x2d_left(interp: &mut Interp, args: &[Value]) -> Shen
             };
             let __t3762 = v_V1741.clone();
             let __t3764 = {
-                let v_V1740 = v_V1740.clone();
-                let v_V1741 = v_V1741.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -16156,16 +16046,12 @@ pub fn aot_string_x2e_difference(interp: &mut Interp, args: &[Value]) -> ShenRes
     loop {
         break Ok({
             let __t3793 = {
-                let v_V1761 = v_V1761.clone();
-                let v_V1762 = v_V1762.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
                     move |interp, args| {
                         let v_Z1763 = args[0].clone();
                         Ok({
-                            let v_V1761 = v_V1761.clone();
-                            let v_V1762 = v_V1762.clone();
                             let v_Z1763 = v_Z1763.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
@@ -16188,8 +16074,6 @@ pub fn aot_string_x2e_difference(interp: &mut Interp, args: &[Value]) -> ShenRes
             let __t3794 = v_V1761.clone();
             let __t3795 = v_V1762.clone();
             let __t3797 = {
-                let v_V1761 = v_V1761.clone();
-                let v_V1762 = v_V1762.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -16229,16 +16113,12 @@ pub fn aot_string_x2e_intersection(interp: &mut Interp, args: &[Value]) -> ShenR
     loop {
         break Ok({
             let __t3800 = {
-                let v_V1771 = v_V1771.clone();
-                let v_V1772 = v_V1772.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
                     move |interp, args| {
                         let v_Z1773 = args[0].clone();
                         Ok({
-                            let v_V1771 = v_V1771.clone();
-                            let v_V1772 = v_V1772.clone();
                             let v_Z1773 = v_Z1773.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
@@ -16265,8 +16145,6 @@ pub fn aot_string_x2e_intersection(interp: &mut Interp, args: &[Value]) -> ShenR
             let __t3801 = v_V1771.clone();
             let __t3802 = v_V1772.clone();
             let __t3804 = {
-                let v_V1771 = v_V1771.clone();
-                let v_V1772 = v_V1772.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -17277,7 +17155,6 @@ pub fn aot_spell_x2d_number(interp: &mut Interp, args: &[Value]) -> ShenResult<V
                         break Ok({
                             let __t3979 = {
                                 let __t3975 = {
-                                    let v_V1839 = v_V1839.clone();
                                     rt::make_aot_closure(
                                         "<lambda>",
                                         1,
@@ -24393,10 +24270,7 @@ pub fn aot_populate(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                 break Ok({
                     let __t5671 = Value::Int(1i64);
                     let __t5674 = {
-                        let v_V2094 = v_V2094.clone();
                         let v_V2095 = v_V2095.clone();
-                        let v_W2096 = v_W2096.clone();
-                        let v_W2097 = v_W2097.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -24413,9 +24287,7 @@ pub fn aot_populate(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                     };
                     let __t5679 = {
                         let v_V2094 = v_V2094.clone();
-                        let v_V2095 = v_V2095.clone();
                         let v_W2096 = v_W2096.clone();
-                        let v_W2097 = v_W2097.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -24439,10 +24311,6 @@ pub fn aot_populate(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                         )
                     };
                     let __t5682 = {
-                        let v_V2094 = v_V2094.clone();
-                        let v_V2095 = v_V2095.clone();
-                        let v_W2096 = v_W2096.clone();
-                        let v_W2097 = v_W2097.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -24458,20 +24326,12 @@ pub fn aot_populate(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                         )
                     };
                     let __t5683 = {
-                        let v_V2094 = v_V2094.clone();
-                        let v_V2095 = v_V2095.clone();
-                        let v_W2096 = v_W2096.clone();
-                        let v_W2097 = v_W2097.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
                             move |interp, args| {
                                 let v_Z2101 = args[0].clone();
                                 Ok({
-                                    let v_V2094 = v_V2094.clone();
-                                    let v_V2095 = v_V2095.clone();
-                                    let v_W2096 = v_W2096.clone();
-                                    let v_W2097 = v_W2097.clone();
                                     let v_Z2101 = v_Z2101.clone();
                                     rt::make_aot_closure(
                                         "<lambda>",
@@ -25372,9 +25232,7 @@ pub fn aot_vector_x2e_copy(interp: &mut Interp, args: &[Value]) -> ShenResult<Va
                 break Ok({
                     let __t5924 = Value::Int(1i64);
                     let __t5927 = {
-                        let v_V2174 = v_V2174.clone();
                         let v_W2175 = v_W2175.clone();
-                        let v_W2176 = v_W2176.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -25391,7 +25249,6 @@ pub fn aot_vector_x2e_copy(interp: &mut Interp, args: &[Value]) -> ShenResult<Va
                     };
                     let __t5937 = {
                         let v_V2174 = v_V2174.clone();
-                        let v_W2175 = v_W2175.clone();
                         let v_W2176 = v_W2176.clone();
                         rt::make_aot_closure(
                             "<lambda>",
@@ -25422,8 +25279,6 @@ pub fn aot_vector_x2e_copy(interp: &mut Interp, args: &[Value]) -> ShenResult<Va
                                         Ok(v) => v,
                                         Err(e) => {
                                             let __h = {
-                                                let v_V2174 = v_V2174.clone();
-                                                let v_W2175 = v_W2175.clone();
                                                 let v_W2176 = v_W2176.clone();
                                                 let v_Z2178 = v_Z2178.clone();
                                                 rt::make_aot_closure(
@@ -25458,9 +25313,6 @@ pub fn aot_vector_x2e_copy(interp: &mut Interp, args: &[Value]) -> ShenResult<Va
                         )
                     };
                     let __t5940 = {
-                        let v_V2174 = v_V2174.clone();
-                        let v_W2175 = v_W2175.clone();
-                        let v_W2176 = v_W2176.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -25476,18 +25328,12 @@ pub fn aot_vector_x2e_copy(interp: &mut Interp, args: &[Value]) -> ShenResult<Va
                         )
                     };
                     let __t5941 = {
-                        let v_V2174 = v_V2174.clone();
-                        let v_W2175 = v_W2175.clone();
-                        let v_W2176 = v_W2176.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
                             move |interp, args| {
                                 let v_Z2181 = args[0].clone();
                                 Ok({
-                                    let v_V2174 = v_V2174.clone();
-                                    let v_W2175 = v_W2175.clone();
-                                    let v_W2176 = v_W2176.clone();
                                     let v_Z2181 = v_Z2181.clone();
                                     rt::make_aot_closure(
                                         "<lambda>",
@@ -25548,9 +25394,6 @@ pub fn aot_vector_x2e_reverse(interp: &mut Interp, args: &[Value]) -> ShenResult
                     let v_W2190 = {
                         let __t5944 = v_W2188.clone();
                         let __t5947 = {
-                            let v_V2187 = v_V2187.clone();
-                            let v_W2188 = v_W2188.clone();
-                            let v_W2189 = v_W2189.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
                                 1,
@@ -25606,8 +25449,6 @@ pub fn aot_vector_x2e_reverse(interp: &mut Interp, args: &[Value]) -> ShenResult
                                             Ok(v) => v,
                                             Err(e) => {
                                                 let __h = {
-                                                    let v_V2187 = v_V2187.clone();
-                                                    let v_W2188 = v_W2188.clone();
                                                     let v_W2189 = v_W2189.clone();
                                                     let v_Z2192 = v_Z2192.clone();
                                                     rt::make_aot_closure(
@@ -25642,9 +25483,6 @@ pub fn aot_vector_x2e_reverse(interp: &mut Interp, args: &[Value]) -> ShenResult
                             )
                         };
                         let __t5964 = {
-                            let v_V2187 = v_V2187.clone();
-                            let v_W2188 = v_W2188.clone();
-                            let v_W2189 = v_W2189.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
                                 1,
@@ -25660,18 +25498,12 @@ pub fn aot_vector_x2e_reverse(interp: &mut Interp, args: &[Value]) -> ShenResult
                             )
                         };
                         let __t5965 = {
-                            let v_V2187 = v_V2187.clone();
-                            let v_W2188 = v_W2188.clone();
-                            let v_W2189 = v_W2189.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
                                 1,
                                 move |interp, args| {
                                     let v_Z2195 = args[0].clone();
                                     Ok({
-                                        let v_V2187 = v_V2187.clone();
-                                        let v_W2188 = v_W2188.clone();
-                                        let v_W2189 = v_W2189.clone();
                                         let v_Z2195 = v_Z2195.clone();
                                         rt::make_aot_closure(
                                             "<lambda>",
@@ -25747,12 +25579,7 @@ pub fn aot_vector_x2e_append(interp: &mut Interp, args: &[Value]) -> ShenResult<
                             let v_W2212 = {
                                 let __t5971 = Value::Int(1i64);
                                 let __t5974 = {
-                                    let v_V2206 = v_V2206.clone();
-                                    let v_V2207 = v_V2207.clone();
                                     let v_W2208 = v_W2208.clone();
-                                    let v_W2209 = v_W2209.clone();
-                                    let v_W2210 = v_W2210.clone();
-                                    let v_W2211 = v_W2211.clone();
                                     rt::make_aot_closure(
                                         "<lambda>",
                                         1,
@@ -25769,10 +25596,6 @@ pub fn aot_vector_x2e_append(interp: &mut Interp, args: &[Value]) -> ShenResult<
                                 };
                                 let __t5984 = {
                                     let v_V2206 = v_V2206.clone();
-                                    let v_V2207 = v_V2207.clone();
-                                    let v_W2208 = v_W2208.clone();
-                                    let v_W2209 = v_W2209.clone();
-                                    let v_W2210 = v_W2210.clone();
                                     let v_W2211 = v_W2211.clone();
                                     rt::make_aot_closure(
                                         "<lambda>",
@@ -25804,11 +25627,6 @@ pub fn aot_vector_x2e_append(interp: &mut Interp, args: &[Value]) -> ShenResult<
                                                     Ok(v) => v,
                                                     Err(e) => {
                                                         let __h = {
-                                                            let v_V2206 = v_V2206.clone();
-                                                            let v_V2207 = v_V2207.clone();
-                                                            let v_W2208 = v_W2208.clone();
-                                                            let v_W2209 = v_W2209.clone();
-                                                            let v_W2210 = v_W2210.clone();
                                                             let v_W2211 = v_W2211.clone();
                                                             let v_Z2214 = v_Z2214.clone();
                                                             rt::make_aot_closure(
@@ -25848,12 +25666,6 @@ pub fn aot_vector_x2e_append(interp: &mut Interp, args: &[Value]) -> ShenResult<
                                     )
                                 };
                                 let __t5987 = {
-                                    let v_V2206 = v_V2206.clone();
-                                    let v_V2207 = v_V2207.clone();
-                                    let v_W2208 = v_W2208.clone();
-                                    let v_W2209 = v_W2209.clone();
-                                    let v_W2210 = v_W2210.clone();
-                                    let v_W2211 = v_W2211.clone();
                                     rt::make_aot_closure(
                                         "<lambda>",
                                         1,
@@ -25869,24 +25681,12 @@ pub fn aot_vector_x2e_append(interp: &mut Interp, args: &[Value]) -> ShenResult<
                                     )
                                 };
                                 let __t5988 = {
-                                    let v_V2206 = v_V2206.clone();
-                                    let v_V2207 = v_V2207.clone();
-                                    let v_W2208 = v_W2208.clone();
-                                    let v_W2209 = v_W2209.clone();
-                                    let v_W2210 = v_W2210.clone();
-                                    let v_W2211 = v_W2211.clone();
                                     rt::make_aot_closure(
                                         "<lambda>",
                                         1,
                                         move |interp, args| {
                                             let v_Z2217 = args[0].clone();
                                             Ok({
-                                                let v_V2206 = v_V2206.clone();
-                                                let v_V2207 = v_V2207.clone();
-                                                let v_W2208 = v_W2208.clone();
-                                                let v_W2209 = v_W2209.clone();
-                                                let v_W2210 = v_W2210.clone();
-                                                let v_W2211 = v_W2211.clone();
                                                 let v_Z2217 = v_Z2217.clone();
                                                 rt::make_aot_closure(
                                                     "<lambda>",
@@ -25919,13 +25719,7 @@ pub fn aot_vector_x2e_append(interp: &mut Interp, args: &[Value]) -> ShenResult<
                                         rt::add(&__t5989, &__t5990)?
                                     };
                                     let __t5994 = {
-                                        let v_V2206 = v_V2206.clone();
-                                        let v_V2207 = v_V2207.clone();
-                                        let v_W2208 = v_W2208.clone();
-                                        let v_W2209 = v_W2209.clone();
                                         let v_W2210 = v_W2210.clone();
-                                        let v_W2211 = v_W2211.clone();
-                                        let v_W2212 = v_W2212.clone();
                                         rt::make_aot_closure(
                                             "<lambda>",
                                             1,
@@ -25941,13 +25735,8 @@ pub fn aot_vector_x2e_append(interp: &mut Interp, args: &[Value]) -> ShenResult<
                                         )
                                     };
                                     let __t6004 = {
-                                        let v_V2206 = v_V2206.clone();
                                         let v_V2207 = v_V2207.clone();
-                                        let v_W2208 = v_W2208.clone();
-                                        let v_W2209 = v_W2209.clone();
-                                        let v_W2210 = v_W2210.clone();
                                         let v_W2211 = v_W2211.clone();
-                                        let v_W2212 = v_W2212.clone();
                                         rt::make_aot_closure(
                                             "<lambda>",
                                             1,
@@ -25978,13 +25767,7 @@ pub fn aot_vector_x2e_append(interp: &mut Interp, args: &[Value]) -> ShenResult<
                                                         Ok(v) => v,
                                                         Err(e) => {
                                                             let __h = {
-                                                                let v_V2206 = v_V2206.clone();
-                                                                let v_V2207 = v_V2207.clone();
-                                                                let v_W2208 = v_W2208.clone();
-                                                                let v_W2209 = v_W2209.clone();
-                                                                let v_W2210 = v_W2210.clone();
                                                                 let v_W2211 = v_W2211.clone();
-                                                                let v_W2212 = v_W2212.clone();
                                                                 let v_Z2221 = v_Z2221.clone();
                                                                 rt::make_aot_closure(
                                                                     "<lambda>",
@@ -26026,13 +25809,6 @@ pub fn aot_vector_x2e_append(interp: &mut Interp, args: &[Value]) -> ShenResult<
                                         )
                                     };
                                     let __t6007 = {
-                                        let v_V2206 = v_V2206.clone();
-                                        let v_V2207 = v_V2207.clone();
-                                        let v_W2208 = v_W2208.clone();
-                                        let v_W2209 = v_W2209.clone();
-                                        let v_W2210 = v_W2210.clone();
-                                        let v_W2211 = v_W2211.clone();
-                                        let v_W2212 = v_W2212.clone();
                                         rt::make_aot_closure(
                                             "<lambda>",
                                             1,
@@ -26048,26 +25824,12 @@ pub fn aot_vector_x2e_append(interp: &mut Interp, args: &[Value]) -> ShenResult<
                                         )
                                     };
                                     let __t6008 = {
-                                        let v_V2206 = v_V2206.clone();
-                                        let v_V2207 = v_V2207.clone();
-                                        let v_W2208 = v_W2208.clone();
-                                        let v_W2209 = v_W2209.clone();
-                                        let v_W2210 = v_W2210.clone();
-                                        let v_W2211 = v_W2211.clone();
-                                        let v_W2212 = v_W2212.clone();
                                         rt::make_aot_closure(
                                             "<lambda>",
                                             1,
                                             move |interp, args| {
                                                 let v_Z2224 = args[0].clone();
                                                 Ok({
-                                                    let v_V2206 = v_V2206.clone();
-                                                    let v_V2207 = v_V2207.clone();
-                                                    let v_W2208 = v_W2208.clone();
-                                                    let v_W2209 = v_W2209.clone();
-                                                    let v_W2210 = v_W2210.clone();
-                                                    let v_W2211 = v_W2211.clone();
-                                                    let v_W2212 = v_W2212.clone();
                                                     let v_Z2224 = v_Z2224.clone();
                                                     rt::make_aot_closure(
                                                         "<lambda>",
@@ -26130,8 +25892,6 @@ pub fn aot_vector_x2e_dfilter(interp: &mut Interp, args: &[Value]) -> ShenResult
                 let v_W2234 = {
                     let __t6010 = Value::Int(1i64);
                     let __t6013 = {
-                        let v_V2231 = v_V2231.clone();
-                        let v_V2232 = v_V2232.clone();
                         let v_W2233 = v_W2233.clone();
                         rt::make_aot_closure(
                             "<lambda>",
@@ -26150,7 +25910,6 @@ pub fn aot_vector_x2e_dfilter(interp: &mut Interp, args: &[Value]) -> ShenResult
                     let __t6033 = {
                         let v_V2231 = v_V2231.clone();
                         let v_V2232 = v_V2232.clone();
-                        let v_W2233 = v_W2233.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -26233,9 +25992,6 @@ pub fn aot_vector_x2e_dfilter(interp: &mut Interp, args: &[Value]) -> ShenResult
                         )
                     };
                     let __t6036 = {
-                        let v_V2231 = v_V2231.clone();
-                        let v_V2232 = v_V2232.clone();
-                        let v_W2233 = v_W2233.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -26251,18 +26007,12 @@ pub fn aot_vector_x2e_dfilter(interp: &mut Interp, args: &[Value]) -> ShenResult
                         )
                     };
                     let __t6037 = {
-                        let v_V2231 = v_V2231.clone();
-                        let v_V2232 = v_V2232.clone();
-                        let v_W2233 = v_W2233.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
                             move |interp, args| {
                                 let v_Z2238 = args[0].clone();
                                 Ok({
-                                    let v_V2231 = v_V2231.clone();
-                                    let v_V2232 = v_V2232.clone();
-                                    let v_W2233 = v_W2233.clone();
                                     let v_Z2238 = v_Z2238.clone();
                                     rt::make_aot_closure(
                                         "<lambda>",
@@ -26321,8 +26071,6 @@ pub fn aot_vector_x2e_element_x3f_(interp: &mut Interp, args: &[Value]) -> ShenR
                 let v_W2246 = {
                     let __t6039 = Value::Int(1i64);
                     let __t6042 = {
-                        let v_V2243 = v_V2243.clone();
-                        let v_V2244 = v_V2244.clone();
                         let v_W2245 = v_W2245.clone();
                         rt::make_aot_closure(
                             "<lambda>",
@@ -26341,7 +26089,6 @@ pub fn aot_vector_x2e_element_x3f_(interp: &mut Interp, args: &[Value]) -> ShenR
                     let __t6052 = {
                         let v_V2243 = v_V2243.clone();
                         let v_V2244 = v_V2244.clone();
-                        let v_W2245 = v_W2245.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -26380,9 +26127,6 @@ pub fn aot_vector_x2e_element_x3f_(interp: &mut Interp, args: &[Value]) -> ShenR
                         )
                     };
                     let __t6055 = {
-                        let v_V2243 = v_V2243.clone();
-                        let v_V2244 = v_V2244.clone();
-                        let v_W2245 = v_W2245.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -26442,10 +26186,7 @@ pub fn aot_vector_x2e_map(interp: &mut Interp, args: &[Value]) -> ShenResult<Val
                     let v_W2260 = {
                         let __t6058 = Value::Int(1i64);
                         let __t6061 = {
-                            let v_V2256 = v_V2256.clone();
-                            let v_V2257 = v_V2257.clone();
                             let v_W2258 = v_W2258.clone();
-                            let v_W2259 = v_W2259.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
                                 1,
@@ -26463,7 +26204,6 @@ pub fn aot_vector_x2e_map(interp: &mut Interp, args: &[Value]) -> ShenResult<Val
                         let __t6082 = {
                             let v_V2256 = v_V2256.clone();
                             let v_V2257 = v_V2257.clone();
-                            let v_W2258 = v_W2258.clone();
                             let v_W2259 = v_W2259.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
@@ -26534,9 +26274,6 @@ pub fn aot_vector_x2e_map(interp: &mut Interp, args: &[Value]) -> ShenResult<Val
                                                 Ok(v) => v,
                                                 Err(e) => {
                                                     let __h = {
-                                                        let v_V2256 = v_V2256.clone();
-                                                        let v_V2257 = v_V2257.clone();
-                                                        let v_W2258 = v_W2258.clone();
                                                         let v_W2259 = v_W2259.clone();
                                                         let v_Z2262 = v_Z2262.clone();
                                                         rt::make_aot_closure(
@@ -26573,10 +26310,6 @@ pub fn aot_vector_x2e_map(interp: &mut Interp, args: &[Value]) -> ShenResult<Val
                             )
                         };
                         let __t6085 = {
-                            let v_V2256 = v_V2256.clone();
-                            let v_V2257 = v_V2257.clone();
-                            let v_W2258 = v_W2258.clone();
-                            let v_W2259 = v_W2259.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
                                 1,
@@ -26592,20 +26325,12 @@ pub fn aot_vector_x2e_map(interp: &mut Interp, args: &[Value]) -> ShenResult<Val
                             )
                         };
                         let __t6086 = {
-                            let v_V2256 = v_V2256.clone();
-                            let v_V2257 = v_V2257.clone();
-                            let v_W2258 = v_W2258.clone();
-                            let v_W2259 = v_W2259.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
                                 1,
                                 move |interp, args| {
                                     let v_Z2265 = args[0].clone();
                                     Ok({
-                                        let v_V2256 = v_V2256.clone();
-                                        let v_V2257 = v_V2257.clone();
-                                        let v_W2258 = v_W2258.clone();
-                                        let v_W2259 = v_W2259.clone();
                                         let v_Z2265 = v_Z2265.clone();
                                         rt::make_aot_closure(
                                             "<lambda>",
@@ -26665,8 +26390,6 @@ pub fn aot_vector_x2e_dmap(interp: &mut Interp, args: &[Value]) -> ShenResult<Va
                 let v_W2276 = {
                     let __t6088 = Value::Int(1i64);
                     let __t6091 = {
-                        let v_V2273 = v_V2273.clone();
-                        let v_V2274 = v_V2274.clone();
                         let v_W2275 = v_W2275.clone();
                         rt::make_aot_closure(
                             "<lambda>",
@@ -26685,7 +26408,6 @@ pub fn aot_vector_x2e_dmap(interp: &mut Interp, args: &[Value]) -> ShenResult<Va
                     let __t6112 = {
                         let v_V2273 = v_V2273.clone();
                         let v_V2274 = v_V2274.clone();
-                        let v_W2275 = v_W2275.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -26751,9 +26473,7 @@ pub fn aot_vector_x2e_dmap(interp: &mut Interp, args: &[Value]) -> ShenResult<Va
                                             Ok(v) => v,
                                             Err(e) => {
                                                 let __h = {
-                                                    let v_V2273 = v_V2273.clone();
                                                     let v_V2274 = v_V2274.clone();
-                                                    let v_W2275 = v_W2275.clone();
                                                     let v_Z2278 = v_Z2278.clone();
                                                     rt::make_aot_closure(
                                                         "<lambda>",
@@ -26788,9 +26508,6 @@ pub fn aot_vector_x2e_dmap(interp: &mut Interp, args: &[Value]) -> ShenResult<Va
                         )
                     };
                     let __t6115 = {
-                        let v_V2273 = v_V2273.clone();
-                        let v_V2274 = v_V2274.clone();
-                        let v_W2275 = v_W2275.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -26806,18 +26523,12 @@ pub fn aot_vector_x2e_dmap(interp: &mut Interp, args: &[Value]) -> ShenResult<Va
                         )
                     };
                     let __t6116 = {
-                        let v_V2273 = v_V2273.clone();
-                        let v_V2274 = v_V2274.clone();
-                        let v_W2275 = v_W2275.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
                             move |interp, args| {
                                 let v_Z2281 = args[0].clone();
                                 Ok({
-                                    let v_V2273 = v_V2273.clone();
-                                    let v_V2274 = v_V2274.clone();
-                                    let v_W2275 = v_W2275.clone();
                                     let v_Z2281 = v_Z2281.clone();
                                     rt::make_aot_closure(
                                         "<lambda>",
@@ -26876,8 +26587,6 @@ pub fn aot_vector_x2e_every_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRes
                 let v_W2289 = {
                     let __t6118 = Value::Int(1i64);
                     let __t6121 = {
-                        let v_V2286 = v_V2286.clone();
-                        let v_V2287 = v_V2287.clone();
                         let v_W2288 = v_W2288.clone();
                         rt::make_aot_closure(
                             "<lambda>",
@@ -26896,7 +26605,6 @@ pub fn aot_vector_x2e_every_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRes
                     let __t6130 = {
                         let v_V2286 = v_V2286.clone();
                         let v_V2287 = v_V2287.clone();
-                        let v_W2288 = v_W2288.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -26934,9 +26642,6 @@ pub fn aot_vector_x2e_every_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRes
                         )
                     };
                     let __t6133 = {
-                        let v_V2286 = v_V2286.clone();
-                        let v_V2287 = v_V2287.clone();
-                        let v_W2288 = v_W2288.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -26991,8 +26696,6 @@ pub fn aot_vector_x2e_some_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResu
                 let v_W2299 = {
                     let __t6135 = Value::Int(1i64);
                     let __t6138 = {
-                        let v_V2296 = v_V2296.clone();
-                        let v_V2297 = v_V2297.clone();
                         let v_W2298 = v_W2298.clone();
                         rt::make_aot_closure(
                             "<lambda>",
@@ -27011,7 +26714,6 @@ pub fn aot_vector_x2e_some_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResu
                     let __t6147 = {
                         let v_V2296 = v_V2296.clone();
                         let v_V2297 = v_V2297.clone();
-                        let v_W2298 = v_W2298.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -27049,9 +26751,6 @@ pub fn aot_vector_x2e_some_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResu
                         )
                     };
                     let __t6150 = {
-                        let v_V2296 = v_V2296.clone();
-                        let v_V2297 = v_V2297.clone();
-                        let v_W2298 = v_W2298.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -27101,7 +26800,6 @@ pub fn aot_vector_x2d__x3e_list(interp: &mut Interp, args: &[Value]) -> ShenResu
             let __t6151 = Value::Int(1i64);
             let __t6155 = {
                 let v_V2308 = v_V2308.clone();
-                let v_V2309 = v_V2309.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -27156,8 +26854,6 @@ pub fn aot_vector_x2d__x3e_list(interp: &mut Interp, args: &[Value]) -> ShenResu
                 )
             };
             let __t6168 = {
-                let v_V2308 = v_V2308.clone();
-                let v_V2309 = v_V2309.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -27173,16 +26869,12 @@ pub fn aot_vector_x2d__x3e_list(interp: &mut Interp, args: &[Value]) -> ShenResu
                 )
             };
             let __t6171 = {
-                let v_V2308 = v_V2308.clone();
-                let v_V2309 = v_V2309.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
                     move |interp, args| {
                         let v_Z2313 = args[0].clone();
                         Ok({
-                            let v_V2308 = v_V2308.clone();
-                            let v_V2309 = v_V2309.clone();
                             let v_Z2313 = v_Z2313.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
@@ -27408,7 +27100,6 @@ pub fn aot_vacant_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value>
                 )
             };
             let __t6207 = {
-                let v_V2328 = v_V2328.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -27491,7 +27182,6 @@ pub fn aot_dense_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> 
                 )
             };
             let __t6220 = {
-                let v_V2334 = v_V2334.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -27577,7 +27267,6 @@ pub fn aot_porous_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value>
                 )
             };
             let __t6234 = {
-                let v_V2340 = v_V2340.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -27628,7 +27317,6 @@ pub fn aot_sparse_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value>
                     let __t6236 = Value::Int(1i64);
                     let __t6240 = {
                         let v_V2348 = v_V2348.clone();
-                        let v_W2349 = v_W2349.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -27648,7 +27336,6 @@ pub fn aot_sparse_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value>
                     };
                     let __t6246 = {
                         let v_V2348 = v_V2348.clone();
-                        let v_W2349 = v_W2349.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -27675,8 +27362,6 @@ pub fn aot_sparse_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value>
                         )
                     };
                     let __t6249 = {
-                        let v_V2348 = v_V2348.clone();
-                        let v_W2349 = v_W2349.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -27692,16 +27377,12 @@ pub fn aot_sparse_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value>
                         )
                     };
                     let __t6252 = {
-                        let v_V2348 = v_V2348.clone();
-                        let v_W2349 = v_W2349.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
                             move |interp, args| {
                                 let v_Z2354 = args[0].clone();
                                 Ok({
-                                    let v_V2348 = v_V2348.clone();
-                                    let v_W2349 = v_W2349.clone();
                                     let v_Z2354 = v_Z2354.clone();
                                     rt::make_aot_closure(
                                         "<lambda>",
@@ -29363,8 +29044,6 @@ pub fn aot_append_x2d_files_x2d_with_x2d_open_x2d_stream(
                             {
                                 let v_W2539 = {
                                     let __t6615 = {
-                                        let v_V2536 = v_V2536.clone();
-                                        let v_V2537 = v_V2537.clone();
                                         let v_W2538 = v_W2538.clone();
                                         rt::make_aot_closure(
                                             "<lambda>",
@@ -29544,8 +29223,6 @@ pub fn aot_reopen(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                 {
                     let v_W2556 = {
                         let __t6646 = {
-                            let v_V2553 = v_V2553.clone();
-                            let v_W2554 = v_W2554.clone();
                             let v_W2555 = v_W2555.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
@@ -29677,7 +29354,6 @@ pub fn aot_file_x2d_exists_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResu
                 Ok(v) => v,
                 Err(e) => {
                     let __h = {
-                        let v_V2567 = v_V2567.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -30300,7 +29976,6 @@ pub fn aot_cartprodp(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                             let __t6776 = {
                                 let __t6774 = {
                                     let v_V2633 = v_V2633.clone();
-                                    let v_V2634 = v_V2634.clone();
                                     rt::make_aot_closure(
                                         "<lambda>",
                                         1,
@@ -30978,7 +30653,6 @@ pub fn aot_stlib_x2e_initialise_x2d_final(
                 {
                     let v_externalf = {
                         let __t6914 = {
-                            let v_external = v_external.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
                                 1,
@@ -31002,8 +30676,6 @@ pub fn aot_stlib_x2e_initialise_x2d_final(
                     {
                         let v_systemf_x2d_result = {
                             let __t6917 = {
-                                let v_external = v_external.clone();
-                                let v_externalf = v_externalf.clone();
                                 rt::make_aot_closure(
                                     "<lambda>",
                                     1,

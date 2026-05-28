@@ -479,8 +479,6 @@ pub fn aot_shen_x2e_package_x2d_user_x2d_input(
                                 };
                                 break Ok({
                                     let __t84 = {
-                                        let v_V5648 = v_V5648.clone();
-                                        let v_V5649 = v_V5649.clone();
                                         let v_W5650 = v_W5650.clone();
                                         let v_W5651 = v_W5651.clone();
                                         rt::make_aot_closure(
@@ -685,7 +683,6 @@ pub fn aot_shen_x2e_pui_x2d_h(interp: &mut Interp, args: &[Value]) -> ShenResult
                                         let __t104 = {
                                             let v_V5657 = v_V5657.clone();
                                             let v_V5658 = v_V5658.clone();
-                                            let v_V5659 = v_V5659.clone();
                                             rt::make_aot_closure(
                                                 "<lambda>",
                                                 1,
@@ -730,7 +727,6 @@ pub fn aot_shen_x2e_pui_x2d_h(interp: &mut Interp, args: &[Value]) -> ShenResult
                                             let __t114 = {
                                                 let v_V5657 = v_V5657.clone();
                                                 let v_V5658 = v_V5658.clone();
-                                                let v_V5659 = v_V5659.clone();
                                                 rt::make_aot_closure(
                                                     "<lambda>",
                                                     1,
@@ -763,7 +759,6 @@ pub fn aot_shen_x2e_pui_x2d_h(interp: &mut Interp, args: &[Value]) -> ShenResult
                                                 let __t121 = {
                                                     let v_V5657 = v_V5657.clone();
                                                     let v_V5658 = v_V5658.clone();
-                                                    let v_V5659 = v_V5659.clone();
                                                     rt::make_aot_closure(
                                                         "<lambda>",
                                                         1,

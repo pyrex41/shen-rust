@@ -695,7 +695,6 @@ pub fn aot_vector_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value>
                         Ok(v) => v,
                         Err(e) => {
                             let __h = {
-                                let v_V3764 = v_V3764.clone();
                                 rt::make_aot_closure(
                                     "<lambda>",
                                     1,
@@ -1058,7 +1057,6 @@ pub fn aot_symbol_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value>
                                         Ok(v) => v,
                                         Err(e) => {
                                             let __h = {
-                                                let v_V3775 = v_V3775.clone();
                                                 rt::make_aot_closure(
                                                     "<lambda>",
                                                     1,
@@ -1345,7 +1343,6 @@ pub fn aot_variable_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
                                 Ok(v) => v,
                                 Err(e) => {
                                     let __h = {
-                                        let v_V3785 = v_V3785.clone();
                                         rt::make_aot_closure(
                                             "<lambda>",
                                             1,
@@ -1669,7 +1666,6 @@ pub fn aot_tuple_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> 
                         Ok(v) => v,
                         Err(e) => {
                             let __h = {
-                                let v_V3802 = v_V3802.clone();
                                 rt::make_aot_closure(
                                     "<lambda>",
                                     1,
@@ -1972,10 +1968,7 @@ pub fn aot_shen_x2e_copyfromvector(interp: &mut Interp, args: &[Value]) -> ShenR
                 Ok(v) => v,
                 Err(e) => {
                     let __h = {
-                        let v_V3820 = v_V3820.clone();
                         let v_V3821 = v_V3821.clone();
-                        let v_V3822 = v_V3822.clone();
-                        let v_V3823 = v_V3823.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -2022,7 +2015,6 @@ pub fn aot_hdv(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                 Ok(v) => v,
                 Err(e) => {
                     let __h = {
-                        let v_V3825 = v_V3825.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -3153,10 +3145,6 @@ pub fn aot_put(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                 Ok(v) => v,
                 Err(e) => {
                     let __h = {
-                        let v_V3899 = v_V3899.clone();
-                        let v_V3900 = v_V3900.clone();
-                        let v_V3901 = v_V3901.clone();
-                        let v_V3902 = v_V3902.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -3224,9 +3212,6 @@ pub fn aot_unput(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                 Ok(v) => v,
                 Err(e) => {
                     let __h = {
-                        let v_V3907 = v_V3907.clone();
-                        let v_V3908 = v_V3908.clone();
-                        let v_V3909 = v_V3909.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -3295,7 +3280,6 @@ pub fn aot_get(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                     let __h = {
                         let v_V3914 = v_V3914.clone();
                         let v_V3915 = v_V3915.clone();
-                        let v_V3916 = v_V3916.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -3456,7 +3440,6 @@ pub fn aot_shen_x2e_hashkey(interp: &mut Interp, args: &[Value]) -> ShenResult<V
         {
             let v_W3924 = {
                 let __t528 = {
-                    let v_V3923 = v_V3923.clone();
                     rt::make_aot_closure(
                         "<lambda>",
                         1,
@@ -5677,7 +5660,6 @@ pub fn aot_bound_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> 
                         Ok(v) => v,
                         Err(e) => {
                             let __h = {
-                                let v_V4052 = v_V4052.clone();
                                 rt::make_aot_closure(
                                     "<lambda>",
                                     1,
@@ -6249,7 +6231,6 @@ pub fn aot_package_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value
                                 Ok(v) => v,
                                 Err(e) => {
                                     let __h = {
-                                        let v_V4063 = v_V4063.clone();
                                         rt::make_aot_closure(
                                             "<lambda>",
                                             1,

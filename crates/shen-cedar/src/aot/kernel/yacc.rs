@@ -449,7 +449,6 @@ pub fn aot_shen_x2e_yacc_x2d__x3e_shen(interp: &mut Interp, args: &[Value]) -> S
     loop {
         break Ok({
             let __t66 = {
-                let v_V131 = v_V131.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -1618,8 +1617,6 @@ pub fn aot_shen_x2e_non_x2d_terminal_x3f_(
                     };
                     break Ok({
                         let __t296 = {
-                            let v_V193 = v_V193.clone();
-                            let v_W194 = v_W194.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
                                 1,
@@ -5701,7 +5698,6 @@ pub fn aot_shen_x2e_process_x2d_yacc_x2d_semantics(
                     } {
                         break Ok({
                             let __t1242 = {
-                                let v_V386 = v_V386.clone();
                                 rt::make_aot_closure(
                                     "<lambda>",
                                     1,

@@ -1249,7 +1249,6 @@ pub fn aot_shen_x2e_x_x2e_features_x2e_initialise(
                 Ok(v) => v,
                 Err(e) => {
                     let __h = {
-                        let v_V7055 = v_V7055.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -1270,8 +1269,6 @@ pub fn aot_shen_x2e_x_x2e_features_x2e_initialise(
                                                         "shen.x.features.cond-expand-macro",
                                                     ));
                                                 let __t363 = {
-                                                    let v_V7055 = v_V7055.clone();
-                                                    let v_Z7057 = v_Z7057.clone();
                                                     rt::make_aot_closure(
                                                         "<lambda>",
                                                         1,
@@ -1298,8 +1295,6 @@ pub fn aot_shen_x2e_x_x2e_features_x2e_initialise(
                                                 interp.intern("shen.x.features.cond-expand-macro"),
                                             );
                                             let __t367 = {
-                                                let v_V7055 = v_V7055.clone();
-                                                let v_Z7057 = v_Z7057.clone();
                                                 rt::make_aot_closure(
                                                     "<lambda>",
                                                     1,

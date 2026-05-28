@@ -169,7 +169,6 @@ pub fn aot_shen_x2e_dict_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult
                         Ok(v) => v,
                         Err(e) => {
                             let __h = {
-                                let v_V4144 = v_V4144.clone();
                                 rt::make_aot_closure(
                                     "<lambda>",
                                     1,
@@ -894,14 +893,12 @@ pub fn aot_shen_x2e_dict_x2d_keys(interp: &mut Interp, args: &[Value]) -> ShenRe
     loop {
         break Ok({
             let __t150 = {
-                let v_V4194 = v_V4194.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
                     move |interp, args| {
                         let v_Z4195 = args[0].clone();
                         Ok({
-                            let v_V4194 = v_V4194.clone();
                             let v_Z4195 = v_Z4195.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
@@ -909,9 +906,7 @@ pub fn aot_shen_x2e_dict_x2d_keys(interp: &mut Interp, args: &[Value]) -> ShenRe
                                 move |interp, args| {
                                     let v_Z4196 = args[0].clone();
                                     Ok({
-                                        let v_V4194 = v_V4194.clone();
                                         let v_Z4195 = v_Z4195.clone();
-                                        let v_Z4196 = v_Z4196.clone();
                                         rt::make_aot_closure(
                                             "<lambda>",
                                             1,
@@ -960,23 +955,18 @@ pub fn aot_shen_x2e_dict_x2d_values(interp: &mut Interp, args: &[Value]) -> Shen
     loop {
         break Ok({
             let __t155 = {
-                let v_V4198 = v_V4198.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
                     move |interp, args| {
                         let v_Z4199 = args[0].clone();
                         Ok({
-                            let v_V4198 = v_V4198.clone();
-                            let v_Z4199 = v_Z4199.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
                                 1,
                                 move |interp, args| {
                                     let v_Z4200 = args[0].clone();
                                     Ok({
-                                        let v_V4198 = v_V4198.clone();
-                                        let v_Z4199 = v_Z4199.clone();
                                         let v_Z4200 = v_Z4200.clone();
                                         rt::make_aot_closure(
                                             "<lambda>",

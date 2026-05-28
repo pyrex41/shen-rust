@@ -661,10 +661,9 @@ impl<'a> Codegen<'a> {
             KlExpr::Sym(s) => self.interner.resolve(*s).to_string(),
             _ => return Err("lambda: param not a symbol".into()),
         };
-        // Snapshot the lexical env: every variable currently in scope is
-        // captured into the closure by-value (cloned). Sort for stable
-        // output across runs (HashSet iteration is non-deterministic).
-        let mut captures: Vec<String> = scope.in_scope.iter().cloned().collect();
+        // Capture only outer vars the body actually references. Sort for
+        // stable codegen output across runs.
+        let mut captures = self.captures_used(&args[1], scope);
         captures.sort();
 
         let mut inner_scope = Scope::new();
@@ -690,8 +689,8 @@ impl<'a> Codegen<'a> {
         if args.len() != 1 {
             return Err("freeze: expected 1 arg".into());
         }
-        // 0-arity closure. Sort captures for stable codegen output.
-        let mut captures: Vec<String> = scope.in_scope.iter().cloned().collect();
+        // 0-arity closure. Capture only outer vars the body references.
+        let mut captures = self.captures_used(&args[0], scope);
         captures.sort();
         let mut inner_scope = Scope::new();
         for c in &captures {
@@ -705,6 +704,48 @@ impl<'a> Codegen<'a> {
         Ok(format!(
             "{{ {clone_list}rt::make_aot_closure(\"<freeze>\", 0, move |interp, _args| Ok({body_src}), interp) }}"
         ))
+    }
+
+    /// Pick out the subset of `scope.in_scope` that the closure body
+    /// might actually look up. Walks the body collecting every
+    /// `KlExpr::Sym(s)` reference and keeps only outer-scope names that
+    /// appear in that set. Conservative: ignores inner `let`/`lambda`
+    /// shadowing, since shadowing is resolved at runtime by
+    /// innermost-wins lookup — over-capturing a slot is never wrong,
+    /// just slightly larger. The big win is shrinking type-checker
+    /// freezes whose body uses 3–5 vars out of a 20–50 entry scope.
+    fn captures_used(&self, body: &KlExpr, scope: &Scope) -> Vec<String> {
+        if scope.in_scope.is_empty() {
+            return Vec::new();
+        }
+        let mut used: HashSet<String> = HashSet::new();
+        self.collect_used_names(body, &mut used);
+        if used.is_empty() {
+            return Vec::new();
+        }
+        scope
+            .in_scope
+            .iter()
+            .filter(|name| used.contains(name.as_str()))
+            .cloned()
+            .collect()
+    }
+
+    fn collect_used_names(&self, expr: &KlExpr, out: &mut HashSet<String>) {
+        match expr {
+            KlExpr::Sym(s) => {
+                let name = self.interner.resolve(*s);
+                if !out.contains(name) {
+                    out.insert(name.to_string());
+                }
+            }
+            KlExpr::App(items) => {
+                for child in items.iter() {
+                    self.collect_used_names(child, out);
+                }
+            }
+            _ => {}
+        }
     }
 
     fn compile_thaw(&mut self, args: &[KlExpr], scope: &mut Scope) -> Result<String, String> {

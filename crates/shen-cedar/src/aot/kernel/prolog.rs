@@ -1229,8 +1229,6 @@ pub fn aot_shen_x2e_compile_x2d_prolog(interp: &mut Interp, args: &[Value]) -> S
     loop {
         break Ok({
             let __t247 = {
-                let v_V1616 = v_V1616.clone();
-                let v_V1617 = v_V1617.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -1332,13 +1330,6 @@ pub fn aot_shen_x2e__x3c_defprolog_x3e_(interp: &mut Interp, args: &[Value]) -> 
                                                         {
                                                             let v_W1627 = {
                                                                 let __t262 = {
-                                                                    let v_V1619 = v_V1619.clone();
-                                                                    let v_W1621 = v_W1621.clone();
-                                                                    let v_W1622 = v_W1622.clone();
-                                                                    let v_W1623 = v_W1623.clone();
-                                                                    let v_W1624 = v_W1624.clone();
-                                                                    let v_W1625 = v_W1625.clone();
-                                                                    let v_W1626 = v_W1626.clone();
                                                                     rt::make_aot_closure(
                                                                         "<lambda>",
                                                                         1,
@@ -6476,7 +6467,6 @@ pub fn aot_shen_x2e_deref_x2d_calls(interp: &mut Interp, args: &[Value]) -> Shen
                             };
                             let __t1310 = {
                                 let __t1307 = {
-                                    let v_V1931 = v_V1931.clone();
                                     let v_V1932 = v_V1932.clone();
                                     rt::make_aot_closure(
                                         "<lambda>",
@@ -7241,7 +7231,6 @@ pub fn aot_shen_x2e_deref_x2d_terms(interp: &mut Interp, args: &[Value]) -> Shen
                                             } {
                                                 break Ok({
                                                     let __t1394 = {
-                                                        let v_V1954 = v_V1954.clone();
                                                         let v_V1955 = v_V1955.clone();
                                                         let v_V1956 = v_V1956.clone();
                                                         rt::make_aot_closure(
@@ -9460,7 +9449,6 @@ pub fn aot_shen_x2e_demode(interp: &mut Interp, args: &[Value]) -> ShenResult<Va
                             } {
                                 break Ok({
                                     let __t2172 = {
-                                        let v_V2052 = v_V2052.clone();
                                         rt::make_aot_closure(
                                             "<lambda>",
                                             1,
@@ -9544,7 +9532,6 @@ pub fn aot_shen_x2e_tame(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
                     } {
                         break Ok({
                             let __t2218 = {
-                                let v_V2054 = v_V2054.clone();
                                 rt::make_aot_closure(
                                     "<lambda>",
                                     1,
@@ -9851,7 +9838,6 @@ pub fn aot_shen_x2e_pvar_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult
                         Ok(v) => v,
                         Err(e) => {
                             let __h = {
-                                let v_V2063 = v_V2063.clone();
                                 rt::make_aot_closure(
                                     "<lambda>",
                                     1,
@@ -11809,8 +11795,6 @@ pub fn aot_shen_x2e_findall_x2d_h(interp: &mut Interp, args: &[Value]) -> ShenRe
                             let __t2600 = v_V2242.clone();
                             let __t2607 = {
                                 let v_V2236 = v_V2236.clone();
-                                let v_V2237 = v_V2237.clone();
-                                let v_V2238 = v_V2238.clone();
                                 let v_V2239 = v_V2239.clone();
                                 let v_V2240 = v_V2240.clone();
                                 let v_V2241 = v_V2241.clone();

@@ -45,8 +45,6 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_quiet_x2d_load(
             };
             break Ok({
                 let __t2 = {
-                    let v_V7078 = v_V7078.clone();
-                    let v_W7079 = v_W7079.clone();
                     rt::make_aot_closure(
                         "<lambda>",
                         1,
@@ -526,7 +524,6 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                             let __t195 = {
                                 let __t193 = {
                                     let v_V7091 = v_V7091.clone();
-                                    let v_V7092 = v_V7092.clone();
                                     rt::make_aot_closure(
                                         "<freeze>",
                                         0,
@@ -621,7 +618,6 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                     let __t170 = {
                                         let __t168 = {
                                             let v_V7091 = v_V7091.clone();
-                                            let v_V7092 = v_V7092.clone();
                                             rt::make_aot_closure(
                                                 "<freeze>",
                                                 0,
@@ -679,8 +675,6 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                             };
                                             let __t150 = {
                                                 let __t148 = {
-                                                    let v_V7091 = v_V7091.clone();
-                                                    let v_V7092 = v_V7092.clone();
                                                     rt::make_aot_closure(
                                                         "<freeze>",
                                                         0,
@@ -785,7 +779,6 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                     let __t136 = {
                                                         let __t134 = {
                                                             let v_V7091 = v_V7091.clone();
-                                                            let v_V7092 = v_V7092.clone();
                                                             rt::make_aot_closure(
                                                                 "<freeze>",
                                                                 0,
@@ -892,8 +885,6 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                                     let v_Freeze7095 = {
                                                                         let v_V7091 =
                                                                             v_V7091.clone();
-                                                                        let v_V7092 =
-                                                                            v_V7092.clone();
                                                                         rt::make_aot_closure(
                                                                             "<freeze>",
                                                                             0,

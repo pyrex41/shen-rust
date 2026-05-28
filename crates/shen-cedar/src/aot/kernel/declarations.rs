@@ -320,7 +320,6 @@ pub fn aot_arity(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                 Ok(v) => v,
                 Err(e) => {
                     let __h = {
-                        let v_V887 = v_V887.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -709,7 +708,6 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
         {
             let v_W902 = {
                 let __t106 = {
-                    let v_V901 = v_V901.clone();
                     rt::make_aot_closure(
                         "<lambda>",
                         1,
@@ -728,8 +726,6 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
             };
             break Ok({
                 let __t109 = {
-                    let v_V901 = v_V901.clone();
-                    let v_W902 = v_W902.clone();
                     rt::make_aot_closure(
                         "<lambda>",
                         1,
@@ -747,8 +743,6 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                     let __t113 = {
                         let __t110 = Value::Sym(interp.intern("shen.tuple"));
                         let __t112 = {
-                            let v_V901 = v_V901.clone();
-                            let v_W902 = v_W902.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
                                 1,
@@ -768,8 +762,6 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                         let __t117 = {
                             let __t114 = Value::Sym(interp.intern("shen.pvar"));
                             let __t116 = {
-                                let v_V901 = v_V901.clone();
-                                let v_W902 = v_W902.clone();
                                 rt::make_aot_closure(
                                     "<lambda>",
                                     1,
@@ -789,8 +781,6 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                             let __t121 = {
                                 let __t118 = Value::Sym(interp.intern("shen.dictionary"));
                                 let __t120 = {
-                                    let v_V901 = v_V901.clone();
-                                    let v_W902 = v_W902.clone();
                                     rt::make_aot_closure(
                                         "<lambda>",
                                         1,
@@ -815,8 +805,6 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                                     let __t122 =
                                         Value::Sym(interp.intern("shen.print-prolog-vector"));
                                     let __t124 = {
-                                        let v_V901 = v_V901.clone();
-                                        let v_W902 = v_W902.clone();
                                         rt::make_aot_closure(
                                             "<lambda>",
                                             1,
@@ -841,8 +829,6 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                                         let __t126 =
                                             Value::Sym(interp.intern("shen.print-freshterm"));
                                         let __t128 = {
-                                            let v_V901 = v_V901.clone();
-                                            let v_W902 = v_W902.clone();
                                             rt::make_aot_closure(
                                                 "<lambda>",
                                                 1,
@@ -866,8 +852,6 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                                         let __t133 = {
                                             let __t130 = Value::Sym(interp.intern("shen.printF"));
                                             let __t132 = {
-                                                let v_V901 = v_V901.clone();
-                                                let v_W902 = v_W902.clone();
                                                 rt::make_aot_closure(
                                                     "<lambda>",
                                                     1,

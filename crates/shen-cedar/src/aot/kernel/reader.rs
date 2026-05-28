@@ -44,8 +44,6 @@ pub fn aot_read_x2d_file(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
                 let v_W2506 = match (|| -> ShenResult<Value> {
                     Ok({
                         let __t2 = {
-                            let v_V2504 = v_V2504.clone();
-                            let v_W2505 = v_W2505.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
                                 1,
@@ -66,8 +64,6 @@ pub fn aot_read_x2d_file(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
                     Ok(v) => v,
                     Err(e) => {
                         let __h = {
-                            let v_V2504 = v_V2504.clone();
-                            let v_W2505 = v_W2505.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
                                 1,
@@ -676,7 +672,6 @@ pub fn aot_shen_x2e_monotype(interp: &mut Interp, args: &[Value]) -> ShenResult<
             } {
                 break Ok({
                     let __t105 = {
-                        let v_V2539 = v_V2539.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -765,7 +760,6 @@ pub fn aot_lineread(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
             };
             let __t111 = Value::Nil;
             let __t113 = {
-                let v_V2541 = v_V2541.clone();
                 rt::make_aot_closure(
                     "<lambda>",
                     1,
@@ -809,8 +803,6 @@ pub fn aot_read_x2d_from_x2d_string(interp: &mut Interp, args: &[Value]) -> Shen
             {
                 let v_W2545 = {
                     let __t116 = {
-                        let v_V2543 = v_V2543.clone();
-                        let v_W2544 = v_W2544.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -867,8 +859,6 @@ pub fn aot_read_x2d_from_x2d_string_x2d_unprocessed(
             {
                 let v_W2550 = {
                     let __t121 = {
-                        let v_V2548 = v_V2548.clone();
-                        let v_W2549 = v_W2549.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -1001,7 +991,6 @@ pub fn aot_read(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                 };
                 let __t139 = Value::Nil;
                 let __t141 = {
-                    let v_V2553 = v_V2553.clone();
                     rt::make_aot_closure(
                         "<lambda>",
                         1,
@@ -1129,10 +1118,6 @@ pub fn aot_shen_x2e_read_x2d_loop(interp: &mut Interp, args: &[Value]) -> ShenRe
                             } else {
                                 break Ok({
                                     let __t187 = {
-                                        let v_V2560 = v_V2560.clone();
-                                        let v_V2561 = v_V2561.clone();
-                                        let v_V2562 = v_V2562.clone();
-                                        let v_V2563 = v_V2563.clone();
                                         rt::make_aot_closure(
                                             "<lambda>",
                                             1,
@@ -1331,7 +1316,6 @@ pub fn aot_shen_x2e_try_x2d_parse(interp: &mut Interp, args: &[Value]) -> ShenRe
             let v_W2567 = match (|| -> ShenResult<Value> {
                 Ok({
                     let __t195 = {
-                        let v_V2566 = v_V2566.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -1352,7 +1336,6 @@ pub fn aot_shen_x2e_try_x2d_parse(interp: &mut Interp, args: &[Value]) -> ShenRe
                 Ok(v) => v,
                 Err(e) => {
                     let __h = {
-                        let v_V2566 = v_V2566.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -1596,9 +1579,6 @@ pub fn aot_shen_x2e_process_x2d_sexprs(interp: &mut Interp, args: &[Value]) -> S
                     };
                     break Ok({
                         let __t228 = {
-                            let v_V2575 = v_V2575.clone();
-                            let v_W2576 = v_W2576.clone();
-                            let v_W2577 = v_W2577.clone();
                             let v_W2578 = v_W2578.clone();
                             rt::make_aot_closure(
                                 "<lambda>",
@@ -1958,7 +1938,6 @@ pub fn aot_shen_x2e_find_x2d_arities(interp: &mut Interp, args: &[Value]) -> She
                             } {
                                 break Ok({
                                     let __t261 = {
-                                        let v_V2583 = v_V2583.clone();
                                         rt::make_aot_closure(
                                             "<lambda>",
                                             1,
@@ -11350,9 +11329,6 @@ pub fn aot_shen_x2e_record_x2d_internal(interp: &mut Interp, args: &[Value]) -> 
                 Ok(v) => v,
                 Err(e) => {
                     let __h = {
-                        let v_V3105 = v_V3105.clone();
-                        let v_V3106 = v_V3106.clone();
-                        let v_V3107 = v_V3107.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -11541,8 +11517,6 @@ pub fn aot_shen_x2e_record_x2d_external(interp: &mut Interp, args: &[Value]) -> 
                 Ok(v) => v,
                 Err(e) => {
                     let __h = {
-                        let v_V3120 = v_V3120.clone();
-                        let v_V3121 = v_V3121.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -11609,7 +11583,6 @@ pub fn aot_shen_x2e_package_x2d_symbols(interp: &mut Interp, args: &[Value]) -> 
                     let __t1933 = {
                         let v_V3128 = v_V3128.clone();
                         let v_V3129 = v_V3129.clone();
-                        let v_V3130 = v_V3130.clone();
                         rt::make_aot_closure(
                             "<lambda>",
                             1,
@@ -12487,7 +12460,6 @@ pub fn aot_shen_x2e_process_x2d_applications(
                                         break Ok({
                                             let __t2067 = {
                                                 let __t2065 = {
-                                                    let v_V3154 = v_V3154.clone();
                                                     let v_V3155 = v_V3155.clone();
                                                     rt::make_aot_closure(
                                                         "<lambda>",
@@ -13364,8 +13336,6 @@ pub fn aot_shen_x2e_special_x2d_case(interp: &mut Interp, args: &[Value]) -> She
                                                         };
                                                         let __t2237 = {
                                                             let __t2233 = {
-                                                                let v_V3164 = v_V3164.clone();
-                                                                let v_V3165 = v_V3165.clone();
                                                                 let v_V3166 = v_V3166.clone();
                                                                 rt::make_aot_closure(
                                                                     "<lambda>",
@@ -13687,8 +13657,6 @@ pub fn aot_shen_x2e_special_x2d_case(interp: &mut Interp, args: &[Value]) -> She
                                                                                     };
                                                                                     let __t2129 = {
                                                                                         let __t2126 = {
-                                                                                            let v_V3164 = v_V3164.clone();
-                                                                                            let v_V3165 = v_V3165.clone();
                                                                                             let v_V3166 = v_V3166.clone();
                                                                                             rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z3168 = args[0].clone(); Ok({ let __t2124 = v_Z3168.clone(); let __t2125 = v_V3166.clone(); rt::apply_direct(interp, "shen.process-applications", &[__t2124, __t2125])? }) }, interp)
                                                                                         };
@@ -13967,8 +13935,6 @@ pub fn aot_shen_x2e_process_x2d_after_x2d_type(
                     let __t2475 = Value::Sym(interp.intern("}"));
                     let __t2481 = {
                         let __t2478 = {
-                            let v_V3175 = v_V3175.clone();
-                            let v_V3176 = v_V3176.clone();
                             let v_V3177 = v_V3177.clone();
                             rt::make_aot_closure(
                                 "<lambda>",

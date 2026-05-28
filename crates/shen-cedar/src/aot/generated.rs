@@ -55,7 +55,7 @@ pub fn aot_fact(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                             let __t5 = Value::Int(1i64);
                             rt::sub(&__t4, &__t5)?
                         };
-                        rt::apply_named(interp, "fact", &[__t6])?
+                        rt::apply_direct(interp, "fact", &[__t6])?
                     };
                     rt::mul(&__t3, &__t7)?
                 });
@@ -66,6 +66,7 @@ pub fn aot_fact(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
 
 fn install_fact(interp: &mut Interp) {
     interp.register_native("fact", 1, aot_fact);
+    interp.register_aot_direct("fact", aot_fact);
 }
 
 /// AOT-compiled from KL `(defun loop-sum ...)`
@@ -116,6 +117,7 @@ pub fn aot_loop_x2d_sum(interp: &mut Interp, args: &[Value]) -> ShenResult<Value
 
 fn install_loop_x2d_sum(interp: &mut Interp) {
     interp.register_native("loop-sum", 2, aot_loop_x2d_sum);
+    interp.register_aot_direct("loop-sum", aot_loop_x2d_sum);
 }
 
 /// AOT-compiled from KL `(defun double ...)`
@@ -140,6 +142,7 @@ pub fn aot_double(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
 
 fn install_double(interp: &mut Interp) {
     interp.register_native("double", 1, aot_double);
+    interp.register_aot_direct("double", aot_double);
 }
 
 /// Register every AOT-compiled function on `interp`. Call after kernel

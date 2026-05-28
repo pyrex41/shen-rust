@@ -49,7 +49,6 @@ pub fn aot_declare(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                             let __t15 = {
                                 let __t13 = {
                                     let v_V5883 = v_V5883.clone();
-                                    let v_V5884 = v_V5884.clone();
                                     let v_W5885 = v_W5885.clone();
                                     rt::make_aot_closure(
                                         "<lambda>",
@@ -58,7 +57,6 @@ pub fn aot_declare(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                             let v_Z5887 = args[0].clone();
                                             Ok({
                                                 let v_V5883 = v_V5883.clone();
-                                                let v_V5884 = v_V5884.clone();
                                                 let v_W5885 = v_W5885.clone();
                                                 let v_Z5887 = v_Z5887.clone();
                                                 rt::make_aot_closure(
@@ -68,7 +66,6 @@ pub fn aot_declare(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                                         let v_Z5888 = args[0].clone();
                                                         Ok({
                                                             let v_V5883 = v_V5883.clone();
-                                                            let v_V5884 = v_V5884.clone();
                                                             let v_W5885 = v_W5885.clone();
                                                             let v_Z5887 = v_Z5887.clone();
                                                             let v_Z5888 = v_Z5888.clone();
@@ -80,8 +77,6 @@ pub fn aot_declare(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                                                     Ok({
                                                                         let v_V5883 =
                                                                             v_V5883.clone();
-                                                                        let v_V5884 =
-                                                                            v_V5884.clone();
                                                                         let v_W5885 =
                                                                             v_W5885.clone();
                                                                         let v_Z5887 =
@@ -162,9 +157,6 @@ pub fn aot_declare(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                         rt::apply_value(interp, __t22, &[__t23])?
                     };
                     let __t25 = {
-                        let v_V5883 = v_V5883.clone();
-                        let v_V5884 = v_V5884.clone();
-                        let v_W5885 = v_W5885.clone();
                         rt::make_aot_closure(
                             "<freeze>",
                             0,
@@ -356,15 +348,10 @@ pub fn aot_shen_x2e_variants_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRe
                             };
                             {
                                 let v_W5910 = {
-                                    let v_V5900 = v_V5900.clone();
-                                    let v_V5901 = v_V5901.clone();
-                                    let v_V5902 = v_V5902.clone();
                                     let v_V5903 = v_V5903.clone();
                                     let v_V5904 = v_V5904.clone();
-                                    let v_V5905 = v_V5905.clone();
                                     let v_V5906 = v_V5906.clone();
                                     let v_W5907 = v_W5907.clone();
-                                    let v_W5909 = v_W5909.clone();
                                     rt::make_aot_closure(
                                         "<freeze>",
                                         0,
