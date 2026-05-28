@@ -807,10 +807,8 @@ fn capture_used(body: &KlExpr, locals: &[(SymId, Value)]) -> Vec<(SymId, Value)>
 
 fn collect_used_syms(expr: &KlExpr, out: &mut SmallVec<[SymId; 16]>) {
     match expr {
-        KlExpr::Sym(s) => {
-            if !out.contains(s) {
-                out.push(*s);
-            }
+        KlExpr::Sym(s) if !out.contains(s) => {
+            out.push(*s);
         }
         KlExpr::App(items) => {
             for child in items.iter() {

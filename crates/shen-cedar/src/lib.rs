@@ -10,3 +10,4 @@ pub mod kl;
 pub mod primitives;
 pub mod symbol;
 pub mod value;
+pub mod vm;
