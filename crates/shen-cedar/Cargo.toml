@@ -18,3 +18,9 @@ smallvec = "1"
 name = "vm_vs_treewalk"
 harness = false
 
+# Spike: word-sized tagged Value vs current 24-byte Rc enum (JIT prereq
+# de-risk). `cargo bench --bench value_repr_spike`.
+[[bench]]
+name = "value_repr_spike"
+harness = false
+
