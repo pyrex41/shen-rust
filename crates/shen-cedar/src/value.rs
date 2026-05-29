@@ -101,11 +101,12 @@ pub enum Value {
     Float(f64),
     Str(Rc<str>),
     Sym(SymId),
-    /// A cons cell. Head and tail share a single heap allocation (one
-    /// `Rc<(Value, Value)>`) rather than two separate `Rc<Value>`s — the
-    /// kernel is list-processing end to end, so halving the per-cell
-    /// allocation/refcount traffic is the largest single malloc win.
-    Cons(Rc<(Value, Value)>),
+    /// A cons cell. Head and tail share a single heap allocation — the kernel
+    /// is list-processing end to end, so the per-cell allocation/refcount
+    /// traffic is the largest single malloc cost. The allocation strategy
+    /// lives behind [`ConsCell`] (`crate::cons`) so it can be changed without
+    /// touching call sites; see `design/value-representation.md`.
+    Cons(crate::cons::ConsCell),
     Vec(AbsVec),
     Closure(Rc<Closure>),
     Stream(SharedStream),
@@ -139,7 +140,7 @@ impl Value {
     /// Construct a cons cell from head and tail in a single allocation.
     #[inline]
     pub fn cons(head: Value, tail: Value) -> Value {
-        Value::Cons(Rc::new((head, tail)))
+        Value::Cons(crate::cons::ConsCell::new(head, tail))
     }
 
     /// Build a proper list from an iterator. Trailing `Nil`.
@@ -166,7 +167,7 @@ pub fn shen_eq(a: &Value, b: &Value) -> bool {
     // proof goals, and the reader produces shared sub-structures via
     // cons sharing. `Rc::ptr_eq` is O(1) and skips a deep walk.
     if let (Cons(p1), Cons(p2)) = (a, b) {
-        if Rc::ptr_eq(p1, p2) {
+        if p1.ptr_eq(p2) {
             return true;
         }
     }

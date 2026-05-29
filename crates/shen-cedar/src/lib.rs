@@ -2,6 +2,7 @@
 
 pub mod aot;
 pub mod cedar;
+pub mod cons;
 pub mod env;
 pub mod error;
 pub mod generated;
