@@ -126,6 +126,31 @@ pub struct Interp {
     /// Free-running step counter used only to throttle the `deadline`
     /// check (so we don't call `Instant::now()` on every reduction).
     deadline_counter: u64,
+    /// Cache of compiled `lambda`/`freeze` bodies, keyed by the body
+    /// `KlExpr` node address. A single kernel-tests run evaluates ~655
+    /// distinct closure bodies but creates the closures ~1.2M times; the
+    /// VM compiler is otherwise re-invoked on each creation. Caching the
+    /// `BytecodeFn` + its free-variable names lets a repeat creation skip
+    /// straight to gathering the captured values.
+    ///
+    /// Soundness of the address key: each entry holds an `Rc<[KlExpr]>`
+    /// (`_form_guard`) pinning the slice that contains the body node, so
+    /// the keyed address stays allocated and cannot be recycled by a
+    /// different node for the cache's lifetime — no ABA. (Compare the A4
+    /// capture path, which deliberately avoids an address memo precisely
+    /// because it holds no such guard.)
+    closure_cache: std::collections::HashMap<usize, CompiledClosure>,
+}
+
+/// A cached compiled closure body for the VM path. `upval_names` are the
+/// free variables to gather from the live `locals` at each creation, in
+/// the order `compile_closure` registered them as upvals.
+struct CompiledClosure {
+    bf: Rc<crate::vm::bytecode::BytecodeFn>,
+    upval_names: Vec<SymId>,
+    /// Keeps the `Rc<[KlExpr]>` slice holding the body node alive so its
+    /// address (the cache key) cannot be freed and reused. Never read.
+    _form_guard: Rc<[KlExpr]>,
 }
 
 /// Pre-interned ids for KL special forms and a few hot symbols.
@@ -207,6 +232,7 @@ impl Interp {
             remaining_steps: None,
             deadline: None,
             deadline_counter: 0,
+            closure_cache: std::collections::HashMap::new(),
         };
         crate::primitives::register_all(&mut interp);
         interp
@@ -408,7 +434,11 @@ impl Interp {
                 return self.step_let(args, scope, current);
             }
             if sym == wk.k_lambda {
-                return Ok(StepOutcome::Done(self.build_lambda(args, scope.slice())?));
+                return Ok(StepOutcome::Done(self.build_lambda(
+                    items,
+                    args,
+                    scope.slice(),
+                )?));
             }
             if sym == wk.k_defun {
                 return Ok(StepOutcome::Done(self.do_defun(args)?));
@@ -426,7 +456,11 @@ impl Interp {
                 return self.step_or(args, scope, current);
             }
             if sym == wk.k_freeze {
-                return Ok(StepOutcome::Done(self.build_freeze(args, scope.slice())?));
+                return Ok(StepOutcome::Done(self.build_freeze(
+                    items,
+                    args,
+                    scope.slice(),
+                )?));
             }
             if sym == wk.k_thaw {
                 return self.step_thaw(args, scope);
@@ -725,7 +759,12 @@ impl Interp {
         }
     }
 
-    fn build_lambda(&mut self, args: &[KlExpr], locals: &[(SymId, Value)]) -> ShenResult<Value> {
+    fn build_lambda(
+        &mut self,
+        form: &Rc<[KlExpr]>,
+        args: &[KlExpr],
+        locals: &[(SymId, Value)],
+    ) -> ShenResult<Value> {
         if args.len() != 2 {
             return Err(ShenError::new("lambda: expected (lambda PARAM BODY)"));
         }
@@ -737,16 +776,21 @@ impl Interp {
                 )))
             }
         };
-        Ok(self.build_closure(&[param], 1, &args[1], locals))
+        Ok(self.build_closure(form, &[param], 1, &args[1], locals))
     }
 
-    fn build_freeze(&mut self, args: &[KlExpr], locals: &[(SymId, Value)]) -> ShenResult<Value> {
+    fn build_freeze(
+        &mut self,
+        form: &Rc<[KlExpr]>,
+        args: &[KlExpr],
+        locals: &[(SymId, Value)],
+    ) -> ShenResult<Value> {
         if args.len() != 1 {
             return Err(ShenError::new("freeze: expected 1 arg"));
         }
         // (freeze E) ~ (lambda V E) with V fresh and ignored. We model
         // freeze as a 0-arity lambda so `(thaw f)` calls it with no args.
-        Ok(self.build_closure(&[], 0, &args[0], locals))
+        Ok(self.build_closure(form, &[], 0, &args[0], locals))
     }
 
     /// Build a runtime closure for `(lambda ...)` / `(freeze ...)`. When the
@@ -761,13 +805,14 @@ impl Interp {
     /// bytecode pays off (A3 in `design/perf-handoff.md`).
     fn build_closure(
         &mut self,
+        form: &Rc<[KlExpr]>,
         params: &[SymId],
         arity: usize,
         body: &KlExpr,
         locals: &[(SymId, Value)],
     ) -> Value {
         let kind = self
-            .try_compile_closure(params, body, locals)
+            .try_compile_closure(form, params, body, locals)
             .unwrap_or_else(|| {
                 ClosureKind::Lambda(Rc::new(LambdaBody {
                     captured: capture_used(locals),
@@ -786,14 +831,32 @@ impl Interp {
     /// Attempt to compile a runtime closure body to bytecode. Returns
     /// `None` when the VM is disabled or the body can't be lowered (caller
     /// falls back to the tree-walker).
+    ///
+    /// The compiled `BytecodeFn` + free-variable names are cached by body
+    /// address (`closure_cache`); a repeat creation of the same
+    /// `lambda`/`freeze` form skips the compile and only re-gathers the
+    /// captured values from the current `locals`. `form` is the enclosing
+    /// `Rc<[KlExpr]>` slice, stored as a guard so the cached key address
+    /// stays alive (see `closure_cache` docs).
     fn try_compile_closure(
         &mut self,
+        form: &Rc<[KlExpr]>,
         params: &[SymId],
         body: &KlExpr,
         locals: &[(SymId, Value)],
     ) -> Option<ClosureKind> {
         if !vm_enabled() {
             return None;
+        }
+        let key = body as *const KlExpr as usize;
+        // Fast path: already compiled this body — just re-gather captures.
+        if let Some(entry) = self.closure_cache.get(&key) {
+            let bf = Rc::clone(&entry.bf);
+            // Clone names out so the immutable borrow of `self` ends before
+            // we call `lookup_local` (which borrows `self` again).
+            let names = entry.upval_names.clone();
+            let captured = self.gather_captures(&names, locals);
+            return Some(ClosureKind::Bytecode(bf, captured));
         }
         // Determine the captured free variables: symbols referenced in the
         // body that are bound in the surrounding `locals`, in first-mention
@@ -815,9 +878,34 @@ impl Interp {
             }
         }
         match crate::vm::compile_closure(self, params, &upval_names, body) {
-            Ok(bf) => Some(ClosureKind::Bytecode(Rc::new(bf), captured)),
+            Ok(bf) => {
+                let bf = Rc::new(bf);
+                self.closure_cache.insert(
+                    key,
+                    CompiledClosure {
+                        bf: Rc::clone(&bf),
+                        upval_names,
+                        _form_guard: Rc::clone(form),
+                    },
+                );
+                Some(ClosureKind::Bytecode(bf, captured))
+            }
             Err(_) => None,
         }
+    }
+
+    /// Gather the current values of `names` from `locals`, in order, for a
+    /// cache-hit closure creation. Names absent from `locals` are skipped —
+    /// matching the build path, which only records names it found bound
+    /// (`compile_closure` registered upvals only for those). Because the
+    /// cached `upval_names` is exactly that found-bound set, every name here
+    /// resolves, so the gathered vector lines up with the `BytecodeFn`'s
+    /// upval slots.
+    fn gather_captures(&self, names: &[SymId], locals: &[(SymId, Value)]) -> Vec<Value> {
+        names
+            .iter()
+            .filter_map(|s| self.lookup_local(*s, locals))
+            .collect()
     }
 
     fn step_thaw(&mut self, args: &[KlExpr], scope: &Scope) -> ShenResult<StepOutcome> {
