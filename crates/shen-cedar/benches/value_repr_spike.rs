@@ -154,6 +154,98 @@ impl Tagged {
 }
 
 // ---------------------------------------------------------------------------
+// Representation C: TaggedRc — the HONEST tagged word for the real conversion.
+//
+// 8-byte payload like `Tagged`, but NON-`Copy`: heap tags hold an owned
+// `Rc` strong count, so it must refcount on clone and drop exactly as the
+// real `Value` would. Immediates (fixnum/nil) are inline and clone/drop for
+// free. This models Option A (tagged word over Rc, no GC): does the
+// word-sized win survive once refcount traffic is reintroduced on heap
+// values? `Tagged` (leaked, Copy) is the Option-B ceiling; `TaggedRc` is
+// the Option-A reality.
+// ---------------------------------------------------------------------------
+
+struct TaggedRc(u64);
+
+#[repr(align(8))]
+struct RcConsNode {
+    head: TaggedRc,
+    tail: TaggedRc,
+}
+
+impl TaggedRc {
+    #[inline]
+    fn nil() -> TaggedRc {
+        TaggedRc(TAG_NIL)
+    }
+    #[inline]
+    fn fixnum(v: i64) -> TaggedRc {
+        TaggedRc(((v as u64) << TAG_BITS) | TAG_FIXNUM)
+    }
+    #[inline]
+    fn tag(&self) -> u64 {
+        self.0 & TAG_MASK
+    }
+    #[inline]
+    fn is_fixnum(&self) -> bool {
+        self.tag() == TAG_FIXNUM
+    }
+    #[inline]
+    fn is_cons(&self) -> bool {
+        self.tag() == TAG_CONS
+    }
+    #[inline]
+    fn as_fixnum(&self) -> i64 {
+        (self.0 as i64) >> TAG_BITS
+    }
+    #[inline]
+    fn cons(a: TaggedRc, b: TaggedRc) -> TaggedRc {
+        let p = Rc::into_raw(Rc::new(RcConsNode { head: a, tail: b }));
+        TaggedRc((p as u64) | TAG_CONS)
+    }
+    #[inline]
+    fn cons_ptr(&self) -> *const RcConsNode {
+        (self.0 & !TAG_MASK) as *const RcConsNode
+    }
+    #[inline]
+    fn head_ref(&self) -> &TaggedRc {
+        unsafe { &(*self.cons_ptr()).head }
+    }
+    #[inline]
+    fn tail_ref(&self) -> &TaggedRc {
+        unsafe { &(*self.cons_ptr()).tail }
+    }
+    #[inline]
+    fn add(&self, other: &TaggedRc) -> TaggedRc {
+        if self.is_fixnum() && other.is_fixnum() {
+            TaggedRc::fixnum(self.as_fixnum().wrapping_add(other.as_fixnum()))
+        } else {
+            TaggedRc::nil()
+        }
+    }
+}
+
+impl Clone for TaggedRc {
+    #[inline]
+    fn clone(&self) -> TaggedRc {
+        // Heap tags must bump the strong count (real Value semantics).
+        if self.is_cons() {
+            unsafe { Rc::increment_strong_count(self.cons_ptr()) };
+        }
+        TaggedRc(self.0)
+    }
+}
+
+impl Drop for TaggedRc {
+    #[inline]
+    fn drop(&mut self) {
+        if self.is_cons() {
+            unsafe { Rc::decrement_strong_count(self.cons_ptr()) };
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Workloads (identical shape for both reps).
 // ---------------------------------------------------------------------------
 
@@ -185,26 +277,25 @@ fn tagged_arith(n: i64) -> i64 {
 
 /// W2: build a cons list of length n, then sum by walking it. Heap + access
 /// pattern; tests 16-byte cons + Copy traversal vs 40-byte Rc cons + clone.
-fn boxed_list_sum(n: i64) -> Boxed {
+fn boxed_list_sum(n: i64) -> i64 {
     let mut xs = Boxed::Nil;
     for i in 0..n {
         xs = Boxed::cons(Boxed::Int(i), xs);
     }
     let mut acc = Boxed::Int(0);
-    // Walk by reference (no per-node clone) for a fair traversal compare,
-    // then leak the list so neither rep pays reclamation in the timed loop
-    // (Tagged leaks its nodes; match that here).
-    {
-        let mut cur: &Boxed = &xs;
-        while let Boxed::Cons(p) = cur {
-            acc = acc.add(&p.0);
-            cur = &p.1;
-        }
+    let mut cur: &Boxed = &xs;
+    while let Boxed::Cons(p) = cur {
+        acc = acc.add(&p.0);
+        cur = &p.1;
     }
-    std::mem::forget(xs);
-    acc
+    // xs drops here (real reclamation), matching TaggedRc.
+    match acc {
+        Boxed::Int(v) => v,
+        _ => -1,
+    }
 }
-fn tagged_list_sum(n: i64) -> Tagged {
+// Option-B ceiling: leaked Copy word, no reclamation (best case).
+fn tagged_list_sum(n: i64) -> i64 {
     let mut xs = Tagged::nil();
     for i in 0..n {
         xs = Tagged::cons(Tagged::fixnum(i), xs);
@@ -215,7 +306,24 @@ fn tagged_list_sum(n: i64) -> Tagged {
         acc = acc.add(cur.head());
         cur = cur.tail();
     }
-    acc
+    acc.as_fixnum()
+}
+// Option-A reality: tagged word over Rc, refcounts on clone/drop, list is
+// reclaimed at end of scope (Drop walks the chain) — the honest number.
+fn tagged_rc_list_sum(n: i64) -> i64 {
+    let mut xs = TaggedRc::nil();
+    for i in 0..n {
+        xs = TaggedRc::cons(TaggedRc::fixnum(i), xs);
+    }
+    let mut acc = TaggedRc::fixnum(0);
+    let mut cur: &TaggedRc = &xs;
+    while cur.is_cons() {
+        acc = acc.add(cur.head_ref());
+        cur = cur.tail_ref();
+    }
+    // xs drops here: decrement_strong_count cascades down the chain, exactly
+    // like the Boxed/Rc path.
+    acc.as_fixnum()
 }
 
 fn mean(ds: &[Duration]) -> Duration {
@@ -279,43 +387,67 @@ fn main() {
         );
     }
 
-    // W2: list build + sum
+    // W2: list build + sum. Three reps, all reclaimed equally except the
+    // Option-B ceiling (tagged_leaked):
+    //   boxed       — 24B Rc enum, Rc drop (today's reality)
+    //   tagged_rc   — 8B word over Rc, refcounts + Rc drop (Option A reality)
+    //   tagged_leak — 8B Copy word, leaked, no reclaim (Option B / GC ceiling)
     {
         let n = 2_000i64;
         let iters = 2_000u32;
-        let (mut bx, mut tg) = (Vec::new(), Vec::new());
+        let (mut bx, mut trc, mut tl) = (Vec::new(), Vec::new(), Vec::new());
         for _ in 0..PAIRS {
             let t0 = Instant::now();
+            let mut s = 0i64;
             for _ in 0..iters {
-                black_box(boxed_list_sum(black_box(n)));
+                s = s.wrapping_add(black_box(boxed_list_sum(black_box(n))));
             }
+            black_box(s);
             bx.push(t0.elapsed());
+
             let t1 = Instant::now();
+            let mut s = 0i64;
             for _ in 0..iters {
-                black_box(tagged_list_sum(black_box(n)));
+                s = s.wrapping_add(black_box(tagged_rc_list_sum(black_box(n))));
             }
-            tg.push(t1.elapsed());
+            black_box(s);
+            trc.push(t1.elapsed());
+
+            let t2 = Instant::now();
+            let mut s = 0i64;
+            for _ in 0..iters {
+                s = s.wrapping_add(black_box(tagged_list_sum(black_box(n))));
+            }
+            black_box(s);
+            tl.push(t2.elapsed());
         }
-        let (bmin, tmin) = (bx.iter().min().unwrap(), tg.iter().min().unwrap());
+        let bmin = bx.iter().min().unwrap();
+        let trmin = trc.iter().min().unwrap();
+        let tlmin = tl.iter().min().unwrap();
         println!("W2 list build+sum (n={n}, {iters}x):");
+        println!("  boxed (24B Rc)       min {:.2} ms", ms(*bmin));
+        println!("  tagged_rc (8B+Rc, A) min {:.2} ms", ms(*trmin));
+        println!("  tagged_leak (8B, B)  min {:.2} ms", ms(*tlmin));
         println!(
-            "  boxed  min {:.2} ms  mean {:.2} ms",
-            ms(*bmin),
-            ms(mean(&bx))
+            "  Option A (tagged_rc) speedup vs boxed: {:.2}x",
+            bmin.as_secs_f64() / trmin.as_secs_f64()
         );
         println!(
-            "  tagged min {:.2} ms  mean {:.2} ms",
-            ms(*tmin),
-            ms(mean(&tg))
-        );
-        println!(
-            "  tagged speedup (min) {:.2}x\n",
-            bmin.as_secs_f64() / tmin.as_secs_f64()
+            "  Option B (leaked) speedup vs boxed:    {:.2}x  (GC ceiling)\n",
+            bmin.as_secs_f64() / tlmin.as_secs_f64()
         );
     }
 
-    println!("NOTE: spike leaks Tagged heap nodes (no reclamation) — it measures");
-    println!("construction+access throughput of the representation, not GC/drop.");
-    println!("Boxed drops via Rc; this slightly disadvantages Boxed on W2, so");
-    println!("treat W2 as an upper bound on the cons-size/clone effect.");
+    println!("READING (measured 2026-05-29):");
+    println!("- W1 (fixnum arith) ~1.64x: no heap, no refcount; survives any");
+    println!("  lifetime choice. The FLOOR a word-sized Value always delivers.");
+    println!("- W2 Option A (tagged_rc over Rc) ~1.00x: reintroducing the refcount");
+    println!("  on clone/drop (mandatory for safety WITHOUT a GC) erases the");
+    println!("  word-sized list win entirely. The refcount IS the heap cost, not");
+    println!("  the 24B-vs-8B box size.");
+    println!("- W2 Option B (leaked, GC ceiling) ~2.48x: what a GC/arena could");
+    println!("  reach by making heap refs Copy. The A→B gap = the value of a GC.");
+    println!("CONCLUSION: a tagged Value without a GC helps ONLY arithmetic-heavy");
+    println!("code. The full win (and JIT enablement) needs a GC. Ladder to SBCL:");
+    println!("tracing GC (Copy refs) -> word-sized Value -> Cranelift JIT.");
 }
