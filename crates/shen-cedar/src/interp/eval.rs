@@ -923,22 +923,30 @@ impl Interp {
     }
 }
 
-/// Whether runtime `defun` evaluation should compile the body into
-/// bytecode (the VM path) instead of building a tree-walked
+/// Whether runtime `defun` / `lambda` / `freeze` evaluation compiles the
+/// body to bytecode (the VM path) instead of building a tree-walked
 /// `ClosureKind::Lambda`.
 ///
-/// **Opt-in** (`SHEN_CEDAR_VM=1`), not the default. As of the B5
-/// milestone the bytecode VM is correct (134/0 kernel-tests + full unit
-/// coverage) but measured *slower* than the tree-walker on this
-/// workload: kernel-tests is dominated by AOT-to-AOT dispatch, so
-/// user-`defun` calls (the only place the VM runs) are a minority, and
-/// the VM's per-call `Vec<Value>` locals+stack allocation costs more
-/// than the tree-walker's allocation-free `Scope` COW. The VM should
-/// become a win once Phase 3 (tagged `Value(u64)`, 24→8 bytes) makes
-/// those per-call frames ~3× cheaper. Until then it stays behind the
-/// flag so the default keeps the tree-walker's performance.
+/// **Opt-in** (`SHEN_CEDAR_VM=1`), not the default. The bytecode VM is
+/// correct (134/0 kernel-tests + the `vm_differential` oracle) and on
+/// pure user-defined code run via `eval` it beats the tree-walker ~2.7–4×
+/// (see `benches/vm_vs_treewalk.rs`). But it is *not* the default because
+/// `--kernel-tests` is dominated by the AOT-compiled kernel: klcompile
+/// lowers the kernel's hot `lambda`/`freeze` continuations to Rust at
+/// build time, so those never reach this runtime path. Compiling the
+/// minority of *runtime* closures to bytecode there costs more (a compile
+/// pass per closure) than it recoups, regressing kernel-tests ~7%. So the
+/// VM stays behind the flag until the AOT path itself is addressed.
+///
+/// Cached in a `OnceLock`: `std::env::var_os` calls `getenv`, which takes
+/// a lock and linearly scans `environ`. This predicate is consulted on
+/// *every* closure creation (a hot path in the type-checker), so reading
+/// the environment once and caching the bool keeps it off the profile.
+/// The flag is a process-start switch; re-reading it mid-run is not a
+/// supported use case.
 fn vm_enabled() -> bool {
-    std::env::var_os("SHEN_CEDAR_VM").is_some()
+    static VM_ENABLED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *VM_ENABLED.get_or_init(|| std::env::var_os("SHEN_CEDAR_VM").is_some())
 }
 
 fn clone_kind(kind: &ClosureKind) -> ClosureKind {
