@@ -1,16 +1,29 @@
 //! Bytecode dispatch loop.
 //!
-//! Mirrors shen-go's `vmExec` (`../shen-go/kl/vm.go:174–280`) in shape:
-//! flat `Vec<Value>` locals + small operand stack, `loop { match op }`
-//! over the linear instruction stream. Tail calls return up to the
-//! outer caller via a sentinel so the Rust stack doesn't grow on
-//! mutual recursion.
+//! Execution model (A1 + A2): a single `exec` invocation runs an entire
+//! tree of bytecode-to-bytecode calls. There is **one** value stack and
+//! **one** call-frame stack per `exec` entry, both reused across every
+//! call within that tree — no per-call `Vec` allocation, and no Rust-stack
+//! recursion for bytecode callees. This is the CPython / Lua / shen-go
+//! model.
 //!
-//! B1 (current) implements the always-terminal subset:
-//! `LoadConst` / `LoadLocal` / `StoreLocal` / `Pop` / `Return` /
-//! `Call(n)`. The rest (`Jump`/`JumpFalse`, closures, tail calls,
-//! numeric fast-paths) are stubs that return an error so any path that
-//! reaches them is loudly diagnosable during the staged rollout.
+//! * **Value stack** (`stack: Vec<Value>`). Each frame's locals live at
+//!   `stack[base .. base + n_locals]`; operands are pushed above them.
+//!   `LoadLocal(slot)` reads `stack[base + slot]`; operand pushes/pops act
+//!   on the top. `floor = base + n_locals` is the boundary an operand pop
+//!   must never cross.
+//! * **Frame stack** (`frames: Vec<Frame>`). A `Call` to an exact-arity,
+//!   non-partial *bytecode* callee suspends the caller's frame and
+//!   continues the same loop with `pc = 0` (no Rust recursion). `Return`
+//!   pops a frame and writes the result into the caller's operand slot.
+//!   `TailCall` *replaces* the current frame in place — true cross-function
+//!   tail-call optimisation, so deeply/mutually tail-recursive Shen code
+//!   runs in constant frame space.
+//!
+//! Calls to `Native` / AOT / tree-walked `Lambda` callees (and partial or
+//! over-application) still go out to `Interp::apply` — those are leaves
+//! from the VM's perspective. Self-tail-calls keep their dedicated
+//! `SelfTailCall` fast path (in-place arg rebind, no frame work).
 
 use std::rc::Rc;
 
@@ -20,13 +33,33 @@ use crate::value::{Closure, ClosureKind, Value};
 use crate::vm::bytecode::BytecodeFn;
 use crate::vm::opcode::Op;
 
-/// Execute a compiled function. `args` is placed in `locals[0..arity)`
-/// and the rest of `locals` is filled with `Value::Nil`. `upvals` are
-/// the values captured at closure creation time (`MakeClosure`).
-/// Returns the value the function evaluates to.
+// The single value stack: locals + operands for every live frame.
+type Stack = Vec<Value>;
+
+/// A suspended caller. The *current* frame's state is kept in local
+/// variables of `exec` for speed; `frames` holds the callers waiting for
+/// it to return.
+struct Frame {
+    bf: Rc<BytecodeFn>,
+    /// Index in `stack` of this frame's `locals[0]`.
+    base: usize,
+    /// Saved program counter (points at the instruction after the call
+    /// that suspended this frame).
+    pc: usize,
+    /// Values captured at closure-creation time (`MakeClosure`).
+    upvals: Vec<Value>,
+    /// Index in `stack` where this frame's return value must be written
+    /// (the slot the callee occupied). `usize::MAX` for the outermost
+    /// frame, which instead returns out of `exec`.
+    ret_dst: usize,
+}
+
+/// Execute a compiled function. `args` is placed in `locals[0..arity)` and
+/// the remaining locals are `Value::Nil`. `upvals` are the values captured
+/// at closure creation. Returns the value the function evaluates to.
 pub fn exec(
     interp: &mut Interp,
-    bf: &BytecodeFn,
+    bf: &Rc<BytecodeFn>,
     upvals: &[Value],
     args: &[Value],
 ) -> ShenResult<Value> {
@@ -38,15 +71,27 @@ pub fn exec(
         )));
     }
 
-    let mut locals: Vec<Value> = Vec::with_capacity(bf.n_locals);
-    locals.extend_from_slice(args);
-    locals.resize(bf.n_locals, Value::Nil);
+    // Frame 0 lives at base 0. Args become locals[0..arity); the rest of
+    // the locals slots are Nil. Operands push above `floor`.
+    let mut stack: Stack = Vec::with_capacity(bf.n_locals + 8);
+    stack.extend(args.iter().cloned());
+    stack.resize(bf.n_locals, Value::Nil);
 
-    let mut stack: Vec<Value> = Vec::with_capacity(8);
+    let mut frames: Vec<Frame> = Vec::new();
+    let mut cur_bf: Rc<BytecodeFn> = Rc::clone(bf);
+    let mut cur_upvals: Vec<Value> = upvals.to_vec();
+    let mut base: usize = 0;
     let mut pc: usize = 0;
+    let mut ret_dst: usize = usize::MAX;
+    let mut floor: usize = bf.n_locals;
 
     loop {
-        let op = bf
+        // Charge a reduction step against any active budget/deadline so a
+        // Call-heavy bytecode tree is cancelable mid-run, exactly like the
+        // tree-walked trampoline in `eval_in`.
+        interp.charge_step()?;
+
+        let op = cur_bf
             .code
             .get(pc)
             .copied()
@@ -54,7 +99,7 @@ pub fn exec(
         pc += 1;
         match op {
             Op::LoadConst(idx) => {
-                let v = bf
+                let v = cur_bf
                     .consts
                     .get(idx as usize)
                     .cloned()
@@ -62,43 +107,38 @@ pub fn exec(
                 stack.push(v);
             }
             Op::LoadLocal(slot) => {
-                let v = locals
-                    .get(slot as usize)
-                    .cloned()
-                    .ok_or_else(|| ShenError::new("vm: bad local slot"))?;
-                stack.push(v);
+                let s = slot as usize;
+                if s >= cur_bf.n_locals {
+                    return Err(ShenError::new("vm: bad local slot"));
+                }
+                stack.push(stack[base + s].clone());
             }
             Op::StoreLocal(slot) => {
-                let v = stack
-                    .pop()
-                    .ok_or_else(|| ShenError::new("vm: stack underflow on StoreLocal"))?;
                 let s = slot as usize;
-                if s >= locals.len() {
+                if s >= cur_bf.n_locals {
                     return Err(ShenError::new("vm: bad local slot on StoreLocal"));
                 }
-                locals[s] = v;
+                if stack.len() <= floor {
+                    return Err(ShenError::new("vm: stack underflow on StoreLocal"));
+                }
+                let v = stack.pop().unwrap();
+                stack[base + s] = v;
             }
             Op::Pop => {
-                stack
-                    .pop()
-                    .ok_or_else(|| ShenError::new("vm: stack underflow on Pop"))?;
-            }
-            Op::Return => {
-                return Ok(stack.pop().unwrap_or(Value::Nil));
-            }
-            Op::Call(n) => {
-                let n = n as usize;
-                if stack.len() < n + 1 {
-                    return Err(ShenError::new("vm: stack underflow on Call"));
+                if stack.len() <= floor {
+                    return Err(ShenError::new("vm: stack underflow on Pop"));
                 }
-                let args_start = stack.len() - n;
-                let args: Vec<Value> = stack.drain(args_start..).collect();
-                let callee = stack.pop().expect("checked above");
-                let result = interp.apply(callee, args)?;
-                stack.push(result);
+                stack.pop();
+            }
+            Op::LoadUpval(idx) => {
+                let v = cur_upvals
+                    .get(idx as usize)
+                    .cloned()
+                    .ok_or_else(|| ShenError::new("vm: bad upval index"))?;
+                stack.push(v);
             }
             Op::LoadGlobal(idx) => {
-                let v = bf
+                let v = cur_bf
                     .consts
                     .get(idx as usize)
                     .cloned()
@@ -120,9 +160,10 @@ pub fn exec(
                 pc = jump_target(pc, delta)?;
             }
             Op::JumpFalse(delta) => {
-                let v = stack
-                    .pop()
-                    .ok_or_else(|| ShenError::new("vm: stack underflow on JumpFalse"))?;
+                if stack.len() <= floor {
+                    return Err(ShenError::new("vm: stack underflow on JumpFalse"));
+                }
+                let v = stack.pop().unwrap();
                 let truthy = match v {
                     Value::Bool(b) => b,
                     Value::Sym(s) if s == interp.well_known.k_true => true,
@@ -137,20 +178,13 @@ pub fn exec(
                     pc = jump_target(pc, delta)?;
                 }
             }
-            Op::LoadUpval(idx) => {
-                let v = upvals
-                    .get(idx as usize)
-                    .cloned()
-                    .ok_or_else(|| ShenError::new("vm: bad upval index"))?;
-                stack.push(v);
-            }
             Op::MakeClosure { fn_idx, n_upvals } => {
                 let n = n_upvals as usize;
-                if stack.len() < n {
+                if stack.len() < floor + n {
                     return Err(ShenError::new("vm: stack underflow on MakeClosure"));
                 }
                 let captured: Vec<Value> = stack.drain(stack.len() - n..).collect();
-                let inner = bf
+                let inner = cur_bf
                     .fn_consts
                     .get(fn_idx as usize)
                     .cloned()
@@ -163,53 +197,172 @@ pub fn exec(
                 };
                 stack.push(Value::Closure(Rc::new(closure)));
             }
-            Op::SelfTailCall(n) => {
-                // In-place tail-recursion: copy the top n stack values
-                // into `locals[0..n]` and reset `pc = 0`. The Rust
-                // stack doesn't grow because we stay inside this
-                // `vm::exec` invocation. Lets in slots [n..n_locals]
-                // are left as-is; they'll be reassigned by `StoreLocal`
-                // as the body re-executes, matching shen-go's behavior
-                // (`../shen-go/kl/vm.go:258–263`).
+            Op::Return => {
+                let retval = if stack.len() > floor {
+                    stack.pop().unwrap()
+                } else {
+                    Value::Nil
+                };
+                if ret_dst == usize::MAX {
+                    return Ok(retval);
+                }
+                stack.truncate(ret_dst);
+                stack.push(retval);
+                let caller = frames.pop().expect("vm: frame underflow on Return");
+                cur_bf = caller.bf;
+                base = caller.base;
+                pc = caller.pc;
+                cur_upvals = caller.upvals;
+                ret_dst = caller.ret_dst;
+                floor = base + cur_bf.n_locals;
+            }
+            Op::Call(n) => {
                 let n = n as usize;
-                if stack.len() < n {
+                let l = stack.len();
+                if l < n + 1 {
+                    return Err(ShenError::new("vm: stack underflow on Call"));
+                }
+                let callee_idx = l - n - 1;
+                let callee = stack[callee_idx].clone();
+                if let Value::Closure(c) = &callee {
+                    if c.partial.is_empty() && c.arity == n {
+                        match &c.kind {
+                            ClosureKind::Native(nf) => {
+                                // Leaf call: dispatch on the borrowed arg
+                                // slice with no allocation, then collapse
+                                // callee+args to the single result slot.
+                                let r = nf(interp, &stack[l - n..l])?;
+                                stack.truncate(callee_idx);
+                                stack.push(r);
+                                continue;
+                            }
+                            ClosureKind::Bytecode(new_bf, new_up) => {
+                                // Suspend the caller and continue in the
+                                // callee's frame — no Rust recursion. Args
+                                // are already contiguous at [l-n .. l] and
+                                // become the new frame's locals[0..n).
+                                let new_base = l - n;
+                                let new_ret = callee_idx; // callee slot
+                                let new_bf = Rc::clone(new_bf);
+                                let new_up = new_up.clone();
+                                let caller = Frame {
+                                    bf: std::mem::replace(&mut cur_bf, new_bf),
+                                    base,
+                                    pc,
+                                    upvals: std::mem::take(&mut cur_upvals),
+                                    ret_dst,
+                                };
+                                frames.push(caller);
+                                cur_upvals = new_up;
+                                base = new_base;
+                                pc = 0;
+                                ret_dst = new_ret;
+                                let nl = cur_bf.n_locals;
+                                stack.resize(base + nl, Value::Nil);
+                                floor = base + nl;
+                                continue;
+                            }
+                            ClosureKind::Lambda(_) => { /* fall through to apply */ }
+                        }
+                    }
+                }
+                // Fallback: partial / over-application / arity mismatch /
+                // tree-walked lambda. Materialise the args and re-dispatch.
+                let argv: Vec<Value> = stack.drain(l - n..).collect();
+                stack.pop(); // remove callee
+                let r = interp.apply(callee, argv)?;
+                stack.push(r);
+            }
+            Op::TailCall(n) => {
+                let n = n as usize;
+                let l = stack.len();
+                if l < n + 1 {
+                    return Err(ShenError::new("vm: stack underflow on TailCall"));
+                }
+                let callee_idx = l - n - 1;
+                let callee = stack[callee_idx].clone();
+                if let Value::Closure(c) = &callee {
+                    if c.partial.is_empty() && c.arity == n {
+                        if let ClosureKind::Bytecode(new_bf, new_up) = &c.kind {
+                            // Replace the current frame in place: move the
+                            // args down over the current frame's locals,
+                            // then re-enter at pc=0. base and ret_dst are
+                            // preserved → no frame growth (true TCO).
+                            for i in 0..n {
+                                let v = std::mem::replace(&mut stack[l - n + i], Value::Nil);
+                                stack[base + i] = v;
+                            }
+                            stack.truncate(base + n);
+                            cur_bf = Rc::clone(new_bf);
+                            cur_upvals = new_up.clone();
+                            let nl = cur_bf.n_locals;
+                            stack.resize(base + nl, Value::Nil);
+                            floor = base + nl;
+                            pc = 0;
+                            continue;
+                        }
+                    }
+                }
+                // Fallback: apply the non-bytecode callee, then return its
+                // result as this frame's result (still a tail position, so
+                // we do not grow the frame stack).
+                let argv: Vec<Value> = stack.drain(l - n..).collect();
+                stack.pop(); // remove callee
+                let r = interp.apply(callee, argv)?;
+                if ret_dst == usize::MAX {
+                    return Ok(r);
+                }
+                stack.truncate(ret_dst);
+                stack.push(r);
+                let caller = frames
+                    .pop()
+                    .expect("vm: frame underflow on TailCall return");
+                cur_bf = caller.bf;
+                base = caller.base;
+                pc = caller.pc;
+                cur_upvals = caller.upvals;
+                ret_dst = caller.ret_dst;
+                floor = base + cur_bf.n_locals;
+            }
+            Op::SelfTailCall(n) => {
+                // In-place self-recursion: copy the top n operands into
+                // locals[0..n) and reset pc=0. No frame work at all.
+                let n = n as usize;
+                let l = stack.len();
+                if l < floor + n {
                     return Err(ShenError::new("vm: stack underflow on SelfTailCall"));
                 }
-                if n > locals.len() {
+                if n > cur_bf.n_locals {
                     return Err(ShenError::new("vm: SelfTailCall n > n_locals"));
                 }
-                let new_args_start = stack.len() - n;
-                for (i, v) in stack.drain(new_args_start..).enumerate() {
-                    locals[i] = v;
+                for i in 0..n {
+                    let v = std::mem::replace(&mut stack[l - n + i], Value::Nil);
+                    stack[base + i] = v;
                 }
+                stack.truncate(floor);
                 pc = 0;
             }
             // ---- Inlined primitives (B4b) ----------------------------
-            // Each one mirrors the `aot::runtime::*` helper of the
-            // same name; we keep the helpers as the single source of
-            // truth for the semantics.
-            Op::Add => binop_fallible(&mut stack, crate::aot::runtime::add)?,
-            Op::Sub => binop_fallible(&mut stack, crate::aot::runtime::sub)?,
-            Op::Mul => binop_fallible(&mut stack, crate::aot::runtime::mul)?,
-            Op::Div => binop_fallible(&mut stack, crate::aot::runtime::div)?,
-            Op::Lt => binop_fallible(&mut stack, crate::aot::runtime::lt)?,
-            Op::Le => binop_fallible(&mut stack, crate::aot::runtime::lte)?,
-            Op::Gt => binop_fallible(&mut stack, crate::aot::runtime::gt)?,
-            Op::Ge => binop_fallible(&mut stack, crate::aot::runtime::gte)?,
-            Op::Eq => binop_infallible(&mut stack, crate::aot::runtime::eq)?,
-            Op::Cons => binop_infallible(&mut stack, crate::aot::runtime::cons)?,
-            Op::Hd => unop_fallible(&mut stack, crate::aot::runtime::hd)?,
-            Op::Tl => unop_fallible(&mut stack, crate::aot::runtime::tl)?,
-            Op::IsCons => unop_infallible(&mut stack, crate::aot::runtime::is_cons)?,
-            Op::IsNumber => unop_infallible(&mut stack, crate::aot::runtime::is_number)?,
-            Op::IsString => unop_infallible(&mut stack, crate::aot::runtime::is_string)?,
-            Op::IsSymbol => unop_infallible(&mut stack, crate::aot::runtime::is_symbol)?,
-            Op::IsAbsvector => unop_infallible(&mut stack, crate::aot::runtime::is_absvector)?,
-            // Cross-tier TailCall lands in B5/B6.
-            Op::TailCall(_) => {
-                return Err(ShenError::new(format!(
-                    "vm: opcode {op:?} not implemented in this phase"
-                )));
+            // Each mirrors the `aot::runtime::*` helper of the same name;
+            // the helpers are the single source of truth for semantics.
+            Op::Add => binop_fallible(&mut stack, floor, crate::aot::runtime::add)?,
+            Op::Sub => binop_fallible(&mut stack, floor, crate::aot::runtime::sub)?,
+            Op::Mul => binop_fallible(&mut stack, floor, crate::aot::runtime::mul)?,
+            Op::Div => binop_fallible(&mut stack, floor, crate::aot::runtime::div)?,
+            Op::Lt => binop_fallible(&mut stack, floor, crate::aot::runtime::lt)?,
+            Op::Le => binop_fallible(&mut stack, floor, crate::aot::runtime::lte)?,
+            Op::Gt => binop_fallible(&mut stack, floor, crate::aot::runtime::gt)?,
+            Op::Ge => binop_fallible(&mut stack, floor, crate::aot::runtime::gte)?,
+            Op::Eq => binop_infallible(&mut stack, floor, crate::aot::runtime::eq)?,
+            Op::Cons => binop_infallible(&mut stack, floor, crate::aot::runtime::cons)?,
+            Op::Hd => unop_fallible(&mut stack, floor, crate::aot::runtime::hd)?,
+            Op::Tl => unop_fallible(&mut stack, floor, crate::aot::runtime::tl)?,
+            Op::IsCons => unop_infallible(&mut stack, floor, crate::aot::runtime::is_cons)?,
+            Op::IsNumber => unop_infallible(&mut stack, floor, crate::aot::runtime::is_number)?,
+            Op::IsString => unop_infallible(&mut stack, floor, crate::aot::runtime::is_string)?,
+            Op::IsSymbol => unop_infallible(&mut stack, floor, crate::aot::runtime::is_symbol)?,
+            Op::IsAbsvector => {
+                unop_infallible(&mut stack, floor, crate::aot::runtime::is_absvector)?
             }
         }
     }
@@ -217,58 +370,66 @@ pub fn exec(
 
 #[inline]
 fn binop_fallible(
-    stack: &mut Vec<Value>,
+    stack: &mut Stack,
+    floor: usize,
     f: fn(&Value, &Value) -> ShenResult<Value>,
 ) -> ShenResult<()> {
-    let b = stack
-        .pop()
-        .ok_or_else(|| ShenError::new("vm: stack underflow on binop"))?;
-    let a = stack
-        .pop()
-        .ok_or_else(|| ShenError::new("vm: stack underflow on binop"))?;
+    if stack.len() < floor + 2 {
+        return Err(ShenError::new("vm: stack underflow on binop"));
+    }
+    let b = stack.pop().unwrap();
+    let a = stack.pop().unwrap();
     let v = f(&a, &b)?;
     stack.push(v);
     Ok(())
 }
 
 #[inline]
-fn binop_infallible(stack: &mut Vec<Value>, f: fn(&Value, &Value) -> Value) -> ShenResult<()> {
-    let b = stack
-        .pop()
-        .ok_or_else(|| ShenError::new("vm: stack underflow on binop"))?;
-    let a = stack
-        .pop()
-        .ok_or_else(|| ShenError::new("vm: stack underflow on binop"))?;
+fn binop_infallible(
+    stack: &mut Stack,
+    floor: usize,
+    f: fn(&Value, &Value) -> Value,
+) -> ShenResult<()> {
+    if stack.len() < floor + 2 {
+        return Err(ShenError::new("vm: stack underflow on binop"));
+    }
+    let b = stack.pop().unwrap();
+    let a = stack.pop().unwrap();
     let v = f(&a, &b);
     stack.push(v);
     Ok(())
 }
 
 #[inline]
-fn unop_fallible(stack: &mut Vec<Value>, f: fn(&Value) -> ShenResult<Value>) -> ShenResult<()> {
-    let a = stack
-        .pop()
-        .ok_or_else(|| ShenError::new("vm: stack underflow on unop"))?;
+fn unop_fallible(
+    stack: &mut Stack,
+    floor: usize,
+    f: fn(&Value) -> ShenResult<Value>,
+) -> ShenResult<()> {
+    if stack.len() < floor + 1 {
+        return Err(ShenError::new("vm: stack underflow on unop"));
+    }
+    let a = stack.pop().unwrap();
     let v = f(&a)?;
     stack.push(v);
     Ok(())
 }
 
 #[inline]
-fn unop_infallible(stack: &mut Vec<Value>, f: fn(&Value) -> Value) -> ShenResult<()> {
-    let a = stack
-        .pop()
-        .ok_or_else(|| ShenError::new("vm: stack underflow on unop"))?;
+fn unop_infallible(stack: &mut Stack, floor: usize, f: fn(&Value) -> Value) -> ShenResult<()> {
+    if stack.len() < floor + 1 {
+        return Err(ShenError::new("vm: stack underflow on unop"));
+    }
+    let a = stack.pop().unwrap();
     let v = f(&a);
     stack.push(v);
     Ok(())
 }
 
-/// Compute the new `pc` after a Jump/JumpFalse. `pc` here is the value
-/// *already past* the jump instruction (we increment before dispatch),
-/// so the absolute target is `pc + delta`. Errors only on a target
-/// that would be negative — out-of-range past-end errors are caught by
-/// the next iteration's bounds check.
+/// Compute the new `pc` after a Jump/JumpFalse. `pc` here is already past
+/// the jump instruction (we increment before dispatch), so the absolute
+/// target is `pc + delta`. Errors only on a negative target — past-end
+/// targets are caught by the next iteration's bounds check.
 #[inline]
 fn jump_target(pc: usize, delta: i16) -> ShenResult<usize> {
     let target = (pc as i32) + (delta as i32);
@@ -292,9 +453,7 @@ mod tests {
     }
 
     /// Wrap a BytecodeFn as a `Value::Closure` with `ClosureKind::Bytecode`,
-    /// no captured upvals. Used by B3a tests to verify the dispatch path
-    /// (`call_or_apply` → `vm::exec`, `Interp::apply` / `call_strict` →
-    /// `vm::exec`).
+    /// no captured upvals.
     fn bytecode_closure(bf: BytecodeFn, name: Option<crate::symbol::SymId>) -> Value {
         let arity = bf.arity;
         Value::Closure(Rc::new(Closure {
@@ -307,8 +466,6 @@ mod tests {
 
     #[test]
     fn dispatch_via_interp_apply() {
-        // (defun id (X) X) — wrap as ClosureKind::Bytecode and call
-        // through `Interp::apply`. Exercises the call_strict path.
         let mut interp = fresh_interp();
         let name = interp.intern("id-vm");
         let bf = BytecodeFn {
@@ -326,9 +483,6 @@ mod tests {
 
     #[test]
     fn dispatch_via_apply_named_fast_path() {
-        // Register a bytecode-backed closure in the env, then call
-        // through rt::apply_named which routes through `call_or_apply`.
-        // The Fast::Bytecode arm of call_or_apply is the path under test.
         let mut interp = fresh_interp();
         let name = "id-vm";
         let sym = interp.intern(name);
@@ -348,50 +502,39 @@ mod tests {
 
     #[test]
     fn identity_function() {
-        // (defun id (X) X) compiles to:
-        //   LoadLocal(0)      ; push X
-        //   Return            ; return top of stack
         let mut interp = fresh_interp();
         let id_sym = interp.intern("id");
-        let bf = BytecodeFn {
+        let bf = Rc::new(BytecodeFn {
             name: Some(id_sym),
             arity: 1,
             n_locals: 1,
             code: vec![Op::LoadLocal(0), Op::Return],
             consts: vec![],
             fn_consts: vec![],
-        };
+        });
         let result = exec(&mut interp, &bf, &[], &[Value::Int(42)]).expect("exec");
         assert!(matches!(result, Value::Int(42)));
     }
 
     #[test]
     fn constant_function() {
-        // (defun answer () 42) compiles to:
-        //   LoadConst(0)      ; push 42
-        //   Return
         let mut interp = fresh_interp();
-        let bf = BytecodeFn {
+        let bf = Rc::new(BytecodeFn {
             name: Some(interp.intern("answer")),
             arity: 0,
             n_locals: 0,
             code: vec![Op::LoadConst(0), Op::Return],
             consts: vec![Value::Int(42)],
             fn_consts: vec![],
-        };
+        });
         let result = exec(&mut interp, &bf, &[], &[]).expect("exec");
         assert!(matches!(result, Value::Int(42)));
     }
 
     #[test]
     fn let_via_store_local() {
-        // (defun double-via-let (X) (let Y X Y)) compiles to:
-        //   LoadLocal(0)      ; push X
-        //   StoreLocal(1)     ; locals[1] = X   (Y's slot)
-        //   LoadLocal(1)      ; push Y
-        //   Return
         let mut interp = fresh_interp();
-        let bf = BytecodeFn {
+        let bf = Rc::new(BytecodeFn {
             name: Some(interp.intern("double-via-let")),
             arity: 1,
             n_locals: 2,
@@ -403,20 +546,15 @@ mod tests {
             ],
             consts: vec![],
             fn_consts: vec![],
-        };
+        });
         let result = exec(&mut interp, &bf, &[], &[Value::Int(7)]).expect("exec");
         assert!(matches!(result, Value::Int(7)));
     }
 
     #[test]
     fn call_via_existing_primitive() {
-        // (defun plus-one (X) (+ X 1)) — exercise the Call path through
-        // the live interpreter's registered `+` primitive.
-        //   LoadConst(0)        ; push the `+` Value::Closure
-        //   LoadLocal(0)        ; push X
-        //   LoadConst(1)        ; push 1
-        //   Call(2)             ; (+ X 1)
-        //   Return
+        // (defun plus-one (X) (+ X 1)) using the registered `+` closure
+        // via Call (not the inlined Add opcode).
         let mut interp = fresh_interp();
         let plus_sym = interp.intern("+");
         let plus = interp
@@ -424,7 +562,7 @@ mod tests {
             .get_fn(plus_sym)
             .cloned()
             .expect("+ should be registered by Interp::new()");
-        let bf = BytecodeFn {
+        let bf = Rc::new(BytecodeFn {
             name: Some(interp.intern("plus-one")),
             arity: 1,
             n_locals: 1,
@@ -437,20 +575,13 @@ mod tests {
             ],
             consts: vec![plus, Value::Int(1)],
             fn_consts: vec![],
-        };
+        });
         let result = exec(&mut interp, &bf, &[], &[Value::Int(41)]).expect("exec");
         assert!(matches!(result, Value::Int(42)));
     }
 
     #[test]
     fn make_closure_zero_upvals() {
-        // Outer creates an inner `(lambda X X)` (no upvals captured),
-        // calls it with 42, returns the result.
-        // Inner code:  LoadLocal(0), Return       (just returns its arg)
-        // Outer code:  MakeClosure{fn_idx=0, n_upvals=0}  -> stack: [closure]
-        //              LoadConst(0)              -> stack: [closure, 42]
-        //              Call(1)                   -> stack: [42]
-        //              Return
         let mut interp = fresh_interp();
         let inner = Rc::new(BytecodeFn {
             name: None,
@@ -460,7 +591,7 @@ mod tests {
             consts: vec![],
             fn_consts: vec![],
         });
-        let outer = BytecodeFn {
+        let outer = Rc::new(BytecodeFn {
             name: Some(interp.intern("outer")),
             arity: 0,
             n_locals: 0,
@@ -475,21 +606,14 @@ mod tests {
             ],
             consts: vec![Value::Int(42)],
             fn_consts: vec![inner],
-        };
+        });
         let result = exec(&mut interp, &outer, &[], &[]).expect("exec");
         assert!(matches!(result, Value::Int(42)));
     }
 
     #[test]
     fn make_closure_with_upval() {
-        // Outer captures Y=10 into an inner `(lambda X (+ Y X))`, calls
-        // it with X=5, returns 15. Exercises LoadUpval inside the inner
-        // body and MakeClosure popping captures off the outer stack.
         let mut interp = fresh_interp();
-        // Inner: LoadGlobal(0)  -- push `+`
-        //        LoadUpval(0)   -- push Y
-        //        LoadLocal(0)   -- push X
-        //        Call(2); Return
         let inner = Rc::new(BytecodeFn {
             name: Some(interp.intern("inner-add")),
             arity: 1,
@@ -504,11 +628,7 @@ mod tests {
             consts: vec![Value::Sym(interp.intern("+"))],
             fn_consts: vec![],
         });
-        // Outer: LoadConst(0)              -- push 10  (will become upval)
-        //        MakeClosure{0, 1}         -- pop 1 upval, push closure
-        //        LoadConst(1)              -- push 5   (call arg)
-        //        Call(1); Return
-        let outer = BytecodeFn {
+        let outer = Rc::new(BytecodeFn {
             name: Some(interp.intern("outer-add")),
             arity: 0,
             n_locals: 0,
@@ -524,7 +644,7 @@ mod tests {
             ],
             consts: vec![Value::Int(10), Value::Int(5)],
             fn_consts: vec![inner],
-        };
+        });
         let result = exec(&mut interp, &outer, &[], &[]).expect("exec");
         assert!(matches!(result, Value::Int(15)), "got {result:?}");
     }
@@ -532,14 +652,143 @@ mod tests {
     #[test]
     fn arity_mismatch_is_an_error() {
         let mut interp = fresh_interp();
-        let bf = BytecodeFn {
+        let bf = Rc::new(BytecodeFn {
             name: Some(interp.intern("id")),
             arity: 1,
             n_locals: 1,
             code: vec![Op::LoadLocal(0), Op::Return],
             consts: vec![],
             fn_consts: vec![],
-        };
+        });
         assert!(exec(&mut interp, &bf, &[], &[]).is_err());
+    }
+
+    #[test]
+    fn nested_bytecode_call_runs_in_one_exec() {
+        // (defun add1 (x) (+ x 1)) ; (defun caller (x) (add1 (add1 x)))
+        // caller's two calls to add1 must run as in-VM frames (Call to a
+        // bytecode callee), not via interp.apply recursion.
+        let mut interp = fresh_interp();
+        let add1_sym = interp.intern("add1");
+        let add1 = Rc::new(BytecodeFn {
+            name: Some(add1_sym),
+            arity: 1,
+            n_locals: 1,
+            code: vec![Op::LoadLocal(0), Op::LoadConst(0), Op::Add, Op::Return],
+            consts: vec![Value::Int(1)],
+            fn_consts: vec![],
+        });
+        interp.env.set_fn(
+            add1_sym,
+            Value::Closure(Rc::new(Closure {
+                name: Some(add1_sym),
+                arity: 1,
+                partial: Vec::new(),
+                kind: ClosureKind::Bytecode(Rc::clone(&add1), Vec::new()),
+            })),
+        );
+        // caller: LoadGlobal add1, (LoadGlobal add1, LoadLocal0, Call1), Call1
+        let caller = Rc::new(BytecodeFn {
+            name: Some(interp.intern("caller")),
+            arity: 1,
+            n_locals: 1,
+            code: vec![
+                Op::LoadGlobal(0),
+                Op::LoadGlobal(0),
+                Op::LoadLocal(0),
+                Op::Call(1),
+                Op::Call(1),
+                Op::Return,
+            ],
+            consts: vec![Value::Sym(add1_sym)],
+            fn_consts: vec![],
+        });
+        let r = exec(&mut interp, &caller, &[], &[Value::Int(40)]).expect("exec");
+        assert!(matches!(r, Value::Int(42)), "got {r:?}");
+    }
+
+    #[test]
+    fn tail_call_does_not_grow_frames() {
+        // (defun countdown (n) (if (= n 0) 99 (countdown2 (- n 1))))
+        // (defun countdown2 (n) (if (= n 0) 99 (countdown (- n 1))))
+        // Mutual cross-function tail recursion via Op::TailCall must run in
+        // constant frame space (no Rust-stack growth, no frames blowup).
+        let mut interp = fresh_interp();
+        let cd_sym = interp.intern("countdown");
+        let cd2_sym = interp.intern("countdown2");
+
+        // Each body: if (= n 0) 99 (OTHER (- n 1))  — OTHER in tail position.
+        let cd = Rc::new(BytecodeFn {
+            name: Some(cd_sym),
+            arity: 1,
+            n_locals: 1,
+            code: vec![
+                Op::LoadLocal(0),
+                Op::LoadConst(0), // 0
+                Op::Eq,
+                Op::JumpFalse(2),
+                Op::LoadConst(1), // 99
+                Op::Return,
+                Op::LoadGlobal(3), // countdown2
+                Op::LoadLocal(0),
+                Op::LoadConst(2), // 1
+                Op::Sub,
+                Op::TailCall(1),
+            ],
+            consts: vec![
+                Value::Int(0),
+                Value::Int(99),
+                Value::Int(1),
+                Value::Sym(cd2_sym),
+            ],
+            fn_consts: vec![],
+        });
+        let cd2 = Rc::new(BytecodeFn {
+            name: Some(cd2_sym),
+            arity: 1,
+            n_locals: 1,
+            code: vec![
+                Op::LoadLocal(0),
+                Op::LoadConst(0),
+                Op::Eq,
+                Op::JumpFalse(2),
+                Op::LoadConst(1),
+                Op::Return,
+                Op::LoadGlobal(3), // countdown
+                Op::LoadLocal(0),
+                Op::LoadConst(2),
+                Op::Sub,
+                Op::TailCall(1),
+            ],
+            consts: vec![
+                Value::Int(0),
+                Value::Int(99),
+                Value::Int(1),
+                Value::Sym(cd_sym),
+            ],
+            fn_consts: vec![],
+        });
+        interp.env.set_fn(
+            cd_sym,
+            Value::Closure(Rc::new(Closure {
+                name: Some(cd_sym),
+                arity: 1,
+                partial: Vec::new(),
+                kind: ClosureKind::Bytecode(Rc::clone(&cd), Vec::new()),
+            })),
+        );
+        interp.env.set_fn(
+            cd2_sym,
+            Value::Closure(Rc::new(Closure {
+                name: Some(cd2_sym),
+                arity: 1,
+                partial: Vec::new(),
+                kind: ClosureKind::Bytecode(Rc::clone(&cd2), Vec::new()),
+            })),
+        );
+        // 2,000,000 mutual tail calls — would overflow an 8MB Rust stack if
+        // each call recursed. Must complete in constant space.
+        let r = exec(&mut interp, &cd, &[], &[Value::Int(2_000_000)]).expect("exec");
+        assert!(matches!(r, Value::Int(99)), "got {r:?}");
     }
 }

@@ -54,27 +54,25 @@ pub fn apply_value(interp: &mut Interp, f: Value, args: &[Value]) -> ShenResult<
 /// back to the general `Interp::apply`, materialising the args only then.
 #[inline]
 fn call_or_apply(interp: &mut Interp, f: Value, args: &[Value]) -> ShenResult<Value> {
-    // Fast path: full-arity, no partial, dispatch directly on the kind.
-    // Avoids the `args.to_vec()` allocation that `Interp::apply` would do.
-    enum Fast {
-        Native(Rc<crate::value::NativeFn>),
-        Bytecode(Rc<crate::vm::bytecode::BytecodeFn>, Vec<Value>),
-    }
-    let fast = match &f {
-        Value::Closure(c) if c.partial.is_empty() && args.len() == c.arity => match &c.kind {
-            ClosureKind::Native(nf) => Some(Fast::Native(Rc::clone(nf))),
-            ClosureKind::Bytecode(bf, upvals) => {
-                Some(Fast::Bytecode(Rc::clone(bf), upvals.clone()))
+    // Fast path: full-arity, no partial — dispatch in-place on the borrowed
+    // closure. `f` is an owned local, disjoint from `interp`, so we can call
+    // through `&c.kind` while passing `&mut interp` with no clone: this is the
+    // single hottest path in the type-checker's continuation-passing proof
+    // search, and a per-call `Rc::clone`/`Vec::clone` here is pure refcount/
+    // alloc traffic that SBCL's native `funcall` does not pay. The slow path
+    // (partial, arity mismatch, tree-walked lambda) still materialises args.
+    if let Value::Closure(c) = &f {
+        if c.partial.is_empty() && args.len() == c.arity {
+            match &c.kind {
+                ClosureKind::Native(nf) => return nf(interp, args),
+                ClosureKind::Bytecode(bf, upvals) => {
+                    return crate::vm::exec::exec(interp, bf, upvals, args)
+                }
+                ClosureKind::Lambda(_) => {}
             }
-            ClosureKind::Lambda(_) => None,
-        },
-        _ => None,
-    };
-    match fast {
-        Some(Fast::Native(nf)) => nf(interp, args),
-        Some(Fast::Bytecode(bf, upvals)) => crate::vm::exec::exec(interp, &bf, &upvals, args),
-        None => interp.apply(f, args.to_vec()), // boundary: public apply still takes Vec
+        }
     }
+    interp.apply(f, args.to_vec()) // boundary: public apply still takes Vec
 }
 
 /// Match Shen's boolean semantics: `Bool(true)`, `Sym(true)` → true;

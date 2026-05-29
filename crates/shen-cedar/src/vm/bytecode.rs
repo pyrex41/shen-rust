@@ -19,7 +19,7 @@ use crate::vm::opcode::Op;
 /// - `fn_consts` is a sidecar pool of nested compiled functions,
 ///   referenced by `MakeClosure { fn_idx, .. }`. Separated from
 ///   `consts` so the `Value` type doesn't need a `BytecodeFn` variant.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BytecodeFn {
     pub name: Option<SymId>,
     pub arity: usize,

@@ -21,6 +21,7 @@
 //! `shen.shen->kl-h`.
 
 use std::rc::Rc;
+use std::time::Instant;
 
 use smallvec::SmallVec;
 
@@ -109,6 +110,22 @@ pub struct Interp {
     /// Populated for every name that goes through register_native / the
     /// AOT installers. Enables the fast path in rt::apply_direct.
     aot_direct: Vec<Option<DirectFn>>,
+    /// Remaining instruction-count budget for the current evaluation.
+    /// `None` = unbounded (the default). When `Some(0)`, the next
+    /// reduction step raises `ShenError::cancelled`. Exhaustion is
+    /// *sticky*: it stays at `Some(0)` until `clear_budget`, so a budget
+    /// abort that is (incorrectly) caught by an error handler re-fires on
+    /// the handler's very first step rather than letting it make progress.
+    /// Set via [`Interp::set_budget`]; checked in both reduction engines
+    /// (`eval_in`'s trampoline and `vm::exec`).
+    remaining_steps: Option<u64>,
+    /// Optional wall-clock deadline, checked every ~1024 steps so real
+    /// time is bounded even when a step is individually cheap. `None` =
+    /// no deadline. Set via [`Interp::set_deadline`].
+    deadline: Option<Instant>,
+    /// Free-running step counter used only to throttle the `deadline`
+    /// check (so we don't call `Instant::now()` on every reduction).
+    deadline_counter: u64,
 }
 
 /// Pre-interned ids for KL special forms and a few hot symbols.
@@ -187,6 +204,9 @@ impl Interp {
             env: Env::new(),
             well_known,
             aot_direct: Vec::new(),
+            remaining_steps: None,
+            deadline: None,
+            deadline_counter: 0,
         };
         crate::primitives::register_all(&mut interp);
         interp
@@ -205,6 +225,63 @@ impl Interp {
 
     pub fn resolve(&self, id: SymId) -> &str {
         self.symbols.resolve(id)
+    }
+
+    /// Cap the current evaluation at `steps` reduction steps. When the
+    /// budget is exhausted, the active `eval`/`eval_in`/`vm::exec` returns
+    /// `Err(ShenError::cancelled(..))` — distinguishable from an ordinary
+    /// Shen error via [`ShenError::is_cancelled`], and propagated past
+    /// `trap-error` (see `step_trap_error`). Budgeting is per-`Interp` and
+    /// shared across nested `eval_in` re-entries, so it bounds the whole
+    /// evaluation, not just one frame. Call [`Interp::clear_budget`] (or
+    /// `set_budget` again) before the next evaluation.
+    pub fn set_budget(&mut self, steps: u64) {
+        self.remaining_steps = Some(steps);
+    }
+
+    /// Bound the current evaluation by wall-clock time. The deadline is
+    /// checked roughly every 1024 reduction steps. Combine with
+    /// [`Interp::set_budget`] for both a step and a time ceiling.
+    pub fn set_deadline(&mut self, deadline: Instant) {
+        self.deadline = Some(deadline);
+    }
+
+    /// Remove any step budget and wall-clock deadline, restoring unbounded
+    /// evaluation. Call between ticks so a prior cancellation doesn't leak
+    /// into the next evaluation.
+    pub fn clear_budget(&mut self) {
+        self.remaining_steps = None;
+        self.deadline = None;
+        self.deadline_counter = 0;
+    }
+
+    /// Charge one reduction step against the budget/deadline. Returns
+    /// `Err(cancelled)` once exhausted. Hot path: when no budget is set
+    /// (the default), this is two never-taken branches and is free.
+    ///
+    /// Exhaustion is sticky — `remaining_steps` parks at `Some(0)` so a
+    /// cancellation that slips past a `trap-error` handler re-fires on the
+    /// handler's first step instead of letting evaluation resume.
+    #[inline]
+    pub(crate) fn charge_step(&mut self) -> ShenResult<()> {
+        if let Some(n) = self.remaining_steps {
+            if n == 0 {
+                return Err(ShenError::cancelled("cancelled: step budget exhausted"));
+            }
+            self.remaining_steps = Some(n - 1);
+        }
+        if let Some(deadline) = self.deadline {
+            self.deadline_counter = self.deadline_counter.wrapping_add(1);
+            if self.deadline_counter & 1023 == 0 && Instant::now() >= deadline {
+                // Park the step budget at zero so the cancellation stays
+                // sticky even if the caller set no step budget.
+                self.remaining_steps = Some(0);
+                return Err(ShenError::cancelled(
+                    "cancelled: wall-clock deadline exceeded",
+                ));
+            }
+        }
+        Ok(())
     }
 
     pub fn register_native<F>(&mut self, name: &str, arity: usize, f: F)
@@ -282,6 +359,7 @@ impl Interp {
                     if items.is_empty() {
                         return Ok(Value::Nil);
                     }
+                    self.charge_step()?;
                     let items = items.clone();
                     match self.step(&items, &mut scope, &mut current)? {
                         StepOutcome::Done(v) => return Ok(v),
@@ -437,7 +515,8 @@ impl Interp {
         if total_args.len() == closure.arity {
             match &closure.kind {
                 ClosureKind::Native(f) => {
-                    let f = Rc::clone(f);
+                    // Call in-place: `f` borrows `closure.kind`, disjoint from
+                    // `self`; no `Rc::clone` needed on this hot path.
                     let v = f(self, &total_args)?;
                     return Ok(StepOutcome::Done(v));
                 }
@@ -448,9 +527,7 @@ impl Interp {
                     return Ok(StepOutcome::Continue);
                 }
                 ClosureKind::Bytecode(bf, upvals) => {
-                    let bf = Rc::clone(bf);
-                    let upvals = upvals.clone();
-                    let v = crate::vm::exec::exec(self, &bf, &upvals, &total_args)?;
+                    let v = crate::vm::exec::exec(self, bf, upvals, &total_args)?;
                     return Ok(StepOutcome::Done(v));
                 }
             }
@@ -476,11 +553,7 @@ impl Interp {
                 }
                 self.eval_in(&body.body, &locals)
             }
-            ClosureKind::Bytecode(bf, upvals) => {
-                let bf = Rc::clone(bf);
-                let upvals = upvals.clone();
-                crate::vm::exec::exec(self, &bf, &upvals, &args)
-            }
+            ClosureKind::Bytecode(bf, upvals) => crate::vm::exec::exec(self, bf, upvals, &args),
         }
     }
 
@@ -664,18 +737,7 @@ impl Interp {
                 )))
             }
         };
-        let body = LambdaBody {
-            captured: capture_used(&args[1], locals),
-            params: vec![param],
-            body: args[1].clone(),
-        };
-        let closure = Closure {
-            name: None,
-            arity: 1,
-            partial: Vec::new(),
-            kind: ClosureKind::Lambda(Rc::new(body)),
-        };
-        Ok(Value::Closure(Rc::new(closure)))
+        Ok(self.build_closure(&[param], 1, &args[1], locals))
     }
 
     fn build_freeze(&mut self, args: &[KlExpr], locals: &[(SymId, Value)]) -> ShenResult<Value> {
@@ -684,18 +746,78 @@ impl Interp {
         }
         // (freeze E) ~ (lambda V E) with V fresh and ignored. We model
         // freeze as a 0-arity lambda so `(thaw f)` calls it with no args.
-        let body = LambdaBody {
-            captured: capture_used(&args[0], locals),
-            params: Vec::new(),
-            body: args[0].clone(),
-        };
-        let closure = Closure {
+        Ok(self.build_closure(&[], 0, &args[0], locals))
+    }
+
+    /// Build a runtime closure for `(lambda ...)` / `(freeze ...)`. When the
+    /// VM is enabled, compile the body to bytecode with its free variables
+    /// captured as upvals (`ClosureKind::Bytecode`); on any compiler error
+    /// (e.g. a body using `trap-error` / `thaw`, which the VM doesn't lower)
+    /// fall back to the tree-walked `ClosureKind::Lambda`. With the VM off,
+    /// always build the tree-walked closure.
+    ///
+    /// The kernel type-checker's hot continuations are exactly these
+    /// `freeze`/`lambda` closures, so this is where compiling them to
+    /// bytecode pays off (A3 in `design/perf-handoff.md`).
+    fn build_closure(
+        &mut self,
+        params: &[SymId],
+        arity: usize,
+        body: &KlExpr,
+        locals: &[(SymId, Value)],
+    ) -> Value {
+        let kind = self
+            .try_compile_closure(params, body, locals)
+            .unwrap_or_else(|| {
+                ClosureKind::Lambda(Rc::new(LambdaBody {
+                    captured: capture_used(body, locals),
+                    params: params.to_vec(),
+                    body: body.clone(),
+                }))
+            });
+        Value::Closure(Rc::new(Closure {
             name: None,
-            arity: 0,
+            arity,
             partial: Vec::new(),
-            kind: ClosureKind::Lambda(Rc::new(body)),
-        };
-        Ok(Value::Closure(Rc::new(closure)))
+            kind,
+        }))
+    }
+
+    /// Attempt to compile a runtime closure body to bytecode. Returns
+    /// `None` when the VM is disabled or the body can't be lowered (caller
+    /// falls back to the tree-walker).
+    fn try_compile_closure(
+        &mut self,
+        params: &[SymId],
+        body: &KlExpr,
+        locals: &[(SymId, Value)],
+    ) -> Option<ClosureKind> {
+        if !vm_enabled() {
+            return None;
+        }
+        // Determine the captured free variables: symbols referenced in the
+        // body that are bound in the surrounding `locals`, in first-mention
+        // order. Each captures its innermost binding (matching the
+        // tree-walker's reverse-scan `lookup_local`). Names that aren't in
+        // `locals` are left to resolve as globals / self-evaluating symbols,
+        // exactly as in the tree-walker.
+        let mut used: SmallVec<[SymId; 16]> = SmallVec::new();
+        collect_used_syms(body, &mut used);
+        let mut upval_names: Vec<SymId> = Vec::new();
+        let mut captured: Vec<Value> = Vec::new();
+        for s in used {
+            if params.contains(&s) {
+                continue;
+            }
+            if let Some(v) = self.lookup_local(s, locals) {
+                upval_names.push(s);
+                captured.push(v);
+            }
+        }
+        match crate::vm::compile_closure(self, params, &upval_names, body) {
+            Ok(bf) => Some(ClosureKind::Bytecode(Rc::new(bf), captured)),
+            Err(_) => None,
+        }
     }
 
     fn step_thaw(&mut self, args: &[KlExpr], scope: &Scope) -> ShenResult<StepOutcome> {
@@ -713,6 +835,10 @@ impl Interp {
         }
         match self.eval_in(&args[0], scope.slice()) {
             Ok(v) => Ok(StepOutcome::Done(v)),
+            // A budget/deadline cancellation is not a Shen-level error: it
+            // must propagate past `trap-error` so the scheduler sees the
+            // abort rather than having a user handler swallow it.
+            Err(e) if e.is_cancelled() => Err(e),
             Err(e) => {
                 let handler = self.eval_in(&args[1], scope.slice())?;
                 let err_val = Value::Error(e.message.clone());
@@ -754,16 +880,31 @@ impl Interp {
                 )))
             }
         };
-        let body = LambdaBody {
-            captured: Vec::new(),
-            params: params.clone(),
-            body: args[2].clone(),
+        // With `SHEN_CEDAR_VM=1`, try to compile the body into bytecode,
+        // falling back to the tree-walked `ClosureKind::Lambda` on any
+        // compiler error (e.g. unsupported special forms like
+        // `trap-error` or `thaw`). Off by default — see `vm_enabled`.
+        let kind = if vm_enabled() {
+            match crate::vm::compile_fn(self, Some(name), &params, &args[2]) {
+                Ok(bf) => ClosureKind::Bytecode(Rc::new(bf), Vec::new()),
+                Err(_) => ClosureKind::Lambda(Rc::new(LambdaBody {
+                    captured: Vec::new(),
+                    params: params.clone(),
+                    body: args[2].clone(),
+                })),
+            }
+        } else {
+            ClosureKind::Lambda(Rc::new(LambdaBody {
+                captured: Vec::new(),
+                params: params.clone(),
+                body: args[2].clone(),
+            }))
         };
         let closure = Closure {
             name: Some(name),
             arity: params.len(),
             partial: Vec::new(),
-            kind: ClosureKind::Lambda(Rc::new(body)),
+            kind,
         };
         self.env.set_fn(name, Value::Closure(Rc::new(closure)));
         Ok(Value::Sym(name))
@@ -780,6 +921,24 @@ impl Interp {
             KlExpr::App(items) => Value::list(items.iter().map(|e| self.quote_value(e))),
         }
     }
+}
+
+/// Whether runtime `defun` evaluation should compile the body into
+/// bytecode (the VM path) instead of building a tree-walked
+/// `ClosureKind::Lambda`.
+///
+/// **Opt-in** (`SHEN_CEDAR_VM=1`), not the default. As of the B5
+/// milestone the bytecode VM is correct (134/0 kernel-tests + full unit
+/// coverage) but measured *slower* than the tree-walker on this
+/// workload: kernel-tests is dominated by AOT-to-AOT dispatch, so
+/// user-`defun` calls (the only place the VM runs) are a minority, and
+/// the VM's per-call `Vec<Value>` locals+stack allocation costs more
+/// than the tree-walker's allocation-free `Scope` COW. The VM should
+/// become a win once Phase 3 (tagged `Value(u64)`, 24→8 bytes) makes
+/// those per-call frames ~3× cheaper. Until then it stays behind the
+/// flag so the default keeps the tree-walker's performance.
+fn vm_enabled() -> bool {
+    std::env::var_os("SHEN_CEDAR_VM").is_some()
 }
 
 fn clone_kind(kind: &ClosureKind) -> ClosureKind {

@@ -11,3 +11,10 @@ description = "Shen language port hosted in Rust with first-class AWS Cedar inte
 cedar-policy = { workspace = true }
 smallvec = "1"
 
+# Stage-D measurement instrument (paired A/B, no external deps).
+# `harness = false` → it's an ordinary `main`, run with
+# `cargo run --release --bench vm_vs_treewalk`.
+[[bench]]
+name = "vm_vs_treewalk"
+harness = false
+

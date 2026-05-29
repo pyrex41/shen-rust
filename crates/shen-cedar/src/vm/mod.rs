@@ -30,6 +30,6 @@ pub mod exec;
 pub mod opcode;
 
 pub use bytecode::BytecodeFn;
-pub use compiler::compile_fn;
+pub use compiler::{compile_closure, compile_fn};
 pub use exec::exec;
 pub use opcode::Op;

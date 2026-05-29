@@ -66,6 +66,68 @@ pub fn compile_fn(
     })
 }
 
+/// Compile a runtime `lambda` / `freeze` body into a `BytecodeFn` whose
+/// free variables are supplied as **upvals** at closure-creation time.
+///
+/// `compile_fn` is for top-level `defun`s, which have no captured lexical
+/// environment. A `lambda`/`freeze` evaluated inside a function body, by
+/// contrast, closes over the surrounding runtime locals. This entry point
+/// pre-registers those captured names as the top frame's upvals (in the
+/// given order), so a reference to a captured variable lowers to
+/// `LoadUpval(i)` and the matching captured *value* is read from the
+/// closure's `upvals[i]` at run time (see `vm::exec`'s `LoadUpval`).
+///
+/// `params` occupy `locals[0..params.len())`; `upval_names[i]` is upval
+/// slot `i`. A bare symbol that is neither a param nor a captured name
+/// resolves to `None` (self-evaluating in value position, `LoadGlobal` in
+/// head position) — identical to `compile_fn` and the tree-walker.
+///
+/// `current_fn` is left `None`, so no self-tail-call lowering fires: an
+/// anonymous closure has no global name to recurse to.
+pub fn compile_closure(
+    interp: &Interp,
+    params: &[SymId],
+    upval_names: &[SymId],
+    body: &KlExpr,
+) -> Result<BytecodeFn, String> {
+    let mut c = Compiler::new(interp);
+    {
+        let f = c.top_mut();
+        f.current_fn = None;
+        f.current_arity = params.len();
+        if upval_names.len() > u16::MAX as usize {
+            return Err(format!(
+                "vm: more than u16::MAX captured upvals ({})",
+                upval_names.len()
+            ));
+        }
+        // Pre-register captured names as this frame's upvals. The `source`
+        // is never used for the top frame (its upval *values* are supplied
+        // directly as the closure's captured vec, not materialised via a
+        // `MakeClosure` in an enclosing frame), so any placeholder is fine.
+        for &name in upval_names {
+            f.upvals.push(UpvalInfo {
+                name,
+                source: VarKind::Local(0),
+            });
+        }
+    }
+    for &p in params {
+        c.add_local(p);
+    }
+    c.compile_expr(body, true)?;
+    c.emit(Op::Return);
+    let frame = c.frames.pop().expect("vm: missing top frame");
+    Ok(BytecodeFn {
+        name: None,
+        arity: params.len(),
+        n_locals: frame.n_locals as usize,
+        code: frame.code,
+        consts: frame.consts,
+        fn_consts: frame.fn_consts,
+    })
+}
+
 struct Compiler<'a> {
     interp: &'a Interp,
     /// Stack of per-function frames. The innermost (nested-most)
@@ -318,8 +380,14 @@ impl<'a> Compiler<'a> {
                 }
                 return self.compile_expr(&items[1], tail);
             }
-            if sym == wk.k_defun || sym == wk.k_trap_error || sym == wk.k_thaw || sym == wk.k_quote
-            {
+            if sym == wk.k_quote {
+                if items.len() != 2 {
+                    return Err("quote: expected 1 arg".into());
+                }
+                let v = quote_to_value(&items[1]);
+                return self.emit_const(v);
+            }
+            if sym == wk.k_defun || sym == wk.k_trap_error || sym == wk.k_thaw {
                 return Err(format!(
                     "vm: special form `{}` not yet supported",
                     self.interp.resolve(sym)
@@ -380,12 +448,21 @@ impl<'a> Compiler<'a> {
             }
         }
 
-        // Plain call: head value, then args, then `Call(n)`.
+        // Plain call: head value, then args, then `Call(n)` — or
+        // `TailCall(n)` in tail position so deep/mutual tail recursion runs
+        // in constant frame space (the VM's `TailCall` replaces the current
+        // frame in place; see `vm::exec`). Self-recursion already lowered to
+        // `SelfTailCall` above; this covers cross-function tail calls and
+        // tail calls through a computed/closure head.
         self.compile_head(&items[0])?;
         for arg in &items[1..] {
             self.compile_expr(arg, false)?;
         }
-        self.emit(Op::Call(n_args as u8));
+        if tail {
+            self.emit(Op::TailCall(n_args as u8));
+        } else {
+            self.emit(Op::Call(n_args as u8));
+        }
         Ok(())
     }
 
@@ -621,6 +698,22 @@ impl<'a> Compiler<'a> {
     }
 }
 
+/// Recursively materialize a `KlExpr` as a Shen `Value` at compile
+/// time — the value `(quote X)` evaluates to. Mirrors the tree-walker's
+/// `Interp::quote_value` (`interp/eval.rs`). Used by the VM compiler
+/// to lower `(quote ...)` to a single `LoadConst` of the built value.
+fn quote_to_value(expr: &KlExpr) -> Value {
+    match expr {
+        KlExpr::Nil => Value::Nil,
+        KlExpr::Bool(b) => Value::Bool(*b),
+        KlExpr::Int(n) => Value::Int(*n),
+        KlExpr::Float(x) => Value::Float(*x),
+        KlExpr::Str(s) => Value::Str(s.clone()),
+        KlExpr::Sym(s) => Value::Sym(*s),
+        KlExpr::App(items) => Value::list(items.iter().map(quote_to_value)),
+    }
+}
+
 /// klcompile's `inlinable()` table, ported to bytecode opcodes. Returns
 /// the opcode that implements `(name args...)` directly, bypassing the
 /// generic dispatch, when (name, arity) matches a known primitive.
@@ -686,7 +779,7 @@ mod tests {
     fn double_via_vm() {
         let mut interp = Interp::new();
         let (name, params, body) = parse_defun("(defun double (X) (* X 2))", &mut interp);
-        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         let result = exec(&mut interp, &bf, &[], &[Value::Int(21)]).expect("exec");
         assert!(matches!(result, Value::Int(42)));
     }
@@ -696,7 +789,7 @@ mod tests {
         let mut interp = Interp::new();
         let (name, params, body) =
             parse_defun("(defun branch (X) (if (= X 0) 100 200))", &mut interp);
-        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         let zero = exec(&mut interp, &bf, &[], &[Value::Int(0)]).expect("exec");
         assert!(matches!(zero, Value::Int(100)));
         let other = exec(&mut interp, &bf, &[], &[Value::Int(7)]).expect("exec");
@@ -710,8 +803,8 @@ mod tests {
             "(defun fact (N) (if (= N 0) 1 (* N (fact (- N 1)))))",
             &mut interp,
         );
-        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
-        let bf_rc = Rc::new(bf);
+        let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
+        let bf_rc = bf;
         let bf_for_native = bf_rc.clone();
         interp.register_native("fact", 1, move |interp, args| {
             exec(interp, &bf_for_native, &[], args)
@@ -743,7 +836,7 @@ mod tests {
             "(defun shadow (X) (let X (* X 10) (let X (+ X 1) X)))",
             &mut interp,
         );
-        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         let result = exec(&mut interp, &bf, &[], &[Value::Int(5)]).expect("exec");
         // (let X (* 5 10) (let X (+ 50 1) X)) → 51
         assert!(matches!(result, Value::Int(51)), "got {result:?}");
@@ -754,7 +847,7 @@ mod tests {
         let mut interp = Interp::new();
         let (name, params, body) =
             parse_defun("(defun seq (X) (do (+ X 1) (+ X 2) (+ X 3)))", &mut interp);
-        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         let result = exec(&mut interp, &bf, &[], &[Value::Int(10)]).expect("exec");
         assert!(matches!(result, Value::Int(13)));
     }
@@ -764,7 +857,7 @@ mod tests {
         let mut interp = Interp::new();
         let (name, params, body) =
             parse_defun("(defun aab (X) (and (= X 1) (= X 1)))", &mut interp);
-        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         let truthy = exec(&mut interp, &bf, &[], &[Value::Int(1)]).expect("exec");
         assert!(matches!(truthy, Value::Bool(true)));
         let falsy = exec(&mut interp, &bf, &[], &[Value::Int(0)]).expect("exec");
@@ -775,7 +868,7 @@ mod tests {
     fn or_short_circuits() {
         let mut interp = Interp::new();
         let (name, params, body) = parse_defun("(defun oab (X) (or (= X 1) (= X 2)))", &mut interp);
-        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         let one = exec(&mut interp, &bf, &[], &[Value::Int(1)]).expect("exec");
         assert!(matches!(one, Value::Bool(true)));
         let two = exec(&mut interp, &bf, &[], &[Value::Int(2)]).expect("exec");
@@ -791,7 +884,7 @@ mod tests {
             "(defun grade (S) (cond ((>= S 90) 4) ((>= S 80) 3) ((>= S 70) 2) (true 0)))",
             &mut interp,
         );
-        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         let a = exec(&mut interp, &bf, &[], &[Value::Int(95)]).expect("exec");
         assert!(matches!(a, Value::Int(4)));
         let b = exec(&mut interp, &bf, &[], &[Value::Int(85)]).expect("exec");
@@ -809,7 +902,7 @@ mod tests {
         let mut interp = Interp::new();
         let (name, params, body) =
             parse_defun("(defun make-adder (Y) (lambda X (+ X Y)))", &mut interp);
-        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         // Run it directly: make-adder(10) → closure that adds 10 to its arg.
         let closure = exec(&mut interp, &bf, &[], &[Value::Int(10)]).expect("exec");
         // Apply the closure to 5.
@@ -826,7 +919,7 @@ mod tests {
         let mut interp = Interp::new();
         let (name, params, body) =
             parse_defun("(defun pick-y (Y Z) (lambda X (+ X Y)))", &mut interp);
-        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         // First sanity: the result still computes correctly.
         let closure =
             exec(&mut interp, &bf, &[], &[Value::Int(100), Value::Int(999)]).expect("exec");
@@ -859,7 +952,7 @@ mod tests {
         // Apply the freeze with zero args to get X*X.
         let mut interp = Interp::new();
         let (name, params, body) = parse_defun("(defun delayed (X) (freeze (* X X)))", &mut interp);
-        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         let frozen = exec(&mut interp, &bf, &[], &[Value::Int(7)]).expect("exec");
         let result = interp.apply(frozen, vec![]).expect("apply");
         assert!(matches!(result, Value::Int(49)), "got {result:?}");
@@ -879,7 +972,7 @@ mod tests {
             "(defun loop-sum (N ACC) (if (= N 0) ACC (loop-sum (- N 1) (+ ACC 1))))",
             &mut interp,
         );
-        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         // Sanity: emitted code should contain a SelfTailCall, not a
         // plain Call, for the recursive site.
         assert!(
@@ -901,7 +994,7 @@ mod tests {
         let mut interp = Interp::new();
         let (name, params, body) =
             parse_defun("(defun outer (X) (lambda Y (outer X)))", &mut interp);
-        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         // Outer frame should not have a SelfTailCall — just MakeClosure
         // and Return.
         assert!(
@@ -930,7 +1023,7 @@ mod tests {
         // `(+ X 1)` should emit `Op::Add`, not `LoadGlobal + Call`.
         let mut interp = Interp::new();
         let (name, params, body) = parse_defun("(defun inc (X) (+ X 1))", &mut interp);
-        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         assert!(
             bf.code.iter().any(|op| matches!(op, Op::Add)),
             "expected Op::Add in compiled (+ X 1), got code: {:?}",
@@ -950,7 +1043,7 @@ mod tests {
         let mut interp = Interp::new();
         // (defun first (X Y) (hd (cons X Y))) — exercises Cons + Hd.
         let (name, params, body) = parse_defun("(defun first (X Y) (hd (cons X Y)))", &mut interp);
-        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         assert!(bf.code.iter().any(|op| matches!(op, Op::Cons)));
         assert!(bf.code.iter().any(|op| matches!(op, Op::Hd)));
         let result = exec(&mut interp, &bf, &[], &[Value::Int(7), Value::Int(8)]).expect("exec");
@@ -962,7 +1055,7 @@ mod tests {
         let mut interp = Interp::new();
         // (defun foo? (X) (cons? X)) — should emit Op::IsCons.
         let (name, params, body) = parse_defun("(defun foo? (X) (cons? X))", &mut interp);
-        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         assert!(bf.code.iter().any(|op| matches!(op, Op::IsCons)));
         let yes = exec(
             &mut interp,
@@ -980,7 +1073,7 @@ mod tests {
     fn comparisons_inline_and_error_on_bad_args() {
         let mut interp = Interp::new();
         let (name, params, body) = parse_defun("(defun cmp (A B) (< A B))", &mut interp);
-        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         assert!(bf.code.iter().any(|op| matches!(op, Op::Lt)));
         let r = exec(&mut interp, &bf, &[], &[Value::Int(3), Value::Int(5)]).expect("exec");
         assert!(matches!(r, Value::Bool(true)));
@@ -998,7 +1091,7 @@ mod tests {
         // regular Call path.
         let mut interp = Interp::new();
         let (name, params, body) = parse_defun("(defun apply-plus (+ X Y) (+ X Y))", &mut interp);
-        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         assert!(
             !bf.code.iter().any(|op| matches!(op, Op::Add)),
             "+ shadowed by local; should not emit Op::Add: {:?}",
@@ -1028,7 +1121,7 @@ mod tests {
             "(defun fact (N) (if (= N 0) 1 (* N (fact (- N 1)))))",
             &mut interp,
         );
-        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         assert!(bf.code.iter().any(|op| matches!(op, Op::Eq)));
         assert!(bf.code.iter().any(|op| matches!(op, Op::Mul)));
         assert!(bf.code.iter().any(|op| matches!(op, Op::Sub)));
@@ -1045,7 +1138,7 @@ mod tests {
             bf.code
         );
         // Also verify it still computes correctly.
-        let bf_rc = Rc::new(bf);
+        let bf_rc = bf;
         let bf_for_native = bf_rc.clone();
         interp.register_native("fact", 1, move |interp, args| {
             exec(interp, &bf_for_native, &[], args)
@@ -1066,7 +1159,7 @@ mod tests {
             "(defun mk (A) (lambda B (lambda C (+ A (+ B C)))))",
             &mut interp,
         );
-        let bf = compile_fn(&interp, Some(name), &params, &body).expect("compile");
+        let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         let lvl1 = exec(&mut interp, &bf, &[], &[Value::Int(1)]).expect("exec");
         let lvl2 = interp.apply(lvl1, vec![Value::Int(2)]).expect("apply lvl1");
         let result = interp.apply(lvl2, vec![Value::Int(3)]).expect("apply lvl2");
