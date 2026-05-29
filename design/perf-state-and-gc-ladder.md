@@ -197,9 +197,38 @@ code** — is the single biggest design risk and must be prototyped early.
 ### 6e. Kill-criteria
 - A focused GC spike (§7) must show the **Copy-ref list win survives a real
   collector** (i.e. reproduce ~2× of the Option-B ceiling on a list workload
-  *with* actual collection happening), or stop.
+  *with* actual collection happening), or stop. **→ PASSED, see §6f.**
 - Full integration must keep **134/0 kernel-tests**, the differential oracle
   green, Miri clean on all new `unsafe`, and not regress the AOT path.
+
+### 6f. GC spike RESULT (2026-05-29) — kill-criterion PASSED
+`benches/gc_spike.rs`: non-moving **mark-sweep** with a `Copy` tagged-word
+handle + an explicit **shadow stack** for precise roots, on a list workload with
+a realistic live working set (`WINDOW=4` retained lists) that forces real
+collection. 12 paired min-of-N runs, correctness-asserted (sums verified — a
+corrupt list aborts as a *void* measurement, not a fast one):
+
+| Rep | min | vs boxed |
+|---|---|---|
+| boxed (24B `Rc` enum, reclaim) | 138.7 ms | 1.00× |
+| **GC (mark-sweep, `Copy` word)** | **41.6 ms** | **3.34×** |
+| leaked ceiling (Option B, no reclaim) | 40.9 ms | 3.39× |
+
+- **The GC retains ~98% of the no-reclaim ceiling** — i.e. mark/sweep tracing is
+  nearly free relative to the refcount traffic it removes. Collection ran 498×
+  with peak-live ≈ 9000 nodes (heap **bounded** near `cap`, so reclamation is
+  real, not a disguised leak — asserted).
+- Confirms the §4 thesis at the collector level: **refcount-per-clone *is* the
+  heap cost**; making heap refs `Copy` (which needs a GC) recovers ~all of it.
+- **First cut was a false 7.26×**: `cap = 4*n` aligned every collection to a
+  list boundary (empty live set → trivial mark), and there was no correctness
+  assert. Fixed by the live `WINDOW` + un-aligned `cap` + sum assertions +
+  `peak_live ≥ n` guard. (Logged because "too good" is the tell, per §8.)
+- **Caveat (still open)**: this models collector + representation throughput and
+  a shadow-stack roots story. It does **not** model GC roots in **AOT-compiled
+  Rust frames** (§6d) — the largest remaining design risk, to be prototyped
+  before the full conversion. The spike justifies *proceeding*, not *skipping
+  §6d*.
 
 ---
 
@@ -212,8 +241,10 @@ code** — is the single biggest design risk and must be prototyped early.
    option-1 mark-sweep with `Copy` handles + a shadow stack, on a list workload
    that actually triggers collection. **Gate**: reproduce a material fraction of
    the 2.48× Option-B ceiling *with real collection*, and demonstrate a workable
-   precise-roots story including the AOT-frame interaction (§6d). If it can't,
-   fall back to §-fallback.
+   precise-roots story including the AOT-frame interaction (§6d).
+   **→ DONE 2026-05-29: throughput half PASSED (3.34×, 98% of ceiling — §6f).
+   The AOT-frame precise-roots half (§6d) is NOT yet prototyped — do that next,
+   it is the remaining gate before step 3.**
 3. **Full `Value` → word-sized + GC** conversion (the big one): AOT regen, all
    gates, Miri.
 4. **Re-measure** vs SBCL. Then word-size-dependent VM tuning.

@@ -24,3 +24,9 @@ harness = false
 name = "value_repr_spike"
 harness = false
 
+# Spike: does the Copy-heap-ref list win survive a REAL mark-sweep collector?
+# The gating experiment for the GC ladder. `cargo bench --bench gc_spike`.
+[[bench]]
+name = "gc_spike"
+harness = false
+
