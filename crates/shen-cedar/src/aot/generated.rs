@@ -38,21 +38,21 @@ pub fn aot_fact(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
         {
             let __t2 = {
                 let __t0 = v_N.clone();
-                let __t1 = Value::Int(0i64);
+                let __t1 = Value::int(0i64);
                 rt::eq(&__t0, &__t1)
             };
             if match rt::is_truthy(interp, &__t2) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
-                break Ok(Value::Int(1i64));
+                break Ok(Value::int(1i64));
             } else {
                 break Ok({
                     let __t3 = v_N.clone();
                     let __t7 = {
                         let __t6 = {
                             let __t4 = v_N.clone();
-                            let __t5 = Value::Int(1i64);
+                            let __t5 = Value::int(1i64);
                             rt::sub(&__t4, &__t5)?
                         };
                         rt::apply_direct(interp, "fact", &[__t6])?
@@ -86,7 +86,7 @@ pub fn aot_loop_x2d_sum(interp: &mut Interp, args: &[Value]) -> ShenResult<Value
         {
             let __t10 = {
                 let __t8 = v_N.clone();
-                let __t9 = Value::Int(0i64);
+                let __t9 = Value::int(0i64);
                 rt::eq(&__t8, &__t9)
             };
             if match rt::is_truthy(interp, &__t10) {
@@ -98,12 +98,12 @@ pub fn aot_loop_x2d_sum(interp: &mut Interp, args: &[Value]) -> ShenResult<Value
                 {
                     let __t13 = {
                         let __t11 = v_N.clone();
-                        let __t12 = Value::Int(1i64);
+                        let __t12 = Value::int(1i64);
                         rt::sub(&__t11, &__t12)?
                     };
                     let __t16 = {
                         let __t14 = v_ACC.clone();
-                        let __t15 = Value::Int(1i64);
+                        let __t15 = Value::int(1i64);
                         rt::add(&__t14, &__t15)?
                     };
                     v_N = __t13;
@@ -134,7 +134,7 @@ pub fn aot_double(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     loop {
         break Ok({
             let __t17 = v_X.clone();
-            let __t18 = Value::Int(2i64);
+            let __t18 = Value::int(2i64);
             rt::mul(&__t17, &__t18)?
         });
     }

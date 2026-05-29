@@ -392,7 +392,7 @@ impl<'a> Codegen<'a> {
 
     fn compile_tail_do(&mut self, args: &[KlExpr], scope: &mut Scope) -> Result<String, String> {
         if args.is_empty() {
-            return Ok("break Ok(Value::Nil);".into());
+            return Ok("break Ok(Value::nil());".into());
         }
         let mut block = String::from("{ ");
         for (i, a) in args.iter().enumerate() {
@@ -416,7 +416,7 @@ impl<'a> Codegen<'a> {
         let av = self.fresh();
         let tail_b = self.compile_tail(&args[1], scope)?;
         Ok(format!(
-            "{{ let {av} = {a}; if !match rt::is_truthy(interp, &{av}) {{ Ok(b) => b, Err(e) => break Err(e), }} {{ break Ok(Value::Bool(false)); }} else {{ {tail_b} }} }}"
+            "{{ let {av} = {a}; if !match rt::is_truthy(interp, &{av}) {{ Ok(b) => b, Err(e) => break Err(e), }} {{ break Ok(Value::bool(false)); }} else {{ {tail_b} }} }}"
         ))
     }
 
@@ -428,7 +428,7 @@ impl<'a> Codegen<'a> {
         let av = self.fresh();
         let tail_b = self.compile_tail(&args[1], scope)?;
         Ok(format!(
-            "{{ let {av} = {a}; if match rt::is_truthy(interp, &{av}) {{ Ok(b) => b, Err(e) => break Err(e), }} {{ break Ok(Value::Bool(true)); }} else {{ {tail_b} }} }}"
+            "{{ let {av} = {a}; if match rt::is_truthy(interp, &{av}) {{ Ok(b) => b, Err(e) => break Err(e), }} {{ break Ok(Value::bool(true)); }} else {{ {tail_b} }} }}"
         ))
     }
 
@@ -438,11 +438,11 @@ impl<'a> Codegen<'a> {
     /// returning `ShenResult<Value>`.
     fn compile_expr(&mut self, expr: &KlExpr, scope: &mut Scope) -> Result<String, String> {
         Ok(match expr {
-            KlExpr::Nil => "Value::Nil".into(),
-            KlExpr::Bool(b) => format!("Value::Bool({b})"),
-            KlExpr::Int(n) => format!("Value::Int({n}i64)"),
-            KlExpr::Float(x) => format!("Value::Float({x}f64)"),
-            KlExpr::Str(s) => format!("Value::Str(Rc::from({:?}))", s.as_ref()),
+            KlExpr::Nil => "Value::nil()".into(),
+            KlExpr::Bool(b) => format!("Value::bool({b})"),
+            KlExpr::Int(n) => format!("Value::int({n}i64)"),
+            KlExpr::Float(x) => format!("Value::float({x}f64)"),
+            KlExpr::Str(s) => format!("Value::str({:?})", s.as_ref()),
             KlExpr::Sym(id) => {
                 let name = self.interner.resolve(*id);
                 if scope.has(name) {
@@ -450,7 +450,7 @@ impl<'a> Codegen<'a> {
                 } else {
                     // Free symbol — innocent symbol semantics: evaluate
                     // to the symbol value itself.
-                    format!("Value::Sym(interp.intern({:?}))", name)
+                    format!("Value::sym(interp.intern({:?}))", name)
                 }
             }
             KlExpr::App(items) => self.compile_app(items, scope)?,
@@ -459,7 +459,7 @@ impl<'a> Codegen<'a> {
 
     fn compile_app(&mut self, items: &[KlExpr], scope: &mut Scope) -> Result<String, String> {
         if items.is_empty() {
-            return Ok("Value::Nil".into());
+            return Ok("Value::nil()".into());
         }
         let head_name = match &items[0] {
             KlExpr::Sym(s) => Some(self.interner.resolve(*s).to_string()),
@@ -612,7 +612,7 @@ impl<'a> Codegen<'a> {
 
     fn compile_do(&mut self, args: &[KlExpr], scope: &mut Scope) -> Result<String, String> {
         if args.is_empty() {
-            return Ok("Value::Nil".into());
+            return Ok("Value::nil()".into());
         }
         let mut block = String::from("{ ");
         for (i, a) in args.iter().enumerate() {
@@ -636,7 +636,7 @@ impl<'a> Codegen<'a> {
         let av = self.fresh();
         let bv = self.fresh();
         Ok(format!(
-            "{{ let {av} = {a}; if !rt::is_truthy(interp, &{av})? {{ Value::Bool(false) }} else {{ let {bv} = {b}; Value::Bool(rt::is_truthy(interp, &{bv})?) }} }}"
+            "{{ let {av} = {a}; if !rt::is_truthy(interp, &{av})? {{ Value::bool(false) }} else {{ let {bv} = {b}; Value::bool(rt::is_truthy(interp, &{bv})?) }} }}"
         ))
     }
 
@@ -649,7 +649,7 @@ impl<'a> Codegen<'a> {
         let av = self.fresh();
         let bv = self.fresh();
         Ok(format!(
-            "{{ let {av} = {a}; if rt::is_truthy(interp, &{av})? {{ Value::Bool(true) }} else {{ let {bv} = {b}; Value::Bool(rt::is_truthy(interp, &{bv})?) }} }}"
+            "{{ let {av} = {a}; if rt::is_truthy(interp, &{av})? {{ Value::bool(true) }} else {{ let {bv} = {b}; Value::bool(rt::is_truthy(interp, &{bv})?) }} }}"
         ))
     }
 
@@ -766,20 +766,20 @@ impl<'a> Codegen<'a> {
         // closure, not the enclosing AOT function. Catch the error here
         // and dispatch to the handler.
         Ok(format!(
-            "match (|| -> ShenResult<Value> {{ Ok({body}) }})() {{ Ok(v) => v, Err(e) => {{ let __h = {handler}; let __err = Value::Error(e.message.clone()); rt::apply_value(interp, __h, &[__err])? }} }}"
+            "match (|| -> ShenResult<Value> {{ Ok({body}) }})() {{ Ok(v) => v, Err(e) => {{ let __h = {handler}; let __err = Value::err(e.message.clone()); rt::apply_value(interp, __h, &[__err])? }} }}"
         ))
     }
 
     fn compile_quote(&mut self, expr: &KlExpr) -> Result<String, String> {
         // Quote produces a literal Value. No lookups, no calls.
         Ok(match expr {
-            KlExpr::Nil => "Value::Nil".into(),
-            KlExpr::Bool(b) => format!("Value::Bool({b})"),
-            KlExpr::Int(n) => format!("Value::Int({n}i64)"),
-            KlExpr::Float(x) => format!("Value::Float({x}f64)"),
-            KlExpr::Str(s) => format!("Value::Str(Rc::from({:?}))", s.as_ref()),
+            KlExpr::Nil => "Value::nil()".into(),
+            KlExpr::Bool(b) => format!("Value::bool({b})"),
+            KlExpr::Int(n) => format!("Value::int({n}i64)"),
+            KlExpr::Float(x) => format!("Value::float({x}f64)"),
+            KlExpr::Str(s) => format!("Value::str({:?})", s.as_ref()),
             KlExpr::Sym(id) => format!(
-                "Value::Sym(interp.intern({:?}))",
+                "Value::sym(interp.intern({:?}))",
                 self.interner.resolve(*id)
             ),
             KlExpr::App(items) => {

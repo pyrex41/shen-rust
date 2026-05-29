@@ -204,10 +204,10 @@ fn set_port_metadata(interp: &mut Interp) {
     ];
     for (name, value) in pairs {
         let sym = interp.intern(name);
-        interp.env.set_global(sym, Value::Str(Rc::from(*value)));
+        interp.env.set_global(sym, Value::str(Rc::from(*value)));
     }
     let tc_sym = interp.intern("*tc*");
-    interp.env.set_global(tc_sym, Value::Bool(false));
+    interp.env.set_global(tc_sym, Value::bool(false));
 }
 
 fn os_name() -> &'static str {
@@ -236,7 +236,7 @@ fn set_home_directory(interp: &mut Interp) -> ShenResult<()> {
         home.push('/');
     }
     let sym = interp.intern("*home-directory*");
-    interp.env.set_global(sym, Value::Str(Rc::from(home)));
+    interp.env.set_global(sym, Value::str(Rc::from(home)));
     Ok(())
 }
 
@@ -295,9 +295,9 @@ fn register_all_metadata(interp: &mut Interp) -> ShenResult<()> {
         };
         // (put NAME 'arity ARITY *pv*)
         let args = vec![
-            Value::Sym(name_sym),
-            Value::Sym(arity_sym),
-            Value::Int(*arity as i64),
+            Value::sym(name_sym),
+            Value::sym(arity_sym),
+            Value::int(*arity as i64),
             pv.clone(),
         ];
         interp
@@ -306,8 +306,8 @@ fn register_all_metadata(interp: &mut Interp) -> ShenResult<()> {
         if *arity > 0 {
             // (put NAME 'shen.lambda-form CLOSURE *pv*)
             let args = vec![
-                Value::Sym(name_sym),
-                Value::Sym(lambda_form_sym),
+                Value::sym(name_sym),
+                Value::sym(lambda_form_sym),
                 closure,
                 pv.clone(),
             ];

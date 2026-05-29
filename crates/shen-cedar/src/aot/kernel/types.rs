@@ -140,11 +140,11 @@ pub fn aot_declare(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                 rt::apply_value(interp, __t13, &[__t14])?
                             };
                             let __t21 = {
-                                let __t16 = Value::Bool(true);
+                                let __t16 = Value::bool(true);
                                 let __t20 = {
-                                    let __t17 = Value::Int(0i64);
+                                    let __t17 = Value::int(0i64);
                                     let __t19 = {
-                                        let __t18 = Value::Int(0i64);
+                                        let __t18 = Value::int(0i64);
                                         rt::apply_direct(interp, "vector", &[__t18])?
                                     };
                                     rt::apply_direct(interp, "@v", &[__t17, __t19])?
@@ -153,14 +153,14 @@ pub fn aot_declare(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                             };
                             rt::apply_value(interp, __t15, &[__t21])?
                         };
-                        let __t23 = Value::Int(0i64);
+                        let __t23 = Value::int(0i64);
                         rt::apply_value(interp, __t22, &[__t23])?
                     };
                     let __t25 = {
                         rt::make_aot_closure(
                             "<freeze>",
                             0,
-                            move |interp, _args| Ok(Value::Bool(true)),
+                            move |interp, _args| Ok(Value::bool(true)),
                             interp,
                         )
                     };
@@ -176,12 +176,12 @@ pub fn aot_declare(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                     };
                     {
                         let v_W5892 = {
-                            let __t28 = Value::Sym(interp.intern("shen.*sigf*"));
+                            let __t28 = Value::sym(interp.intern("shen.*sigf*"));
                             let __t33 = {
                                 let __t29 = v_V5883.clone();
                                 let __t30 = v_W5891.clone();
                                 let __t32 = {
-                                    let __t31 = Value::Sym(interp.intern("shen.*sigf*"));
+                                    let __t31 = Value::sym(interp.intern("shen.*sigf*"));
                                     rt::apply_direct(interp, "value", &[__t31])?
                                 };
                                 rt::apply_direct(interp, "shen.assoc->", &[__t29, __t30, __t32])?
@@ -244,7 +244,7 @@ pub fn aot_shen_x2e_variancy(interp: &mut Interp, args: &[Value]) -> ShenResult<
                             {
                                 let __t38 = v_V5893.clone();
                                 let __t39 = v_W5899.clone();
-                                let __t40 = Value::Nil;
+                                let __t40 = Value::nil();
                                 let __t41 = v_V5895.clone();
                                 let __t42 = v_V5896.clone();
                                 let __t43 = v_V5897.clone();
@@ -292,7 +292,7 @@ pub fn aot_shen_x2e_variancy(interp: &mut Interp, args: &[Value]) -> ShenResult<
                     });
                 }
             } else {
-                break Ok(Value::Bool(false));
+                break Ok(Value::bool(false));
             }
         }
     }
@@ -330,7 +330,7 @@ pub fn aot_shen_x2e_variants_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRe
         {
             let v_W5907 = {
                 let __t53 = v_V5905.clone();
-                let __t54 = Value::Int(1i64);
+                let __t54 = Value::int(1i64);
                 rt::add(&__t53, &__t54)?
             };
             {
@@ -379,7 +379,7 @@ pub fn aot_shen_x2e_variants_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRe
                                 {
                                     let __t70 = {
                                         let __t62 = v_W5909.clone();
-                                        let __t63 = Value::Sym(interp.intern("symbol"));
+                                        let __t63 = Value::sym(interp.intern("symbol"));
                                         rt::eq(&__t62, &__t63)
                                     };
                                     if rt::is_truthy(interp, &__t70)? {
@@ -393,7 +393,7 @@ pub fn aot_shen_x2e_variants_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRe
                                             if rt::is_truthy(interp, &__t69)? {
                                                 {
                                                     let __t65 = v_W5909.clone();
-                                                    let __t66 = Value::Sym(interp.intern("symbol"));
+                                                    let __t66 = Value::sym(interp.intern("symbol"));
                                                     let __t67 = v_V5903.clone();
                                                     let __t68 = v_W5910.clone();
                                                     rt::apply_direct(
@@ -403,7 +403,7 @@ pub fn aot_shen_x2e_variants_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRe
                                                     )?
                                                 }
                                             } else {
-                                                Value::Bool(false)
+                                                Value::bool(false)
                                             }
                                         }
                                     }
@@ -411,13 +411,13 @@ pub fn aot_shen_x2e_variants_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRe
                             }
                         }
                     } else {
-                        Value::Bool(false)
+                        Value::bool(false)
                     }
                 };
                 {
                     let __t74 = {
                         let __t72 = v_W5908.clone();
-                        let __t73 = Value::Bool(false);
+                        let __t73 = Value::bool(false);
                         rt::eq(&__t72, &__t73)
                     };
                     if match rt::is_truthy(interp, &__t74) {
@@ -448,13 +448,13 @@ pub fn aot_shen_x2e_variants_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRe
                                         }
                                     }
                                 } else {
-                                    Value::Bool(false)
+                                    Value::bool(false)
                                 }
                             };
                             {
                                 let __t85 = {
                                     let __t83 = v_W5911.clone();
-                                    let __t84 = Value::Bool(false);
+                                    let __t84 = Value::bool(false);
                                     rt::eq(&__t83, &__t84)
                                 };
                                 if match rt::is_truthy(interp, &__t85) {
@@ -495,7 +495,7 @@ pub fn aot_shen_x2e_variants_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRe
                                                                 let __t89 = v_W5913.clone();
                                                                 let __t99 = {
                                                                     let __t97 = {
-                                                                        let __t90 = Value::Str(Rc::from("warning: changing the type of "));
+                                                                        let __t90 = Value::str("warning: changing the type of ");
                                                                         let __t96 = {
                                                                             let __t93 = {
                                                                                 let __t91 =
@@ -508,8 +508,8 @@ pub fn aot_shen_x2e_variants_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRe
                                                                                     &[__t91, __t92],
                                                                                 )?
                                                                             };
-                                                                            let __t94 = Value::Str(Rc::from(" may create errors\n"));
-                                                                            let __t95 = Value::Sym(
+                                                                            let __t94 = Value::str(" may create errors\n");
+                                                                            let __t95 = Value::sym(
                                                                                 interp.intern(
                                                                                     "shen.a",
                                                                                 ),
@@ -564,13 +564,13 @@ pub fn aot_shen_x2e_variants_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRe
                                                     }
                                                 }
                                             } else {
-                                                Value::Bool(false)
+                                                Value::bool(false)
                                             }
                                         };
                                         {
                                             let __t108 = {
                                                 let __t106 = v_W5912.clone();
-                                                let __t107 = Value::Bool(false);
+                                                let __t107 = Value::bool(false);
                                                 rt::eq(&__t106, &__t107)
                                             };
                                             if match rt::is_truthy(interp, &__t108) {
@@ -627,27 +627,27 @@ pub fn aot_shen_x2e_prolog_x2d_abstraction(
     loop {
         {
             let v_W5915 = {
-                let __t111 = Value::Sym(interp.intern("B"));
+                let __t111 = Value::sym(interp.intern("B"));
                 rt::apply_direct(interp, "gensym", &[__t111])?
             };
             {
                 let v_W5916 = {
-                    let __t112 = Value::Sym(interp.intern("L"));
+                    let __t112 = Value::sym(interp.intern("L"));
                     rt::apply_direct(interp, "gensym", &[__t112])?
                 };
                 {
                     let v_W5917 = {
-                        let __t113 = Value::Sym(interp.intern("Key"));
+                        let __t113 = Value::sym(interp.intern("Key"));
                         rt::apply_direct(interp, "gensym", &[__t113])?
                     };
                     {
                         let v_W5918 = {
-                            let __t114 = Value::Sym(interp.intern("C"));
+                            let __t114 = Value::sym(interp.intern("C"));
                             rt::apply_direct(interp, "gensym", &[__t114])?
                         };
                         {
                             let v_W5919 = {
-                                let __t115 = Value::Sym(interp.intern("V"));
+                                let __t115 = Value::sym(interp.intern("V"));
                                 rt::apply_direct(interp, "gensym", &[__t115])?
                             };
                             {
@@ -656,23 +656,23 @@ pub fn aot_shen_x2e_prolog_x2d_abstraction(
                                     rt::apply_direct(interp, "shen.extract-vars", &[__t116])?
                                 };
                                 break Ok({
-                                    let __t117 = Value::Sym(interp.intern("lambda"));
+                                    let __t117 = Value::sym(interp.intern("lambda"));
                                     let __t164 = {
                                         let __t118 = v_W5919.clone();
                                         let __t163 = {
                                             let __t161 = {
-                                                let __t119 = Value::Sym(interp.intern("lambda"));
+                                                let __t119 = Value::sym(interp.intern("lambda"));
                                                 let __t160 = {
                                                     let __t120 = v_W5915.clone();
                                                     let __t159 = {
                                                         let __t157 = {
                                                             let __t121 =
-                                                                Value::Sym(interp.intern("lambda"));
+                                                                Value::sym(interp.intern("lambda"));
                                                             let __t156 = {
                                                                 let __t122 = v_W5916.clone();
                                                                 let __t155 = {
                                                                     let __t153 = {
-                                                                        let __t123 = Value::Sym(
+                                                                        let __t123 = Value::sym(
                                                                             interp.intern("lambda"),
                                                                         );
                                                                         let __t152 = {
@@ -680,17 +680,17 @@ pub fn aot_shen_x2e_prolog_x2d_abstraction(
                                                                                 v_W5917.clone();
                                                                             let __t151 = {
                                                                                 let __t149 = {
-                                                                                    let __t125 = Value::Sym(interp.intern("lambda"));
+                                                                                    let __t125 = Value::sym(interp.intern("lambda"));
                                                                                     let __t148 = {
                                                                                         let __t126 = v_W5918.clone();
                                                                                         let __t147 = {
                                                                                             let __t145 = {
                                                                                                 let __t127 = v_W5920.clone();
-                                                                                                let __t143 = { let __t128 = Value::Sym(interp.intern("is!")); let __t142 = { let __t129 = v_W5919.clone(); let __t141 = { let __t131 = { let __t130 = v_V5914.clone(); rt::apply_direct(interp, "shen.rcons_form", &[__t130])? }; let __t140 = { let __t132 = v_W5915.clone(); let __t139 = { let __t133 = v_W5916.clone(); let __t138 = { let __t134 = v_W5917.clone(); let __t137 = { let __t135 = v_W5918.clone(); let __t136 = Value::Nil; rt::cons(&__t135, &__t136) }; rt::cons(&__t134, &__t137) }; rt::cons(&__t133, &__t138) }; rt::cons(&__t132, &__t139) }; rt::cons(&__t131, &__t140) }; rt::cons(&__t129, &__t141) }; rt::cons(&__t128, &__t142) };
+                                                                                                let __t143 = { let __t128 = Value::sym(interp.intern("is!")); let __t142 = { let __t129 = v_W5919.clone(); let __t141 = { let __t131 = { let __t130 = v_V5914.clone(); rt::apply_direct(interp, "shen.rcons_form", &[__t130])? }; let __t140 = { let __t132 = v_W5915.clone(); let __t139 = { let __t133 = v_W5916.clone(); let __t138 = { let __t134 = v_W5917.clone(); let __t137 = { let __t135 = v_W5918.clone(); let __t136 = Value::nil(); rt::cons(&__t135, &__t136) }; rt::cons(&__t134, &__t137) }; rt::cons(&__t133, &__t138) }; rt::cons(&__t132, &__t139) }; rt::cons(&__t131, &__t140) }; rt::cons(&__t129, &__t141) }; rt::cons(&__t128, &__t142) };
                                                                                                 let __t144 = v_W5915.clone();
                                                                                                 rt::apply_direct(interp, "shen.stpart", &[__t127, __t143, __t144])?
                                                                                             };
-                                                                                            let __t146 = Value::Nil;
+                                                                                            let __t146 = Value::nil();
                                                                                             rt::cons(&__t145, &__t146)
                                                                                         };
                                                                                         rt::cons(
@@ -704,7 +704,7 @@ pub fn aot_shen_x2e_prolog_x2d_abstraction(
                                                                                     )
                                                                                 };
                                                                                 let __t150 =
-                                                                                    Value::Nil;
+                                                                                    Value::nil();
                                                                                 rt::cons(
                                                                                     &__t149,
                                                                                     &__t150,
@@ -716,21 +716,21 @@ pub fn aot_shen_x2e_prolog_x2d_abstraction(
                                                                         };
                                                                         rt::cons(&__t123, &__t152)
                                                                     };
-                                                                    let __t154 = Value::Nil;
+                                                                    let __t154 = Value::nil();
                                                                     rt::cons(&__t153, &__t154)
                                                                 };
                                                                 rt::cons(&__t122, &__t155)
                                                             };
                                                             rt::cons(&__t121, &__t156)
                                                         };
-                                                        let __t158 = Value::Nil;
+                                                        let __t158 = Value::nil();
                                                         rt::cons(&__t157, &__t158)
                                                     };
                                                     rt::cons(&__t120, &__t159)
                                                 };
                                                 rt::cons(&__t119, &__t160)
                                             };
-                                            let __t162 = Value::Nil;
+                                            let __t162 = Value::nil();
                                             rt::cons(&__t161, &__t162)
                                         };
                                         rt::cons(&__t118, &__t163)
@@ -772,7 +772,7 @@ pub fn aot_shen_x2e_demod(interp: &mut Interp, args: &[Value]) -> ShenResult<Val
     loop {
         {
             let v_W5922 = {
-                let __t165 = Value::Sym(interp.intern("shen.*demodulation-function*"));
+                let __t165 = Value::sym(interp.intern("shen.*demodulation-function*"));
                 rt::apply_direct(interp, "value", &[__t165])?
             };
             break Ok({

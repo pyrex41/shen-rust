@@ -320,11 +320,11 @@ impl<'a> Compiler<'a> {
 
     fn compile_expr(&mut self, expr: &KlExpr, tail: bool) -> Result<(), String> {
         match expr {
-            KlExpr::Nil => self.emit_const(Value::Nil)?,
-            KlExpr::Bool(b) => self.emit_const(Value::Bool(*b))?,
-            KlExpr::Int(n) => self.emit_const(Value::Int(*n))?,
-            KlExpr::Float(x) => self.emit_const(Value::Float(*x))?,
-            KlExpr::Str(s) => self.emit_const(Value::Str(s.clone()))?,
+            KlExpr::Nil => self.emit_const(Value::nil())?,
+            KlExpr::Bool(b) => self.emit_const(Value::bool(*b))?,
+            KlExpr::Int(n) => self.emit_const(Value::int(*n))?,
+            KlExpr::Float(x) => self.emit_const(Value::float(*x))?,
+            KlExpr::Str(s) => self.emit_const(Value::str(s.clone()))?,
             KlExpr::Sym(s) => {
                 let idx = self.current_frame_idx();
                 match self.resolve_var(idx, *s) {
@@ -334,7 +334,7 @@ impl<'a> Compiler<'a> {
                         // Self-evaluating symbol (innocent-symbol
                         // semantics matches the tree-walker's
                         // `eval_symbol`).
-                        self.emit_const(Value::Sym(*s))?;
+                        self.emit_const(Value::sym(*s))?;
                     }
                 }
             }
@@ -345,7 +345,7 @@ impl<'a> Compiler<'a> {
 
     fn compile_app(&mut self, items: &[KlExpr], tail: bool) -> Result<(), String> {
         if items.is_empty() {
-            return self.emit_const(Value::Nil);
+            return self.emit_const(Value::nil());
         }
         if let KlExpr::Sym(head_sym) = &items[0] {
             let wk = &self.interp.well_known;
@@ -479,7 +479,7 @@ impl<'a> Compiler<'a> {
                     return Ok(());
                 }
                 None => {
-                    let const_idx = self.add_const(Value::Sym(*s))?;
+                    let const_idx = self.add_const(Value::sym(*s))?;
                     self.emit(Op::LoadGlobal(const_idx));
                     return Ok(());
                 }
@@ -558,7 +558,7 @@ impl<'a> Compiler<'a> {
         self.compile_expr(&args[1], tail)?;
         let end_jump = self.emit_jump(Op::Jump);
         self.patch_jump(else_jump)?;
-        self.emit_const(Value::Bool(false))?;
+        self.emit_const(Value::bool(false))?;
         self.patch_jump(end_jump)?;
         Ok(())
     }
@@ -569,7 +569,7 @@ impl<'a> Compiler<'a> {
         }
         self.compile_expr(&args[0], false)?;
         let eval_b = self.emit_jump(Op::JumpFalse);
-        self.emit_const(Value::Bool(true))?;
+        self.emit_const(Value::bool(true))?;
         let end_jump = self.emit_jump(Op::Jump);
         self.patch_jump(eval_b)?;
         // Second arg's value is the value of the `or` on the false
@@ -581,7 +581,7 @@ impl<'a> Compiler<'a> {
 
     fn compile_do(&mut self, args: &[KlExpr], tail: bool) -> Result<(), String> {
         if args.is_empty() {
-            return self.emit_const(Value::Nil);
+            return self.emit_const(Value::nil());
         }
         let last = args.len() - 1;
         for (i, e) in args.iter().enumerate() {
@@ -614,7 +614,7 @@ impl<'a> Compiler<'a> {
         // so the fall-through is unreachable in practice; emit a
         // defensive `Nil` to keep the stack invariant for synthetic
         // inputs.
-        self.emit_const(Value::Nil)?;
+        self.emit_const(Value::nil())?;
         for j in end_jumps {
             self.patch_jump(j)?;
         }
@@ -704,12 +704,12 @@ impl<'a> Compiler<'a> {
 /// to lower `(quote ...)` to a single `LoadConst` of the built value.
 fn quote_to_value(expr: &KlExpr) -> Value {
     match expr {
-        KlExpr::Nil => Value::Nil,
-        KlExpr::Bool(b) => Value::Bool(*b),
-        KlExpr::Int(n) => Value::Int(*n),
-        KlExpr::Float(x) => Value::Float(*x),
-        KlExpr::Str(s) => Value::Str(s.clone()),
-        KlExpr::Sym(s) => Value::Sym(*s),
+        KlExpr::Nil => Value::nil(),
+        KlExpr::Bool(b) => Value::bool(*b),
+        KlExpr::Int(n) => Value::int(*n),
+        KlExpr::Float(x) => Value::float(*x),
+        KlExpr::Str(s) => Value::str(s.clone()),
+        KlExpr::Sym(s) => Value::sym(*s),
         KlExpr::App(items) => Value::list(items.iter().map(quote_to_value)),
     }
 }
@@ -780,7 +780,7 @@ mod tests {
         let mut interp = Interp::new();
         let (name, params, body) = parse_defun("(defun double (X) (* X 2))", &mut interp);
         let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
-        let result = exec(&mut interp, &bf, &[], &[Value::Int(21)]).expect("exec");
+        let result = exec(&mut interp, &bf, &[], &[Value::int(21)]).expect("exec");
         assert!(matches!(result, Value::Int(42)));
     }
 
@@ -790,9 +790,9 @@ mod tests {
         let (name, params, body) =
             parse_defun("(defun branch (X) (if (= X 0) 100 200))", &mut interp);
         let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
-        let zero = exec(&mut interp, &bf, &[], &[Value::Int(0)]).expect("exec");
+        let zero = exec(&mut interp, &bf, &[], &[Value::int(0)]).expect("exec");
         assert!(matches!(zero, Value::Int(100)));
-        let other = exec(&mut interp, &bf, &[], &[Value::Int(7)]).expect("exec");
+        let other = exec(&mut interp, &bf, &[], &[Value::int(7)]).expect("exec");
         assert!(matches!(other, Value::Int(200)));
     }
 
@@ -809,7 +809,7 @@ mod tests {
         interp.register_native("fact", 1, move |interp, args| {
             exec(interp, &bf_for_native, &[], args)
         });
-        let result = exec(&mut interp, &bf_rc, &[], &[Value::Int(10)]).expect("exec");
+        let result = exec(&mut interp, &bf_rc, &[], &[Value::int(10)]).expect("exec");
         assert!(matches!(result, Value::Int(3628800)), "got {result:?}");
     }
 
@@ -825,7 +825,7 @@ mod tests {
         interp.register_native("loop-sum", 2, move |interp, args| {
             exec(interp, &bf_for_native, &[], args)
         });
-        let result = exec(&mut interp, &bf, &[], &[Value::Int(100), Value::Int(0)]).expect("exec");
+        let result = exec(&mut interp, &bf, &[], &[Value::int(100), Value::int(0)]).expect("exec");
         assert!(matches!(result, Value::Int(100)), "got {result:?}");
     }
 
@@ -837,7 +837,7 @@ mod tests {
             &mut interp,
         );
         let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
-        let result = exec(&mut interp, &bf, &[], &[Value::Int(5)]).expect("exec");
+        let result = exec(&mut interp, &bf, &[], &[Value::int(5)]).expect("exec");
         // (let X (* 5 10) (let X (+ 50 1) X)) → 51
         assert!(matches!(result, Value::Int(51)), "got {result:?}");
     }
@@ -848,7 +848,7 @@ mod tests {
         let (name, params, body) =
             parse_defun("(defun seq (X) (do (+ X 1) (+ X 2) (+ X 3)))", &mut interp);
         let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
-        let result = exec(&mut interp, &bf, &[], &[Value::Int(10)]).expect("exec");
+        let result = exec(&mut interp, &bf, &[], &[Value::int(10)]).expect("exec");
         assert!(matches!(result, Value::Int(13)));
     }
 
@@ -858,9 +858,9 @@ mod tests {
         let (name, params, body) =
             parse_defun("(defun aab (X) (and (= X 1) (= X 1)))", &mut interp);
         let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
-        let truthy = exec(&mut interp, &bf, &[], &[Value::Int(1)]).expect("exec");
+        let truthy = exec(&mut interp, &bf, &[], &[Value::int(1)]).expect("exec");
         assert!(matches!(truthy, Value::Bool(true)));
-        let falsy = exec(&mut interp, &bf, &[], &[Value::Int(0)]).expect("exec");
+        let falsy = exec(&mut interp, &bf, &[], &[Value::int(0)]).expect("exec");
         assert!(matches!(falsy, Value::Bool(false)));
     }
 
@@ -869,11 +869,11 @@ mod tests {
         let mut interp = Interp::new();
         let (name, params, body) = parse_defun("(defun oab (X) (or (= X 1) (= X 2)))", &mut interp);
         let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
-        let one = exec(&mut interp, &bf, &[], &[Value::Int(1)]).expect("exec");
+        let one = exec(&mut interp, &bf, &[], &[Value::int(1)]).expect("exec");
         assert!(matches!(one, Value::Bool(true)));
-        let two = exec(&mut interp, &bf, &[], &[Value::Int(2)]).expect("exec");
+        let two = exec(&mut interp, &bf, &[], &[Value::int(2)]).expect("exec");
         assert!(matches!(two, Value::Bool(true)));
-        let neither = exec(&mut interp, &bf, &[], &[Value::Int(3)]).expect("exec");
+        let neither = exec(&mut interp, &bf, &[], &[Value::int(3)]).expect("exec");
         assert!(matches!(neither, Value::Bool(false)));
     }
 
@@ -885,11 +885,11 @@ mod tests {
             &mut interp,
         );
         let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
-        let a = exec(&mut interp, &bf, &[], &[Value::Int(95)]).expect("exec");
+        let a = exec(&mut interp, &bf, &[], &[Value::int(95)]).expect("exec");
         assert!(matches!(a, Value::Int(4)));
-        let b = exec(&mut interp, &bf, &[], &[Value::Int(85)]).expect("exec");
+        let b = exec(&mut interp, &bf, &[], &[Value::int(85)]).expect("exec");
         assert!(matches!(b, Value::Int(3)));
-        let f = exec(&mut interp, &bf, &[], &[Value::Int(50)]).expect("exec");
+        let f = exec(&mut interp, &bf, &[], &[Value::int(50)]).expect("exec");
         assert!(matches!(f, Value::Int(0)));
     }
 
@@ -904,9 +904,9 @@ mod tests {
             parse_defun("(defun make-adder (Y) (lambda X (+ X Y)))", &mut interp);
         let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         // Run it directly: make-adder(10) → closure that adds 10 to its arg.
-        let closure = exec(&mut interp, &bf, &[], &[Value::Int(10)]).expect("exec");
+        let closure = exec(&mut interp, &bf, &[], &[Value::int(10)]).expect("exec");
         // Apply the closure to 5.
-        let result = interp.apply(closure, vec![Value::Int(5)]).expect("apply");
+        let result = interp.apply(closure, vec![Value::int(5)]).expect("apply");
         assert!(matches!(result, Value::Int(15)), "got {result:?}");
     }
 
@@ -922,9 +922,9 @@ mod tests {
         let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         // First sanity: the result still computes correctly.
         let closure =
-            exec(&mut interp, &bf, &[], &[Value::Int(100), Value::Int(999)]).expect("exec");
+            exec(&mut interp, &bf, &[], &[Value::int(100), Value::int(999)]).expect("exec");
         let result = interp
-            .apply(closure.clone(), vec![Value::Int(1)])
+            .apply(closure.clone(), vec![Value::int(1)])
             .expect("apply");
         assert!(matches!(result, Value::Int(101)), "got {result:?}");
         // Second: check the compiled closure has exactly one upval (Y),
@@ -953,7 +953,7 @@ mod tests {
         let mut interp = Interp::new();
         let (name, params, body) = parse_defun("(defun delayed (X) (freeze (* X X)))", &mut interp);
         let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
-        let frozen = exec(&mut interp, &bf, &[], &[Value::Int(7)]).expect("exec");
+        let frozen = exec(&mut interp, &bf, &[], &[Value::int(7)]).expect("exec");
         let result = interp.apply(frozen, vec![]).expect("apply");
         assert!(matches!(result, Value::Int(49)), "got {result:?}");
     }
@@ -981,7 +981,7 @@ mod tests {
             bf.code
         );
         let result =
-            exec(&mut interp, &bf, &[], &[Value::Int(100_000), Value::Int(0)]).expect("exec");
+            exec(&mut interp, &bf, &[], &[Value::int(100_000), Value::int(0)]).expect("exec");
         assert!(matches!(result, Value::Int(100_000)), "got {result:?}");
     }
 
@@ -1034,7 +1034,7 @@ mod tests {
             "(+ X 1) should not need LoadGlobal: {:?}",
             bf.code
         );
-        let result = exec(&mut interp, &bf, &[], &[Value::Int(41)]).expect("exec");
+        let result = exec(&mut interp, &bf, &[], &[Value::int(41)]).expect("exec");
         assert!(matches!(result, Value::Int(42)));
     }
 
@@ -1046,7 +1046,7 @@ mod tests {
         let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         assert!(bf.code.iter().any(|op| matches!(op, Op::Cons)));
         assert!(bf.code.iter().any(|op| matches!(op, Op::Hd)));
-        let result = exec(&mut interp, &bf, &[], &[Value::Int(7), Value::Int(8)]).expect("exec");
+        let result = exec(&mut interp, &bf, &[], &[Value::int(7), Value::int(8)]).expect("exec");
         assert!(matches!(result, Value::Int(7)));
     }
 
@@ -1061,11 +1061,11 @@ mod tests {
             &mut interp,
             &bf,
             &[],
-            &[Value::cons(Value::Int(1), Value::Nil)],
+            &[Value::cons(Value::int(1), Value::nil())],
         )
         .expect("exec");
         assert!(matches!(yes, Value::Bool(true)));
-        let no = exec(&mut interp, &bf, &[], &[Value::Int(5)]).expect("exec");
+        let no = exec(&mut interp, &bf, &[], &[Value::int(5)]).expect("exec");
         assert!(matches!(no, Value::Bool(false)));
     }
 
@@ -1075,12 +1075,12 @@ mod tests {
         let (name, params, body) = parse_defun("(defun cmp (A B) (< A B))", &mut interp);
         let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
         assert!(bf.code.iter().any(|op| matches!(op, Op::Lt)));
-        let r = exec(&mut interp, &bf, &[], &[Value::Int(3), Value::Int(5)]).expect("exec");
+        let r = exec(&mut interp, &bf, &[], &[Value::int(3), Value::int(5)]).expect("exec");
         assert!(matches!(r, Value::Bool(true)));
-        let r2 = exec(&mut interp, &bf, &[], &[Value::Int(9), Value::Int(5)]).expect("exec");
+        let r2 = exec(&mut interp, &bf, &[], &[Value::int(9), Value::int(5)]).expect("exec");
         assert!(matches!(r2, Value::Bool(false)));
         // Non-numeric should error.
-        let err = exec(&mut interp, &bf, &[], &[Value::Nil, Value::Int(5)]);
+        let err = exec(&mut interp, &bf, &[], &[Value::nil(), Value::int(5)]);
         assert!(err.is_err(), "expected < on Nil to error, got {err:?}");
     }
 
@@ -1104,7 +1104,7 @@ mod tests {
             &mut interp,
             &bf,
             &[],
-            &[plus, Value::Int(10), Value::Int(32)],
+            &[plus, Value::int(10), Value::int(32)],
         )
         .expect("exec");
         assert!(matches!(result, Value::Int(42)));
@@ -1143,7 +1143,7 @@ mod tests {
         interp.register_native("fact", 1, move |interp, args| {
             exec(interp, &bf_for_native, &[], args)
         });
-        let result = exec(&mut interp, &bf_rc, &[], &[Value::Int(10)]).expect("exec");
+        let result = exec(&mut interp, &bf_rc, &[], &[Value::int(10)]).expect("exec");
         assert!(matches!(result, Value::Int(3628800)));
     }
 
@@ -1160,9 +1160,9 @@ mod tests {
             &mut interp,
         );
         let bf = Rc::new(compile_fn(&interp, Some(name), &params, &body).expect("compile"));
-        let lvl1 = exec(&mut interp, &bf, &[], &[Value::Int(1)]).expect("exec");
-        let lvl2 = interp.apply(lvl1, vec![Value::Int(2)]).expect("apply lvl1");
-        let result = interp.apply(lvl2, vec![Value::Int(3)]).expect("apply lvl2");
+        let lvl1 = exec(&mut interp, &bf, &[], &[Value::int(1)]).expect("exec");
+        let lvl2 = interp.apply(lvl1, vec![Value::int(2)]).expect("apply lvl1");
+        let result = interp.apply(lvl2, vec![Value::int(3)]).expect("apply lvl2");
         assert!(matches!(result, Value::Int(6)), "got {result:?}");
     }
 }

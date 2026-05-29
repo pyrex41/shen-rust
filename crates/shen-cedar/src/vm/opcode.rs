@@ -36,7 +36,7 @@ pub enum Op {
     /// Unconditional PC-relative jump (signed delta applied after the
     /// post-increment from reading this opcode).
     Jump(i16),
-    /// Pop a value; if it is `Value::Bool(false)` or the symbol `false`,
+    /// Pop a value; if it is `Value::bool(false)` or the symbol `false`,
     /// jump by `delta`. Otherwise fall through. Non-boolean produces an
     /// error.
     JumpFalse(i16),

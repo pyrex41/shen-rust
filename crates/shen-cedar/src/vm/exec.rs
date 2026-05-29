@@ -55,7 +55,7 @@ struct Frame {
 }
 
 /// Execute a compiled function. `args` is placed in `locals[0..arity)` and
-/// the remaining locals are `Value::Nil`. `upvals` are the values captured
+/// the remaining locals are `Value::nil()`. `upvals` are the values captured
 /// at closure creation. Returns the value the function evaluates to.
 pub fn exec(
     interp: &mut Interp,
@@ -75,7 +75,7 @@ pub fn exec(
     // the locals slots are Nil. Operands push above `floor`.
     let mut stack: Stack = Vec::with_capacity(bf.n_locals + 8);
     stack.extend(args.iter().cloned());
-    stack.resize(bf.n_locals, Value::Nil);
+    stack.resize(bf.n_locals, Value::nil());
 
     let mut frames: Vec<Frame> = Vec::new();
     let mut cur_bf: Rc<BytecodeFn> = Rc::clone(bf);
@@ -201,7 +201,7 @@ pub fn exec(
                 let retval = if stack.len() > floor {
                     stack.pop().unwrap()
                 } else {
-                    Value::Nil
+                    Value::nil()
                 };
                 if ret_dst == usize::MAX {
                     return Ok(retval);
@@ -258,7 +258,7 @@ pub fn exec(
                                 pc = 0;
                                 ret_dst = new_ret;
                                 let nl = cur_bf.n_locals;
-                                stack.resize(base + nl, Value::Nil);
+                                stack.resize(base + nl, Value::nil());
                                 floor = base + nl;
                                 continue;
                             }
@@ -289,14 +289,14 @@ pub fn exec(
                             // then re-enter at pc=0. base and ret_dst are
                             // preserved → no frame growth (true TCO).
                             for i in 0..n {
-                                let v = std::mem::replace(&mut stack[l - n + i], Value::Nil);
+                                let v = std::mem::replace(&mut stack[l - n + i], Value::nil());
                                 stack[base + i] = v;
                             }
                             stack.truncate(base + n);
                             cur_bf = Rc::clone(new_bf);
                             cur_upvals = new_up.clone();
                             let nl = cur_bf.n_locals;
-                            stack.resize(base + nl, Value::Nil);
+                            stack.resize(base + nl, Value::nil());
                             floor = base + nl;
                             pc = 0;
                             continue;
@@ -336,7 +336,7 @@ pub fn exec(
                     return Err(ShenError::new("vm: SelfTailCall n > n_locals"));
                 }
                 for i in 0..n {
-                    let v = std::mem::replace(&mut stack[l - n + i], Value::Nil);
+                    let v = std::mem::replace(&mut stack[l - n + i], Value::nil());
                     stack[base + i] = v;
                 }
                 stack.truncate(floor);
@@ -477,7 +477,7 @@ mod tests {
             fn_consts: vec![],
         };
         let f = bytecode_closure(bf, Some(name));
-        let r = interp.apply(f, vec![Value::Int(7)]).expect("apply");
+        let r = interp.apply(f, vec![Value::int(7)]).expect("apply");
         assert!(matches!(r, Value::Int(7)));
     }
 
@@ -495,7 +495,7 @@ mod tests {
             fn_consts: vec![],
         };
         interp.env.set_fn(sym, bytecode_closure(bf, Some(sym)));
-        let r = crate::aot::runtime::apply_named(&mut interp, "id-vm", &[Value::Int(99)])
+        let r = crate::aot::runtime::apply_named(&mut interp, "id-vm", &[Value::int(99)])
             .expect("apply_named");
         assert!(matches!(r, Value::Int(99)));
     }
@@ -512,7 +512,7 @@ mod tests {
             consts: vec![],
             fn_consts: vec![],
         });
-        let result = exec(&mut interp, &bf, &[], &[Value::Int(42)]).expect("exec");
+        let result = exec(&mut interp, &bf, &[], &[Value::int(42)]).expect("exec");
         assert!(matches!(result, Value::Int(42)));
     }
 
@@ -524,7 +524,7 @@ mod tests {
             arity: 0,
             n_locals: 0,
             code: vec![Op::LoadConst(0), Op::Return],
-            consts: vec![Value::Int(42)],
+            consts: vec![Value::int(42)],
             fn_consts: vec![],
         });
         let result = exec(&mut interp, &bf, &[], &[]).expect("exec");
@@ -547,7 +547,7 @@ mod tests {
             consts: vec![],
             fn_consts: vec![],
         });
-        let result = exec(&mut interp, &bf, &[], &[Value::Int(7)]).expect("exec");
+        let result = exec(&mut interp, &bf, &[], &[Value::int(7)]).expect("exec");
         assert!(matches!(result, Value::Int(7)));
     }
 
@@ -573,10 +573,10 @@ mod tests {
                 Op::Call(2),
                 Op::Return,
             ],
-            consts: vec![plus, Value::Int(1)],
+            consts: vec![plus, Value::int(1)],
             fn_consts: vec![],
         });
-        let result = exec(&mut interp, &bf, &[], &[Value::Int(41)]).expect("exec");
+        let result = exec(&mut interp, &bf, &[], &[Value::int(41)]).expect("exec");
         assert!(matches!(result, Value::Int(42)));
     }
 
@@ -604,7 +604,7 @@ mod tests {
                 Op::Call(1),
                 Op::Return,
             ],
-            consts: vec![Value::Int(42)],
+            consts: vec![Value::int(42)],
             fn_consts: vec![inner],
         });
         let result = exec(&mut interp, &outer, &[], &[]).expect("exec");
@@ -625,7 +625,7 @@ mod tests {
                 Op::Call(2),
                 Op::Return,
             ],
-            consts: vec![Value::Sym(interp.intern("+"))],
+            consts: vec![Value::sym(interp.intern("+"))],
             fn_consts: vec![],
         });
         let outer = Rc::new(BytecodeFn {
@@ -642,7 +642,7 @@ mod tests {
                 Op::Call(1),
                 Op::Return,
             ],
-            consts: vec![Value::Int(10), Value::Int(5)],
+            consts: vec![Value::int(10), Value::int(5)],
             fn_consts: vec![inner],
         });
         let result = exec(&mut interp, &outer, &[], &[]).expect("exec");
@@ -675,7 +675,7 @@ mod tests {
             arity: 1,
             n_locals: 1,
             code: vec![Op::LoadLocal(0), Op::LoadConst(0), Op::Add, Op::Return],
-            consts: vec![Value::Int(1)],
+            consts: vec![Value::int(1)],
             fn_consts: vec![],
         });
         interp.env.set_fn(
@@ -700,10 +700,10 @@ mod tests {
                 Op::Call(1),
                 Op::Return,
             ],
-            consts: vec![Value::Sym(add1_sym)],
+            consts: vec![Value::sym(add1_sym)],
             fn_consts: vec![],
         });
-        let r = exec(&mut interp, &caller, &[], &[Value::Int(40)]).expect("exec");
+        let r = exec(&mut interp, &caller, &[], &[Value::int(40)]).expect("exec");
         assert!(matches!(r, Value::Int(42)), "got {r:?}");
     }
 
@@ -736,10 +736,10 @@ mod tests {
                 Op::TailCall(1),
             ],
             consts: vec![
-                Value::Int(0),
-                Value::Int(99),
-                Value::Int(1),
-                Value::Sym(cd2_sym),
+                Value::int(0),
+                Value::int(99),
+                Value::int(1),
+                Value::sym(cd2_sym),
             ],
             fn_consts: vec![],
         });
@@ -761,10 +761,10 @@ mod tests {
                 Op::TailCall(1),
             ],
             consts: vec![
-                Value::Int(0),
-                Value::Int(99),
-                Value::Int(1),
-                Value::Sym(cd_sym),
+                Value::int(0),
+                Value::int(99),
+                Value::int(1),
+                Value::sym(cd_sym),
             ],
             fn_consts: vec![],
         });
@@ -788,7 +788,7 @@ mod tests {
         );
         // 2,000,000 mutual tail calls — would overflow an 8MB Rust stack if
         // each call recursed. Must complete in constant space.
-        let r = exec(&mut interp, &cd, &[], &[Value::Int(2_000_000)]).expect("exec");
+        let r = exec(&mut interp, &cd, &[], &[Value::int(2_000_000)]).expect("exec");
         assert!(matches!(r, Value::Int(99)), "got {r:?}");
     }
 }

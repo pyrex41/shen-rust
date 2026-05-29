@@ -38,7 +38,7 @@ pub fn aot_shen_x2e_dict(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
         {
             let __t27 = {
                 let __t19 = v_V4138.clone();
-                let __t20 = Value::Int(1i64);
+                let __t20 = Value::int(1i64);
                 rt::lt(&__t19, &__t20)?
             };
             if match rt::is_truthy(interp, &__t27) {
@@ -47,11 +47,11 @@ pub fn aot_shen_x2e_dict(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
             } {
                 break Ok({
                     let __t26 = {
-                        let __t21 = Value::Str(Rc::from("invalid initial dict size: "));
+                        let __t21 = Value::str("invalid initial dict size: ");
                         let __t25 = {
                             let __t22 = v_V4138.clone();
-                            let __t23 = Value::Str(Rc::from(""));
-                            let __t24 = Value::Sym(interp.intern("shen.s"));
+                            let __t23 = Value::str("");
+                            let __t24 = Value::sym(interp.intern("shen.s"));
                             rt::apply_direct(interp, "shen.app", &[__t22, __t23, __t24])?
                         };
                         rt::apply_direct(interp, "cn", &[__t21, __t25])?
@@ -60,7 +60,7 @@ pub fn aot_shen_x2e_dict(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
                 });
             } else {
                 {
-                    let __t18 = Value::Bool(true);
+                    let __t18 = Value::bool(true);
                     if match rt::is_truthy(interp, &__t18) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
@@ -68,7 +68,7 @@ pub fn aot_shen_x2e_dict(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
                         {
                             let v_W4139 = {
                                 let __t2 = {
-                                    let __t0 = Value::Int(3i64);
+                                    let __t0 = Value::int(3i64);
                                     let __t1 = v_V4138.clone();
                                     rt::add(&__t0, &__t1)?
                                 };
@@ -77,22 +77,22 @@ pub fn aot_shen_x2e_dict(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
                             {
                                 let v_W4140 = {
                                     let __t3 = v_W4139.clone();
-                                    let __t4 = Value::Int(0i64);
-                                    let __t5 = Value::Sym(interp.intern("shen.dictionary"));
+                                    let __t4 = Value::int(0i64);
+                                    let __t5 = Value::sym(interp.intern("shen.dictionary"));
                                     rt::apply_direct(interp, "address->", &[__t3, __t4, __t5])?
                                 };
                                 {
                                     let v_W4141 = {
                                         let __t6 = v_W4139.clone();
-                                        let __t7 = Value::Int(1i64);
+                                        let __t7 = Value::int(1i64);
                                         let __t8 = v_V4138.clone();
                                         rt::apply_direct(interp, "address->", &[__t6, __t7, __t8])?
                                     };
                                     {
                                         let v_W4142 = {
                                             let __t9 = v_W4139.clone();
-                                            let __t10 = Value::Int(2i64);
-                                            let __t11 = Value::Int(0i64);
+                                            let __t10 = Value::int(2i64);
+                                            let __t11 = Value::int(0i64);
                                             rt::apply_direct(
                                                 interp,
                                                 "address->",
@@ -102,13 +102,13 @@ pub fn aot_shen_x2e_dict(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
                                         {
                                             let v_W4143 = {
                                                 let __t12 = v_W4139.clone();
-                                                let __t13 = Value::Int(3i64);
+                                                let __t13 = Value::int(3i64);
                                                 let __t16 = {
-                                                    let __t14 = Value::Int(2i64);
+                                                    let __t14 = Value::int(2i64);
                                                     let __t15 = v_V4138.clone();
                                                     rt::add(&__t14, &__t15)?
                                                 };
-                                                let __t17 = Value::Nil;
+                                                let __t17 = Value::nil();
                                                 rt::apply_direct(
                                                     interp,
                                                     "shen.fillvector",
@@ -156,13 +156,13 @@ pub fn aot_shen_x2e_dict_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
-                break Ok(Value::Bool(false));
+                break Ok(Value::bool(false));
             } else {
                 break Ok({
                     let __t32 = match (|| -> ShenResult<Value> {
                         Ok({
                             let __t30 = v_V4144.clone();
-                            let __t31 = Value::Int(0i64);
+                            let __t31 = Value::int(0i64);
                             rt::apply_direct(interp, "<-address", &[__t30, __t31])?
                         })
                     })() {
@@ -174,16 +174,16 @@ pub fn aot_shen_x2e_dict_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult
                                     1,
                                     move |interp, args| {
                                         let v_Z4145 = args[0].clone();
-                                        Ok(Value::Sym(interp.intern("shen.not-dictionary")))
+                                        Ok(Value::sym(interp.intern("shen.not-dictionary")))
                                     },
                                     interp,
                                 )
                             };
-                            let __err = Value::Error(e.message.clone());
+                            let __err = Value::err(e.message.clone());
                             rt::apply_value(interp, __h, &[__err])?
                         }
                     };
-                    let __t33 = Value::Sym(interp.intern("shen.dictionary"));
+                    let __t33 = Value::sym(interp.intern("shen.dictionary"));
                     rt::eq(&__t32, &__t33)
                 });
             }
@@ -210,7 +210,7 @@ pub fn aot_shen_x2e_dict_x2d_capacity(interp: &mut Interp, args: &[Value]) -> Sh
     loop {
         break Ok({
             let __t34 = v_V4146.clone();
-            let __t35 = Value::Int(1i64);
+            let __t35 = Value::int(1i64);
             rt::apply_direct(interp, "<-address", &[__t34, __t35])?
         });
     }
@@ -235,7 +235,7 @@ pub fn aot_shen_x2e_dict_x2d_count(interp: &mut Interp, args: &[Value]) -> ShenR
     loop {
         break Ok({
             let __t36 = v_V4147.clone();
-            let __t37 = Value::Int(2i64);
+            let __t37 = Value::int(2i64);
             rt::apply_direct(interp, "<-address", &[__t36, __t37])?
         });
     }
@@ -265,7 +265,7 @@ pub fn aot_shen_x2e_dict_x2d_count_x2d__x3e_(
     loop {
         break Ok({
             let __t38 = v_V4148.clone();
-            let __t39 = Value::Int(2i64);
+            let __t39 = Value::int(2i64);
             let __t40 = v_V4149.clone();
             rt::apply_direct(interp, "address->", &[__t38, __t39, __t40])?
         });
@@ -301,7 +301,7 @@ pub fn aot_shen_x2e__x3c__x2d_dict_x2d_bucket(
         break Ok({
             let __t41 = v_V4150.clone();
             let __t44 = {
-                let __t42 = Value::Int(3i64);
+                let __t42 = Value::int(3i64);
                 let __t43 = v_V4151.clone();
                 rt::add(&__t42, &__t43)?
             };
@@ -341,7 +341,7 @@ pub fn aot_shen_x2e_dict_x2d_bucket_x2d__x3e_(
         break Ok({
             let __t45 = v_V4152.clone();
             let __t48 = {
-                let __t46 = Value::Int(3i64);
+                let __t46 = Value::int(3i64);
                 let __t47 = v_V4153.clone();
                 rt::add(&__t46, &__t47)?
             };
@@ -535,11 +535,11 @@ pub fn aot_shen_x2e__x3c__x2d_dict(interp: &mut Interp, args: &[Value]) -> ShenR
                         } {
                             break Ok({
                                 let __t87 = {
-                                    let __t82 = Value::Str(Rc::from("value "));
+                                    let __t82 = Value::str("value ");
                                     let __t86 = {
                                         let __t83 = v_V4168.clone();
-                                        let __t84 = Value::Str(Rc::from(" not found in dict\n"));
-                                        let __t85 = Value::Sym(interp.intern("shen.a"));
+                                        let __t84 = Value::str(" not found in dict\n");
+                                        let __t85 = Value::sym(interp.intern("shen.a"));
                                         rt::apply_direct(
                                             interp,
                                             "shen.app",
@@ -660,7 +660,7 @@ pub fn aot_shen_x2e_dict_x2d_fold(interp: &mut Interp, args: &[Value]) -> ShenRe
                 let __t103 = v_V4179.clone();
                 let __t104 = v_V4180.clone();
                 let __t105 = v_V4181.clone();
-                let __t106 = Value::Int(0i64);
+                let __t106 = Value::int(0i64);
                 let __t107 = v_W4182.clone();
                 rt::apply_direct(
                     interp,
@@ -710,7 +710,7 @@ pub fn aot_shen_x2e_dict_x2d_fold_x2d_h(interp: &mut Interp, args: &[Value]) -> 
                 break Ok(v_V4186.clone());
             } else {
                 {
-                    let __t120 = Value::Bool(true);
+                    let __t120 = Value::bool(true);
                     if match rt::is_truthy(interp, &__t120) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
@@ -737,7 +737,7 @@ pub fn aot_shen_x2e_dict_x2d_fold_x2d_h(interp: &mut Interp, args: &[Value]) -> 
                                     let __t114 = v_V4185.clone();
                                     let __t115 = v_W4190.clone();
                                     let __t118 = {
-                                        let __t116 = Value::Int(1i64);
+                                        let __t116 = Value::int(1i64);
                                         let __t117 = v_V4187.clone();
                                         rt::add(&__t116, &__t117)?
                                     };
@@ -783,7 +783,7 @@ pub fn aot_shen_x2e_bucket_x2d_fold(interp: &mut Interp, args: &[Value]) -> Shen
     loop {
         {
             let __t147 = {
-                let __t145 = Value::Nil;
+                let __t145 = Value::nil();
                 let __t146 = v_V4192.clone();
                 rt::eq(&__t145, &__t146)
             };
@@ -800,7 +800,7 @@ pub fn aot_shen_x2e_bucket_x2d_fold(interp: &mut Interp, args: &[Value]) -> Shen
                             rt::is_cons(&__t126)
                         };
                         if !rt::is_truthy(interp, &__t129)? {
-                            Value::Bool(false)
+                            Value::bool(false)
                         } else {
                             let __t130 = {
                                 let __t128 = {
@@ -809,7 +809,7 @@ pub fn aot_shen_x2e_bucket_x2d_fold(interp: &mut Interp, args: &[Value]) -> Shen
                                 };
                                 rt::is_cons(&__t128)
                             };
-                            Value::Bool(rt::is_truthy(interp, &__t130)?)
+                            Value::bool(rt::is_truthy(interp, &__t130)?)
                         }
                     };
                     if match rt::is_truthy(interp, &__t144) {
@@ -854,13 +854,13 @@ pub fn aot_shen_x2e_bucket_x2d_fold(interp: &mut Interp, args: &[Value]) -> Shen
                         });
                     } else {
                         {
-                            let __t125 = Value::Bool(true);
+                            let __t125 = Value::bool(true);
                             if match rt::is_truthy(interp, &__t125) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t124 = Value::Sym(interp.intern("shen.bucket-fold"));
+                                    let __t124 = Value::sym(interp.intern("shen.bucket-fold"));
                                     rt::apply_direct(interp, "shen.f-error", &[__t124])?
                                 });
                             } else {
@@ -930,7 +930,7 @@ pub fn aot_shen_x2e_dict_x2d_keys(interp: &mut Interp, args: &[Value]) -> ShenRe
                 )
             };
             let __t151 = v_V4194.clone();
-            let __t152 = Value::Nil;
+            let __t152 = Value::nil();
             rt::apply_direct(interp, "shen.dict-fold", &[__t150, __t151, __t152])?
         });
     }
@@ -991,7 +991,7 @@ pub fn aot_shen_x2e_dict_x2d_values(interp: &mut Interp, args: &[Value]) -> Shen
                 )
             };
             let __t156 = v_V4198.clone();
-            let __t157 = Value::Nil;
+            let __t157 = Value::nil();
             rt::apply_direct(interp, "shen.dict-fold", &[__t155, __t156, __t157])?
         });
     }

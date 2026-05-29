@@ -136,8 +136,8 @@ pub fn fn_value(interp: &mut Interp, name: &str) -> ShenResult<Value> {
 pub fn add(a: &Value, b: &Value) -> ShenResult<Value> {
     match (a, b) {
         (Value::Int(x), Value::Int(y)) => match x.checked_add(*y) {
-            Some(v) => Ok(Value::Int(v)),
-            None => Ok(Value::Float(*x as f64 + *y as f64)),
+            Some(v) => Ok(Value::int(v)),
+            None => Ok(Value::float(*x as f64 + *y as f64)),
         },
         (Value::Int(x), Value::Float(y)) => Ok(Value::Float(*x as f64 + *y)),
         (Value::Float(x), Value::Int(y)) => Ok(Value::Float(*x + *y as f64)),
@@ -150,8 +150,8 @@ pub fn add(a: &Value, b: &Value) -> ShenResult<Value> {
 pub fn sub(a: &Value, b: &Value) -> ShenResult<Value> {
     match (a, b) {
         (Value::Int(x), Value::Int(y)) => match x.checked_sub(*y) {
-            Some(v) => Ok(Value::Int(v)),
-            None => Ok(Value::Float(*x as f64 - *y as f64)),
+            Some(v) => Ok(Value::int(v)),
+            None => Ok(Value::float(*x as f64 - *y as f64)),
         },
         (Value::Int(x), Value::Float(y)) => Ok(Value::Float(*x as f64 - *y)),
         (Value::Float(x), Value::Int(y)) => Ok(Value::Float(*x - *y as f64)),
@@ -164,8 +164,8 @@ pub fn sub(a: &Value, b: &Value) -> ShenResult<Value> {
 pub fn mul(a: &Value, b: &Value) -> ShenResult<Value> {
     match (a, b) {
         (Value::Int(x), Value::Int(y)) => match x.checked_mul(*y) {
-            Some(v) => Ok(Value::Int(v)),
-            None => Ok(Value::Float(*x as f64 * *y as f64)),
+            Some(v) => Ok(Value::int(v)),
+            None => Ok(Value::float(*x as f64 * *y as f64)),
         },
         (Value::Int(x), Value::Float(y)) => Ok(Value::Float(*x as f64 * *y)),
         (Value::Float(x), Value::Int(y)) => Ok(Value::Float(*x * *y as f64)),
@@ -188,9 +188,9 @@ pub fn div(a: &Value, b: &Value) -> ShenResult<Value> {
     }
     let r = x / y;
     if both_int && r.fract() == 0.0 {
-        Ok(Value::Int(r as i64))
+        Ok(Value::int(r as i64))
     } else {
-        Ok(Value::Float(r))
+        Ok(Value::float(r))
     }
 }
 
@@ -208,31 +208,31 @@ fn cmp_op(a: &Value, b: &Value, name: &str) -> ShenResult<std::cmp::Ordering> {
 
 #[inline(always)]
 pub fn lt(a: &Value, b: &Value) -> ShenResult<Value> {
-    Ok(Value::Bool(cmp_op(a, b, "<")? == std::cmp::Ordering::Less))
+    Ok(Value::bool(cmp_op(a, b, "<")? == std::cmp::Ordering::Less))
 }
 
 #[inline(always)]
 pub fn gt(a: &Value, b: &Value) -> ShenResult<Value> {
-    Ok(Value::Bool(
+    Ok(Value::bool(
         cmp_op(a, b, ">")? == std::cmp::Ordering::Greater,
     ))
 }
 
 #[inline(always)]
 pub fn lte(a: &Value, b: &Value) -> ShenResult<Value> {
-    Ok(Value::Bool(
+    Ok(Value::bool(
         cmp_op(a, b, "<=")? != std::cmp::Ordering::Greater,
     ))
 }
 
 #[inline(always)]
 pub fn gte(a: &Value, b: &Value) -> ShenResult<Value> {
-    Ok(Value::Bool(cmp_op(a, b, ">=")? != std::cmp::Ordering::Less))
+    Ok(Value::bool(cmp_op(a, b, ">=")? != std::cmp::Ordering::Less))
 }
 
 #[inline(always)]
 pub fn eq(a: &Value, b: &Value) -> Value {
-    Value::Bool(shen_eq(a, b))
+    Value::bool(shen_eq(a, b))
 }
 
 #[inline(always)]
@@ -258,25 +258,25 @@ pub fn tl(v: &Value) -> ShenResult<Value> {
 
 #[inline(always)]
 pub fn is_cons(v: &Value) -> Value {
-    Value::Bool(matches!(v, Value::Cons(_)))
+    Value::bool(matches!(v, Value::Cons(_)))
 }
 
 #[inline(always)]
 pub fn is_number(v: &Value) -> Value {
-    Value::Bool(matches!(v, Value::Int(_) | Value::Float(_)))
+    Value::bool(matches!(v, Value::Int(_) | Value::Float(_)))
 }
 
 #[inline(always)]
 pub fn is_string(v: &Value) -> Value {
-    Value::Bool(matches!(v, Value::Str(_)))
+    Value::bool(matches!(v, Value::Str(_)))
 }
 
 #[inline(always)]
 pub fn is_symbol(v: &Value) -> Value {
-    Value::Bool(matches!(v, Value::Sym(_)))
+    Value::bool(matches!(v, Value::Sym(_)))
 }
 
 #[inline(always)]
 pub fn is_absvector(v: &Value) -> Value {
-    Value::Bool(matches!(v, Value::Vec(_)))
+    Value::bool(matches!(v, Value::Vec(_)))
 }

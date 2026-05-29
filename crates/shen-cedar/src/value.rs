@@ -137,6 +137,59 @@ impl fmt::Debug for Value {
 }
 
 impl Value {
+    // ---- Constructors ------------------------------------------------------
+    //
+    // Every `Value` should be built through one of these rather than naming the
+    // enum variant directly. They are the stable seam for the word-sized repr
+    // flip (see `design/gc-conversion-handoff.md`): when `Value` becomes a
+    // tagged word over `Gc<T>`, only these bodies change — call sites don't.
+    // All are `#[inline]`, so routing construction through them is zero-cost.
+
+    /// The empty list `()`. Distinct from `false` and the symbol `nil`.
+    #[inline]
+    pub fn nil() -> Value {
+        Value::Nil
+    }
+
+    /// A boolean. (Note: the kernel sometimes uses the symbols `true`/`false`
+    /// instead; see [`shen_eq`] for the cross-equate rule.)
+    #[inline]
+    pub fn bool(b: bool) -> Value {
+        Value::Bool(b)
+    }
+
+    /// An integer. Today backed by `i64`; after the repr flip this becomes a
+    /// fixnum with a boxed-wide overflow path.
+    #[inline]
+    pub fn int(n: i64) -> Value {
+        Value::Int(n)
+    }
+
+    /// A floating-point number.
+    #[inline]
+    pub fn float(x: f64) -> Value {
+        Value::Float(x)
+    }
+
+    /// A symbol, identified by its interned [`SymId`].
+    #[inline]
+    pub fn sym(id: SymId) -> Value {
+        Value::Sym(id)
+    }
+
+    /// A string. Accepts anything convertible into the shared `Rc<str>`
+    /// backing (`&str`, `String`, `Rc<str>`).
+    #[inline]
+    pub fn str(s: impl Into<Rc<str>>) -> Value {
+        Value::Str(s.into())
+    }
+
+    /// An error object (a trapped error message).
+    #[inline]
+    pub fn err(msg: impl Into<Rc<str>>) -> Value {
+        Value::Error(msg.into())
+    }
+
     /// Construct a cons cell from head and tail in a single allocation.
     #[inline]
     pub fn cons(head: Value, tail: Value) -> Value {
@@ -153,6 +206,95 @@ impl Value {
             acc = Value::cons(v, acc);
         }
         acc
+    }
+
+    // ---- Inspectors --------------------------------------------------------
+    //
+    // Non-destructuring inspection should go through these rather than ad-hoc
+    // `matches!`/`if let`. Like the constructors, they are the stable seam for
+    // the repr flip: today they match the enum; after the flip they become
+    // tag-checks + accessors with the same signatures. The `head`/`tail`
+    // accessors return `&Value` borrowed from `&self` — sound today (into the
+    // `Rc` cell) and after the flip (the non-moving GC pins the cell, so the
+    // reference stays valid while `self` is reachable).
+    //
+    // Destructuring `match` arms that bind inner data are intentionally left
+    // naming the enum for now; Step 3 of the conversion rewrites those into
+    // tag-dispatch.
+
+    /// Is this the empty list `()`?
+    #[inline]
+    pub fn is_nil(&self) -> bool {
+        matches!(self, Value::Nil)
+    }
+
+    /// Is this a cons cell?
+    #[inline]
+    pub fn is_cons(&self) -> bool {
+        matches!(self, Value::Cons(_))
+    }
+
+    /// The integer value, if this is an `Int`.
+    #[inline]
+    pub fn as_int(&self) -> Option<i64> {
+        match self {
+            Value::Int(n) => Some(*n),
+            _ => None,
+        }
+    }
+
+    /// The float value, if this is a `Float`.
+    #[inline]
+    pub fn as_float(&self) -> Option<f64> {
+        match self {
+            Value::Float(x) => Some(*x),
+            _ => None,
+        }
+    }
+
+    /// The boolean value, if this is a `Bool`.
+    #[inline]
+    pub fn as_bool(&self) -> Option<bool> {
+        match self {
+            Value::Bool(b) => Some(*b),
+            _ => None,
+        }
+    }
+
+    /// The symbol id, if this is a `Sym`.
+    #[inline]
+    pub fn as_sym(&self) -> Option<SymId> {
+        match self {
+            Value::Sym(s) => Some(*s),
+            _ => None,
+        }
+    }
+
+    /// The string contents, if this is a `Str`.
+    #[inline]
+    pub fn as_str(&self) -> Option<&str> {
+        match self {
+            Value::Str(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// The head (car) of a cons cell, if this is a `Cons`.
+    #[inline]
+    pub fn head(&self) -> Option<&Value> {
+        match self {
+            Value::Cons(c) => Some(&c.0),
+            _ => None,
+        }
+    }
+
+    /// The tail (cdr) of a cons cell, if this is a `Cons`.
+    #[inline]
+    pub fn tail(&self) -> Option<&Value> {
+        match self {
+            Value::Cons(c) => Some(&c.1),
+            _ => None,
+        }
     }
 }
 
@@ -260,5 +402,26 @@ mod tests {
     fn nil_only_equals_nil() {
         assert!(shen_eq(&Value::Nil, &Value::Nil));
         assert!(!shen_eq(&Value::Nil, &Value::Bool(false)));
+    }
+
+    #[test]
+    fn constructors_and_inspectors_round_trip() {
+        assert!(Value::nil().is_nil());
+        assert_eq!(Value::int(7).as_int(), Some(7));
+        assert_eq!(Value::float(1.5).as_float(), Some(1.5));
+        assert_eq!(Value::bool(true).as_bool(), Some(true));
+        assert_eq!(Value::sym(SymId(42)).as_sym(), Some(SymId(42)));
+        assert_eq!(Value::str("hi").as_str(), Some("hi"));
+        assert_eq!(Value::err("boom").as_str(), None);
+
+        let c = Value::cons(Value::int(1), Value::int(2));
+        assert!(c.is_cons());
+        assert_eq!(c.head().and_then(Value::as_int), Some(1));
+        assert_eq!(c.tail().and_then(Value::as_int), Some(2));
+
+        // Wrong-type inspectors return None, not panic.
+        assert_eq!(Value::nil().as_int(), None);
+        assert_eq!(Value::int(1).as_str(), None);
+        assert!(Value::int(1).head().is_none());
     }
 }

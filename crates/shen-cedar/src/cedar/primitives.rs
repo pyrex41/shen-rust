@@ -110,7 +110,7 @@ pub fn register_all(interp: &mut Interp) {
     interp.register_native("cedar.entity-uid->string", 1, |_, args| match &args[0] {
         Value::Foreign(_) => {
             let uid = crate::cedar::types::downcast::<EntityUid>(&args[0], "cedar.entity-uid")?;
-            Ok(Value::Str(Rc::from(uid.to_string())))
+            Ok(Value::str(Rc::from(uid.to_string())))
         }
         other => Err(ShenError::new(format!(
             "cedar.entity-uid->string: not a cedar.entity-uid: {other:?}"
@@ -148,7 +148,7 @@ pub fn register_all(interp: &mut Interp) {
             cedar_policy::Decision::Deny => "Deny",
         };
         let decision_sym = interp.intern(decision);
-        Ok(Value::Sym(decision_sym))
+        Ok(Value::sym(decision_sym))
     });
 
     interp.register_native("cedar.is-authorized-detailed", 3, |interp, args| {
@@ -167,16 +167,16 @@ pub fn register_all(interp: &mut Interp) {
         let diagnostics = response.diagnostics();
         let reasons: Vec<Value> = diagnostics
             .reason()
-            .map(|pid| Value::Str(Rc::from(pid.to_string())))
+            .map(|pid| Value::str(Rc::from(pid.to_string())))
             .collect();
         let errors: Vec<Value> = diagnostics
             .errors()
-            .map(|err| Value::Str(Rc::from(err.to_string())))
+            .map(|err| Value::str(Rc::from(err.to_string())))
             .collect();
 
         // Return as a 3-element list: (DECISION REASONS ERRORS).
         Ok(Value::list([
-            Value::Sym(decision_sym),
+            Value::sym(decision_sym),
             Value::list(reasons),
             Value::list(errors),
         ]))
@@ -189,19 +189,19 @@ pub fn register_all(interp: &mut Interp) {
         let result = validator.validate(&policy_set, ValidationMode::default());
         let errors: Vec<Value> = result
             .validation_errors()
-            .map(|err| Value::Str(Rc::from(err.to_string())))
+            .map(|err| Value::str(Rc::from(err.to_string())))
             .collect();
         Ok(Value::list(errors))
     });
 
     interp.register_native("cedar.policy->string", 1, |_, args| {
         let p = as_policy(&args[0])?;
-        Ok(Value::Str(Rc::from(p.to_string())))
+        Ok(Value::str(Rc::from(p.to_string())))
     });
 
     interp.register_native("cedar.policy-set->string", 1, |_, args| {
         let ps = as_policy_set(&args[0])?;
-        Ok(Value::Str(Rc::from(ps.to_string())))
+        Ok(Value::str(Rc::from(ps.to_string())))
     });
 
     interp.register_native("cedar.empty-entities", 0, |_, _| {

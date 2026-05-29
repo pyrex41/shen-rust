@@ -42,10 +42,10 @@ pub fn register_hot_overrides(interp: &mut Interp) {
         let mut cur: Value = args[1].clone();
         loop {
             match cur {
-                Value::Nil => return Ok(Value::Bool(false)),
+                Value::Nil => return Ok(Value::bool(false)),
                 Value::Cons(ref p) => {
                     if shen_eq(target, &p.0) {
-                        return Ok(Value::Bool(true));
+                        return Ok(Value::bool(true));
                     }
                     cur = p.1.clone();
                 }
@@ -58,7 +58,7 @@ pub fn register_hot_overrides(interp: &mut Interp) {
     // representation is an absvector whose slot 0 is the symbol
     // `shen.pvar`.
     interp.register_native("shen.pvar?", 1, move |_, args| {
-        Ok(Value::Bool(match &args[0] {
+        Ok(Value::bool(match &args[0] {
             Value::Vec(v) => {
                 matches!(v.borrow().first(), Some(Value::Sym(s)) if *s == k_pvar)
             }
@@ -102,7 +102,7 @@ pub fn register_hot_overrides(interp: &mut Interp) {
             // Look up its binding in *prolog-vector*.
             let next = {
                 let b = vec.borrow();
-                b.get(idx as usize).cloned().unwrap_or(Value::Nil)
+                b.get(idx as usize).cloned().unwrap_or(Value::nil())
             };
             // Unbound → return the pvar itself.
             if matches!(&next, Value::Sym(s) if *s == k_null) {
@@ -114,7 +114,7 @@ pub fn register_hot_overrides(interp: &mut Interp) {
 
     // fail — return the magic shen.fail! symbol. Kernel-level
     // `fail` is just `(defun fail () shen.fail!)`.
-    interp.register_native("fail", 0, move |_, _args| Ok(Value::Sym(k_fail)));
+    interp.register_native("fail", 0, move |_, _args| Ok(Value::sym(k_fail)));
 
     // value/or — read a global, calling a frozen default on miss
     // instead of erroring. Native because the kernel's version routes
@@ -176,16 +176,16 @@ pub fn register_hot_overrides(interp: &mut Interp) {
             .map_err(|e| ShenError::new(format!("read-file-as-string: {path}: {e}")))?;
         // Kernel semantics: bytes interpreted as a string verbatim.
         let s = String::from_utf8_lossy(&bytes).into_owned();
-        Ok(Value::Str(Rc::from(s.as_str())))
+        Ok(Value::str(Rc::from(s.as_str())))
     });
 }
 
 /// Build a Shen cons-list `(b0 b1 … bN)` of bytes from a slice. Used by
 /// the native `read-file-as-bytelist`.
 fn bytes_to_list(bytes: &[u8]) -> Value {
-    let mut acc = Value::Nil;
+    let mut acc = Value::nil();
     for &b in bytes.iter().rev() {
-        acc = Value::cons(Value::Int(b as i64), acc);
+        acc = Value::cons(Value::int(b as i64), acc);
     }
     acc
 }
@@ -217,21 +217,21 @@ fn register_core(interp: &mut Interp) {
 
     // --- equality ---
     interp.register_native("=", 2, |_, args| {
-        Ok(Value::Bool(shen_eq(&args[0], &args[1])))
+        Ok(Value::bool(shen_eq(&args[0], &args[1])))
     });
 
     // --- predicates ---
     interp.register_native("number?", 1, |_, args| {
-        Ok(Value::Bool(matches!(
+        Ok(Value::bool(matches!(
             &args[0],
             Value::Int(_) | Value::Float(_)
         )))
     });
     interp.register_native("string?", 1, |_, args| {
-        Ok(Value::Bool(matches!(&args[0], Value::Str(_))))
+        Ok(Value::bool(matches!(&args[0], Value::Str(_))))
     });
     interp.register_native("symbol?", 1, |_, args| {
-        Ok(Value::Bool(matches!(&args[0], Value::Sym(_))))
+        Ok(Value::bool(matches!(&args[0], Value::Sym(_))))
     });
     interp.register_native("boolean?", 1, |interp, args| {
         let wk = &interp.well_known;
@@ -240,17 +240,17 @@ fn register_core(interp: &mut Interp) {
             Value::Sym(s) => *s == wk.k_true || *s == wk.k_false,
             _ => false,
         };
-        Ok(Value::Bool(b))
+        Ok(Value::bool(b))
     });
     interp.register_native("cons?", 1, |_, args| {
-        Ok(Value::Bool(matches!(&args[0], Value::Cons(_))))
+        Ok(Value::bool(matches!(&args[0], Value::Cons(_))))
     });
     interp.register_native("absvector?", 1, |_, args| {
-        Ok(Value::Bool(matches!(&args[0], Value::Vec(_))))
+        Ok(Value::bool(matches!(&args[0], Value::Vec(_))))
     });
     // Backward-compat alias used in some kernel code paths.
     interp.register_native("vector?", 1, |_, args| {
-        Ok(Value::Bool(matches!(&args[0], Value::Vec(_))))
+        Ok(Value::bool(matches!(&args[0], Value::Vec(_))))
     });
 
     // --- lists ---
@@ -270,19 +270,19 @@ fn register_core(interp: &mut Interp) {
     interp.register_native("intern", 1, |interp, args| match &args[0] {
         Value::Str(s) => {
             let id = interp.intern(s);
-            Ok(Value::Sym(id))
+            Ok(Value::sym(id))
         }
         other => Err(ShenError::new(format!("intern: not a string: {other:?}"))),
     });
     interp.register_native("str", 1, |interp, args| {
-        Ok(Value::Str(value_to_str(interp, &args[0]).into()))
+        Ok(Value::str(value_to_str(interp, &args[0])))
     });
     interp.register_native("cn", 2, |_, args| match (&args[0], &args[1]) {
         (Value::Str(a), Value::Str(b)) => {
             let mut s = String::with_capacity(a.len() + b.len());
             s.push_str(a);
             s.push_str(b);
-            Ok(Value::Str(s.into()))
+            Ok(Value::str(s))
         }
         (a, b) => Err(ShenError::new(format!(
             "cn: strings only, got {a:?} and {b:?}"
@@ -295,7 +295,7 @@ fn register_core(interp: &mut Interp) {
                 return Err(ShenError::new("pos: index out of range"));
             }
             let byte = s.as_bytes()[n as usize];
-            Ok(Value::Str(String::from(byte as char).into()))
+            Ok(Value::str(String::from(byte as char)))
         }
         (a, b) => Err(ShenError::new(format!("pos: bad args: {a:?}, {b:?}"))),
     });
@@ -309,7 +309,7 @@ fn register_core(interp: &mut Interp) {
             let rest = &s.as_bytes()[1..];
             let rest_str = std::str::from_utf8(rest)
                 .map_err(|_| ShenError::new("tlstr: produced non-UTF-8 result"))?;
-            Ok(Value::Str(rest_str.into()))
+            Ok(Value::str(rest_str))
         }
         other => Err(ShenError::new(format!("tlstr: not a string: {other:?}"))),
     });
@@ -317,7 +317,7 @@ fn register_core(interp: &mut Interp) {
         Value::Int(n) => {
             let c = char::from_u32(*n as u32)
                 .ok_or_else(|| ShenError::new(format!("n->string: bad codepoint {n}")))?;
-            Ok(Value::Str(String::from(c).into()))
+            Ok(Value::str(String::from(c)))
         }
         other => Err(ShenError::new(format!("n->string: not an int: {other:?}"))),
     });
@@ -327,7 +327,7 @@ fn register_core(interp: &mut Interp) {
             if b.is_empty() {
                 return Err(ShenError::new("string->n: empty string"));
             }
-            Ok(Value::Int(b[0] as i64))
+            Ok(Value::int(b[0] as i64))
         }
         other => Err(ShenError::new(format!(
             "string->n: not a string: {other:?}"
@@ -363,7 +363,7 @@ fn register_core(interp: &mut Interp) {
     interp.register_native("absvector", 1, |_, args| match &args[0] {
         Value::Int(n) if *n >= 0 => {
             let len = *n as usize;
-            let cells = vec![Value::Sym(crate::symbol::SymId(0)); len];
+            let cells = vec![Value::sym(crate::symbol::SymId(0)); len];
             // Will be overwritten with an "uninitialized" sentinel in
             // boot.rs once the kernel interns `shen.fail!`. For now we
             // just zero-init with whatever interned id 0 is (`true` per
@@ -401,7 +401,7 @@ fn register_core(interp: &mut Interp) {
         other => Err(ShenError::new(format!("{other:?}"))),
     });
     interp.register_native("error-to-string", 1, |_, args| match &args[0] {
-        Value::Error(s) => Ok(Value::Str(s.clone())),
+        Value::Error(s) => Ok(Value::str(s.clone())),
         other => Err(ShenError::new(format!(
             "error-to-string: not an error: {other:?}"
         ))),
@@ -425,7 +425,7 @@ fn register_core(interp: &mut Interp) {
         // (type X T) — at runtime we ignore the annotation and return X.
         Ok(args[0].clone())
     });
-    interp.register_native("tc?", 0, |_, _| Ok(Value::Bool(false)));
+    interp.register_native("tc?", 0, |_, _| Ok(Value::bool(false)));
     interp.register_native("tc", 1, |_, args| Ok(args[0].clone()));
     interp.register_native("get-time", 1, |_, args| {
         // (get-time TYPE) where TYPE is `real`, `run`, `unix`. We only
@@ -436,7 +436,7 @@ fn register_core(interp: &mut Interp) {
             .duration_since(UNIX_EPOCH)
             .map(|d| d.as_secs_f64())
             .unwrap_or(0.0);
-        Ok(Value::Float(secs))
+        Ok(Value::float(secs))
     });
     interp.register_native("hash", 2, |_, args| match (&args[0], &args[1]) {
         (key, Value::Int(buckets)) => {
@@ -444,7 +444,7 @@ fn register_core(interp: &mut Interp) {
             value_hash(key, &mut h);
             let buckets = (*buckets).max(1) as u64;
             let v = (h.finish() % buckets) as i64 + 1;
-            Ok(Value::Int(v))
+            Ok(Value::int(v))
         }
         (a, b) => Err(ShenError::new(format!("hash: bad args: {a:?}, {b:?}"))),
     });
@@ -488,7 +488,7 @@ fn register_core(interp: &mut Interp) {
     interp.register_native("close", 1, |_, args| match &args[0] {
         Value::Stream(s) => {
             *s.borrow_mut() = Stream::Closed;
-            Ok(Value::Sym(crate::symbol::SymId(0)))
+            Ok(Value::sym(crate::symbol::SymId(0)))
         }
         other => Err(ShenError::new(format!("close: not a stream: {other:?}"))),
     });
@@ -499,8 +499,8 @@ fn register_core(interp: &mut Interp) {
                 Stream::In(r) => {
                     let mut buf = [0u8; 1];
                     match r.read(&mut buf) {
-                        Ok(0) => Ok(Value::Int(-1)),
-                        Ok(_) => Ok(Value::Int(buf[0] as i64)),
+                        Ok(0) => Ok(Value::int(-1)),
+                        Ok(_) => Ok(Value::int(buf[0] as i64)),
                         Err(e) => Err(ShenError::new(format!("read-byte: {e}"))),
                     }
                 }
@@ -515,8 +515,8 @@ fn register_core(interp: &mut Interp) {
     // streams are byte-oriented (read-byte/write-byte), so report
     // `false` for both. shen-cl maps these to lisp `subtypep` of the
     // stream element type; for shen-cedar there's only one type.
-    interp.register_native("shen.char-stoutput?", 1, |_, _args| Ok(Value::Bool(false)));
-    interp.register_native("shen.char-stinput?", 1, |_, _args| Ok(Value::Bool(false)));
+    interp.register_native("shen.char-stoutput?", 1, |_, _args| Ok(Value::bool(false)));
+    interp.register_native("shen.char-stinput?", 1, |_, _args| Ok(Value::bool(false)));
 
     interp.register_native("write-byte", 2, |_, args| match (&args[0], &args[1]) {
         (Value::Int(b), Value::Stream(s)) => {
@@ -526,7 +526,7 @@ fn register_core(interp: &mut Interp) {
                     let buf = [*b as u8];
                     w.write_all(&buf)
                         .map_err(|e| ShenError::new(format!("write-byte: {e}")))?;
-                    Ok(Value::Int(*b))
+                    Ok(Value::int(*b))
                 }
                 _ => Err(ShenError::new("write-byte: not an output stream")),
             }
@@ -546,8 +546,8 @@ where
 {
     match (&args[0], &args[1]) {
         (Value::Int(a), Value::Int(b)) => match i_op(*a, *b) {
-            Some(v) => Ok(Value::Int(v)),
-            None => Ok(Value::Float(f_op(*a as f64, *b as f64))),
+            Some(v) => Ok(Value::int(v)),
+            None => Ok(Value::float(f_op(*a as f64, *b as f64))),
         },
         (Value::Int(a), Value::Float(b)) => Ok(Value::Float(f_op(*a as f64, *b))),
         (Value::Float(a), Value::Int(b)) => Ok(Value::Float(f_op(*a, *b as f64))),
@@ -570,9 +570,9 @@ fn prim_div(_: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     let r = a / b;
     // Return Int when the result is exact and both inputs are integers.
     if matches!(&args[0], Value::Int(_)) && matches!(&args[1], Value::Int(_)) && r.fract() == 0.0 {
-        Ok(Value::Int(r as i64))
+        Ok(Value::int(r as i64))
     } else {
-        Ok(Value::Float(r))
+        Ok(Value::float(r))
     }
 }
 
@@ -588,7 +588,7 @@ where
         (a, b) => return Err(ShenError::new(format!("{name}: bad args: {a:?}, {b:?}"))),
     };
     let ord = ord_opt.ok_or_else(|| ShenError::new(format!("{name}: NaN comparison")))?;
-    Ok(Value::Bool(pred(ord)))
+    Ok(Value::bool(pred(ord)))
 }
 
 /// Convert a Shen value to its `str` representation. Mirrors shen-cl's

@@ -362,11 +362,11 @@ impl Interp {
     pub fn eval_in(&mut self, expr: &KlExpr, locals: &[(SymId, Value)]) -> ShenResult<Value> {
         // Non-`App` forms never trampoline and never need an owned scope.
         match expr {
-            KlExpr::Nil => return Ok(Value::Nil),
-            KlExpr::Bool(b) => return Ok(Value::Bool(*b)),
-            KlExpr::Int(n) => return Ok(Value::Int(*n)),
-            KlExpr::Float(x) => return Ok(Value::Float(*x)),
-            KlExpr::Str(s) => return Ok(Value::Str(s.clone())),
+            KlExpr::Nil => return Ok(Value::nil()),
+            KlExpr::Bool(b) => return Ok(Value::bool(*b)),
+            KlExpr::Int(n) => return Ok(Value::int(*n)),
+            KlExpr::Float(x) => return Ok(Value::float(*x)),
+            KlExpr::Str(s) => return Ok(Value::str(s.clone())),
             KlExpr::Sym(s) => return Ok(self.eval_symbol(*s, locals)),
             KlExpr::App(_) => {}
         }
@@ -375,15 +375,15 @@ impl Interp {
         let mut scope = Scope::Borrowed(locals);
         loop {
             match &current {
-                KlExpr::Nil => return Ok(Value::Nil),
-                KlExpr::Bool(b) => return Ok(Value::Bool(*b)),
-                KlExpr::Int(n) => return Ok(Value::Int(*n)),
-                KlExpr::Float(x) => return Ok(Value::Float(*x)),
-                KlExpr::Str(s) => return Ok(Value::Str(s.clone())),
+                KlExpr::Nil => return Ok(Value::nil()),
+                KlExpr::Bool(b) => return Ok(Value::bool(*b)),
+                KlExpr::Int(n) => return Ok(Value::int(*n)),
+                KlExpr::Float(x) => return Ok(Value::float(*x)),
+                KlExpr::Str(s) => return Ok(Value::str(s.clone())),
                 KlExpr::Sym(s) => return Ok(self.eval_symbol(*s, scope.slice())),
                 KlExpr::App(items) => {
                     if items.is_empty() {
-                        return Ok(Value::Nil);
+                        return Ok(Value::nil());
                     }
                     self.charge_step()?;
                     let items = items.clone();
@@ -399,7 +399,7 @@ impl Interp {
     /// Look up a symbol in the lexical environment; if unbound, the symbol
     /// value itself is returned (innocent-symbol semantics).
     fn eval_symbol(&self, sym: SymId, locals: &[(SymId, Value)]) -> Value {
-        self.lookup_local(sym, locals).unwrap_or(Value::Sym(sym))
+        self.lookup_local(sym, locals).unwrap_or(Value::sym(sym))
     }
 
     fn lookup_local(&self, sym: SymId, locals: &[(SymId, Value)]) -> Option<Value> {
@@ -704,7 +704,7 @@ impl Interp {
         current: &mut KlExpr,
     ) -> ShenResult<StepOutcome> {
         if args.is_empty() {
-            return Ok(StepOutcome::Done(Value::Nil));
+            return Ok(StepOutcome::Done(Value::nil()));
         }
         // Evaluate all but the last for side effects; tail-eval the last.
         for e in &args[..args.len() - 1] {
@@ -726,7 +726,7 @@ impl Interp {
         let a = self.eval_in(&args[0], scope.slice())?;
         let truthy = self.truthy(&a)?;
         if !truthy {
-            return Ok(StepOutcome::Done(Value::Bool(false)));
+            return Ok(StepOutcome::Done(Value::bool(false)));
         }
         *current = args[1].clone();
         Ok(StepOutcome::Continue)
@@ -744,7 +744,7 @@ impl Interp {
         let a = self.eval_in(&args[0], scope.slice())?;
         let truthy = self.truthy(&a)?;
         if truthy {
-            return Ok(StepOutcome::Done(Value::Bool(true)));
+            return Ok(StepOutcome::Done(Value::bool(true)));
         }
         *current = args[1].clone();
         Ok(StepOutcome::Continue)
@@ -929,7 +929,7 @@ impl Interp {
             Err(e) if e.is_cancelled() => Err(e),
             Err(e) => {
                 let handler = self.eval_in(&args[1], scope.slice())?;
-                let err_val = Value::Error(e.message.clone());
+                let err_val = Value::err(e.message.clone());
                 let v = self.apply(handler, vec![err_val])?;
                 Ok(StepOutcome::Done(v))
             }
@@ -995,17 +995,17 @@ impl Interp {
             kind,
         };
         self.env.set_fn(name, Value::Closure(Rc::new(closure)));
-        Ok(Value::Sym(name))
+        Ok(Value::sym(name))
     }
 
     fn quote_value(&self, expr: &KlExpr) -> Value {
         match expr {
-            KlExpr::Nil => Value::Nil,
-            KlExpr::Bool(b) => Value::Bool(*b),
-            KlExpr::Int(n) => Value::Int(*n),
-            KlExpr::Float(x) => Value::Float(*x),
-            KlExpr::Str(s) => Value::Str(s.clone()),
-            KlExpr::Sym(s) => Value::Sym(*s),
+            KlExpr::Nil => Value::nil(),
+            KlExpr::Bool(b) => Value::bool(*b),
+            KlExpr::Int(n) => Value::int(*n),
+            KlExpr::Float(x) => Value::float(*x),
+            KlExpr::Str(s) => Value::str(s.clone()),
+            KlExpr::Sym(s) => Value::sym(*s),
             KlExpr::App(items) => Value::list(items.iter().map(|e| self.quote_value(e))),
         }
     }

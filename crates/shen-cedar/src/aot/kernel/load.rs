@@ -37,13 +37,13 @@ pub fn aot_load(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     loop {
         {
             let v_W1216 = {
-                let __t0 = Value::Sym(interp.intern("shen.*tc*"));
+                let __t0 = Value::sym(interp.intern("shen.*tc*"));
                 rt::apply_direct(interp, "value", &[__t0])?
             };
             {
                 let v_W1217 = {
                     let v_W1218 = {
-                        let __t1 = Value::Sym(interp.intern("run"));
+                        let __t1 = Value::sym(interp.intern("run"));
                         rt::apply_direct(interp, "get-time", &[__t1])?
                     };
                     {
@@ -57,7 +57,7 @@ pub fn aot_load(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                         };
                         {
                             let v_W1220 = {
-                                let __t5 = Value::Sym(interp.intern("run"));
+                                let __t5 = Value::sym(interp.intern("run"));
                                 rt::apply_direct(interp, "get-time", &[__t5])?
                             };
                             {
@@ -69,13 +69,13 @@ pub fn aot_load(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                 {
                                     let v_W1222 = {
                                         let __t13 = {
-                                            let __t8 = Value::Str(Rc::from("\nrun time: "));
+                                            let __t8 = Value::str("\nrun time: ");
                                             let __t12 = {
                                                 let __t10 = {
                                                     let __t9 = v_W1221.clone();
                                                     rt::apply_direct(interp, "str", &[__t9])?
                                                 };
-                                                let __t11 = Value::Str(Rc::from(" secs\n"));
+                                                let __t11 = Value::str(" secs\n");
                                                 rt::apply_direct(interp, "cn", &[__t10, __t11])?
                                             };
                                             rt::apply_direct(interp, "cn", &[__t8, __t12])?
@@ -95,12 +95,12 @@ pub fn aot_load(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                         if rt::is_truthy(interp, &__t22)? {
                             {
                                 let __t20 = {
-                                    let __t15 = Value::Str(Rc::from("\ntypechecked in "));
+                                    let __t15 = Value::str("\ntypechecked in ");
                                     let __t19 = {
                                         let __t16 =
                                             { rt::apply_direct(interp, "inferences", &[])? };
-                                        let __t17 = Value::Str(Rc::from(" inferences\n"));
-                                        let __t18 = Value::Sym(interp.intern("shen.a"));
+                                        let __t17 = Value::str(" inferences\n");
+                                        let __t18 = Value::sym(interp.intern("shen.a"));
                                         rt::apply_direct(
                                             interp,
                                             "shen.app",
@@ -113,10 +113,10 @@ pub fn aot_load(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                 rt::apply_direct(interp, "pr", &[__t20, __t21])?
                             }
                         } else {
-                            Value::Sym(interp.intern("shen.skip"))
+                            Value::sym(interp.intern("shen.skip"))
                         }
                     };
-                    break Ok(Value::Sym(interp.intern("loaded")));
+                    break Ok(Value::sym(interp.intern("loaded")));
                 }
             }
         }
@@ -144,7 +144,7 @@ pub fn aot_shen_x2e_load_x2d_help(interp: &mut Interp, args: &[Value]) -> ShenRe
     loop {
         {
             let __t28 = {
-                let __t25 = Value::Bool(false);
+                let __t25 = Value::bool(false);
                 let __t26 = v_V1226.clone();
                 rt::eq(&__t25, &__t26)
             };
@@ -158,7 +158,7 @@ pub fn aot_shen_x2e_load_x2d_help(interp: &mut Interp, args: &[Value]) -> ShenRe
                 });
             } else {
                 {
-                    let __t24 = Value::Bool(true);
+                    let __t24 = Value::bool(true);
                     if match rt::is_truthy(interp, &__t24) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
@@ -212,8 +212,8 @@ pub fn aot_shen_x2e_eval_x2d_and_x2d_print(
                                     };
                                     rt::apply_direct(interp, "eval-kl", &[__t30])?
                                 };
-                                let __t32 = Value::Str(Rc::from("\n"));
-                                let __t33 = Value::Sym(interp.intern("shen.s"));
+                                let __t32 = Value::str("\n");
+                                let __t33 = Value::sym(interp.intern("shen.s"));
                                 rt::apply_direct(interp, "shen.app", &[__t31, __t32, __t33])?
                             };
                             let __t35 = { rt::apply_direct(interp, "stoutput", &[])? };
@@ -301,7 +301,7 @@ pub fn aot_shen_x2e_check_x2d_eval_x2d_and_x2d_print(
                                 interp,
                             )
                         };
-                        let __err = Value::Error(e.message.clone());
+                        let __err = Value::err(e.message.clone());
                         rt::apply_value(interp, __h, &[__err])?
                     }
                 };
@@ -334,7 +334,7 @@ pub fn aot_shen_x2e_check_x2d_eval_x2d_and_x2d_print(
                                     interp,
                                 )
                             };
-                            let __err = Value::Error(e.message.clone());
+                            let __err = Value::err(e.message.clone());
                             rt::apply_value(interp, __h, &[__err])?
                         }
                     },
@@ -375,11 +375,11 @@ pub fn aot_shen_x2e_typetable(interp: &mut Interp, args: &[Value]) -> ShenResult
                     rt::is_cons(&__t67)
                 };
                 if !rt::is_truthy(interp, &__t87)? {
-                    Value::Bool(false)
+                    Value::bool(false)
                 } else {
                     let __t88 = {
                         let __t85 = {
-                            let __t68 = Value::Sym(interp.intern("define"));
+                            let __t68 = Value::sym(interp.intern("define"));
                             let __t70 = {
                                 let __t69 = v_V1240.clone();
                                 rt::hd(&__t69)?
@@ -387,7 +387,7 @@ pub fn aot_shen_x2e_typetable(interp: &mut Interp, args: &[Value]) -> ShenResult
                             rt::eq(&__t68, &__t70)
                         };
                         if !rt::is_truthy(interp, &__t85)? {
-                            Value::Bool(false)
+                            Value::bool(false)
                         } else {
                             let __t86 = {
                                 let __t83 = {
@@ -398,7 +398,7 @@ pub fn aot_shen_x2e_typetable(interp: &mut Interp, args: &[Value]) -> ShenResult
                                     rt::is_cons(&__t72)
                                 };
                                 if !rt::is_truthy(interp, &__t83)? {
-                                    Value::Bool(false)
+                                    Value::bool(false)
                                 } else {
                                     let __t84 = {
                                         let __t81 = {
@@ -412,10 +412,10 @@ pub fn aot_shen_x2e_typetable(interp: &mut Interp, args: &[Value]) -> ShenResult
                                             rt::is_cons(&__t75)
                                         };
                                         if !rt::is_truthy(interp, &__t81)? {
-                                            Value::Bool(false)
+                                            Value::bool(false)
                                         } else {
                                             let __t82 = {
-                                                let __t76 = Value::Sym(interp.intern("{"));
+                                                let __t76 = Value::sym(interp.intern("{"));
                                                 let __t80 = {
                                                     let __t79 = {
                                                         let __t78 = {
@@ -428,16 +428,16 @@ pub fn aot_shen_x2e_typetable(interp: &mut Interp, args: &[Value]) -> ShenResult
                                                 };
                                                 rt::eq(&__t76, &__t80)
                                             };
-                                            Value::Bool(rt::is_truthy(interp, &__t82)?)
+                                            Value::bool(rt::is_truthy(interp, &__t82)?)
                                         }
                                     };
-                                    Value::Bool(rt::is_truthy(interp, &__t84)?)
+                                    Value::bool(rt::is_truthy(interp, &__t84)?)
                                 }
                             };
-                            Value::Bool(rt::is_truthy(interp, &__t86)?)
+                            Value::bool(rt::is_truthy(interp, &__t86)?)
                         }
                     };
-                    Value::Bool(rt::is_truthy(interp, &__t88)?)
+                    Value::bool(rt::is_truthy(interp, &__t88)?)
                 }
             };
             if match rt::is_truthy(interp, &__t103) {
@@ -476,7 +476,7 @@ pub fn aot_shen_x2e_typetable(interp: &mut Interp, args: &[Value]) -> ShenResult
                             };
                             rt::apply_direct(interp, "shen.rectify-type", &[__t99])?
                         };
-                        let __t101 = Value::Nil;
+                        let __t101 = Value::nil();
                         rt::cons(&__t100, &__t101)
                     };
                     rt::cons(&__t91, &__t102)
@@ -489,11 +489,11 @@ pub fn aot_shen_x2e_typetable(interp: &mut Interp, args: &[Value]) -> ShenResult
                             rt::is_cons(&__t48)
                         };
                         if !rt::is_truthy(interp, &__t56)? {
-                            Value::Bool(false)
+                            Value::bool(false)
                         } else {
                             let __t57 = {
                                 let __t54 = {
-                                    let __t49 = Value::Sym(interp.intern("define"));
+                                    let __t49 = Value::sym(interp.intern("define"));
                                     let __t51 = {
                                         let __t50 = v_V1240.clone();
                                         rt::hd(&__t50)?
@@ -501,7 +501,7 @@ pub fn aot_shen_x2e_typetable(interp: &mut Interp, args: &[Value]) -> ShenResult
                                     rt::eq(&__t49, &__t51)
                                 };
                                 if !rt::is_truthy(interp, &__t54)? {
-                                    Value::Bool(false)
+                                    Value::bool(false)
                                 } else {
                                     let __t55 = {
                                         let __t53 = {
@@ -510,10 +510,10 @@ pub fn aot_shen_x2e_typetable(interp: &mut Interp, args: &[Value]) -> ShenResult
                                         };
                                         rt::is_cons(&__t53)
                                     };
-                                    Value::Bool(rt::is_truthy(interp, &__t55)?)
+                                    Value::bool(rt::is_truthy(interp, &__t55)?)
                                 }
                             };
-                            Value::Bool(rt::is_truthy(interp, &__t57)?)
+                            Value::bool(rt::is_truthy(interp, &__t57)?)
                         }
                     };
                     if match rt::is_truthy(interp, &__t66) {
@@ -522,7 +522,7 @@ pub fn aot_shen_x2e_typetable(interp: &mut Interp, args: &[Value]) -> ShenResult
                     } {
                         break Ok({
                             let __t65 = {
-                                let __t58 = Value::Str(Rc::from("missing { in "));
+                                let __t58 = Value::str("missing { in ");
                                 let __t64 = {
                                     let __t61 = {
                                         let __t60 = {
@@ -531,8 +531,8 @@ pub fn aot_shen_x2e_typetable(interp: &mut Interp, args: &[Value]) -> ShenResult
                                         };
                                         rt::hd(&__t60)?
                                     };
-                                    let __t62 = Value::Str(Rc::from("\n"));
-                                    let __t63 = Value::Sym(interp.intern("shen.a"));
+                                    let __t62 = Value::str("\n");
+                                    let __t63 = Value::sym(interp.intern("shen.a"));
                                     rt::apply_direct(interp, "shen.app", &[__t61, __t62, __t63])?
                                 };
                                 rt::apply_direct(interp, "cn", &[__t58, __t64])?
@@ -541,12 +541,12 @@ pub fn aot_shen_x2e_typetable(interp: &mut Interp, args: &[Value]) -> ShenResult
                         });
                     } else {
                         {
-                            let __t47 = Value::Bool(true);
+                            let __t47 = Value::bool(true);
                             if match rt::is_truthy(interp, &__t47) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
-                                break Ok(Value::Nil);
+                                break Ok(Value::nil());
                             } else {
                                 break Err(ShenError::new("cond: no clause matched"));
                             }
@@ -584,24 +584,24 @@ pub fn aot_shen_x2e_type_x2d_F(interp: &mut Interp, args: &[Value]) -> ShenResul
                     rt::is_cons(&__t119)
                 };
                 if !rt::is_truthy(interp, &__t123)? {
-                    Value::Bool(false)
+                    Value::bool(false)
                 } else {
                     let __t124 = {
-                        let __t120 = Value::Sym(interp.intern("}"));
+                        let __t120 = Value::sym(interp.intern("}"));
                         let __t122 = {
                             let __t121 = v_V1248.clone();
                             rt::hd(&__t121)?
                         };
                         rt::eq(&__t120, &__t122)
                     };
-                    Value::Bool(rt::is_truthy(interp, &__t124)?)
+                    Value::bool(rt::is_truthy(interp, &__t124)?)
                 }
             };
             if match rt::is_truthy(interp, &__t125) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
-                break Ok(Value::Nil);
+                break Ok(Value::nil());
             } else {
                 {
                     let __t118 = {
@@ -629,18 +629,18 @@ pub fn aot_shen_x2e_type_x2d_F(interp: &mut Interp, args: &[Value]) -> ShenResul
                         });
                     } else {
                         {
-                            let __t110 = Value::Bool(true);
+                            let __t110 = Value::bool(true);
                             if match rt::is_truthy(interp, &__t110) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
                                     let __t109 = {
-                                        let __t104 = Value::Str(Rc::from("missing } in "));
+                                        let __t104 = Value::str("missing } in ");
                                         let __t108 = {
                                             let __t105 = v_V1247.clone();
-                                            let __t106 = Value::Str(Rc::from("\n"));
-                                            let __t107 = Value::Sym(interp.intern("shen.a"));
+                                            let __t106 = Value::str("\n");
+                                            let __t107 = Value::sym(interp.intern("shen.a"));
                                             rt::apply_direct(
                                                 interp,
                                                 "shen.app",
@@ -681,7 +681,7 @@ pub fn aot_shen_x2e_assumetypes(interp: &mut Interp, args: &[Value]) -> ShenResu
     loop {
         {
             let __t144 = {
-                let __t142 = Value::Nil;
+                let __t142 = Value::nil();
                 let __t143 = v_V1251.clone();
                 rt::eq(&__t142, &__t143)
             };
@@ -689,7 +689,7 @@ pub fn aot_shen_x2e_assumetypes(interp: &mut Interp, args: &[Value]) -> ShenResu
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
-                break Ok(Value::Nil);
+                break Ok(Value::nil());
             } else {
                 {
                     let __t141 = {
@@ -698,7 +698,7 @@ pub fn aot_shen_x2e_assumetypes(interp: &mut Interp, args: &[Value]) -> ShenResu
                             rt::is_cons(&__t128)
                         };
                         if !rt::is_truthy(interp, &__t131)? {
-                            Value::Bool(false)
+                            Value::bool(false)
                         } else {
                             let __t132 = {
                                 let __t130 = {
@@ -707,7 +707,7 @@ pub fn aot_shen_x2e_assumetypes(interp: &mut Interp, args: &[Value]) -> ShenResu
                                 };
                                 rt::is_cons(&__t130)
                             };
-                            Value::Bool(rt::is_truthy(interp, &__t132)?)
+                            Value::bool(rt::is_truthy(interp, &__t132)?)
                         }
                     };
                     if match rt::is_truthy(interp, &__t141) {
@@ -743,15 +743,14 @@ pub fn aot_shen_x2e_assumetypes(interp: &mut Interp, args: &[Value]) -> ShenResu
                         }
                     } else {
                         {
-                            let __t127 = Value::Bool(true);
+                            let __t127 = Value::bool(true);
                             if match rt::is_truthy(interp, &__t127) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t126 = Value::Str(Rc::from(
-                                        "implementation error in shen.assumetype",
-                                    ));
+                                    let __t126 =
+                                        Value::str("implementation error in shen.assumetype");
                                     rt::apply_direct(interp, "simple-error", &[__t126])?
                                 });
                             } else {
@@ -791,7 +790,7 @@ pub fn aot_shen_x2e_unwind_x2d_types(interp: &mut Interp, args: &[Value]) -> She
                     rt::is_cons(&__t148)
                 };
                 if !rt::is_truthy(interp, &__t151)? {
-                    Value::Bool(false)
+                    Value::bool(false)
                 } else {
                     let __t152 = {
                         let __t150 = {
@@ -800,7 +799,7 @@ pub fn aot_shen_x2e_unwind_x2d_types(interp: &mut Interp, args: &[Value]) -> She
                         };
                         rt::is_cons(&__t150)
                     };
-                    Value::Bool(rt::is_truthy(interp, &__t152)?)
+                    Value::bool(rt::is_truthy(interp, &__t152)?)
                 }
             };
             if match rt::is_truthy(interp, &__t159) {
@@ -831,7 +830,7 @@ pub fn aot_shen_x2e_unwind_x2d_types(interp: &mut Interp, args: &[Value]) -> She
                 }
             } else {
                 {
-                    let __t147 = Value::Bool(true);
+                    let __t147 = Value::bool(true);
                     if match rt::is_truthy(interp, &__t147) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
@@ -871,7 +870,7 @@ pub fn aot_shen_x2e_work_x2d_through(interp: &mut Interp, args: &[Value]) -> She
     loop {
         {
             let __t221 = {
-                let __t219 = Value::Nil;
+                let __t219 = Value::nil();
                 let __t220 = v_V1260.clone();
                 rt::eq(&__t219, &__t220)
             };
@@ -879,7 +878,7 @@ pub fn aot_shen_x2e_work_x2d_through(interp: &mut Interp, args: &[Value]) -> She
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
-                break Ok(Value::Nil);
+                break Ok(Value::nil());
             } else {
                 {
                     let __t218 = {
@@ -888,7 +887,7 @@ pub fn aot_shen_x2e_work_x2d_through(interp: &mut Interp, args: &[Value]) -> She
                             rt::is_cons(&__t174)
                         };
                         if !rt::is_truthy(interp, &__t189)? {
-                            Value::Bool(false)
+                            Value::bool(false)
                         } else {
                             let __t190 = {
                                 let __t187 = {
@@ -899,7 +898,7 @@ pub fn aot_shen_x2e_work_x2d_through(interp: &mut Interp, args: &[Value]) -> She
                                     rt::is_cons(&__t176)
                                 };
                                 if !rt::is_truthy(interp, &__t187)? {
-                                    Value::Bool(false)
+                                    Value::bool(false)
                                 } else {
                                     let __t188 = {
                                         let __t185 = {
@@ -913,7 +912,7 @@ pub fn aot_shen_x2e_work_x2d_through(interp: &mut Interp, args: &[Value]) -> She
                                             rt::is_cons(&__t179)
                                         };
                                         if !rt::is_truthy(interp, &__t185)? {
-                                            Value::Bool(false)
+                                            Value::bool(false)
                                         } else {
                                             let __t186 = {
                                                 let __t182 = {
@@ -924,18 +923,18 @@ pub fn aot_shen_x2e_work_x2d_through(interp: &mut Interp, args: &[Value]) -> She
                                                     rt::hd(&__t181)?
                                                 };
                                                 let __t184 = {
-                                                    let __t183 = Value::Str(Rc::from(":"));
+                                                    let __t183 = Value::str(":");
                                                     rt::apply_direct(interp, "intern", &[__t183])?
                                                 };
                                                 rt::eq(&__t182, &__t184)
                                             };
-                                            Value::Bool(rt::is_truthy(interp, &__t186)?)
+                                            Value::bool(rt::is_truthy(interp, &__t186)?)
                                         }
                                     };
-                                    Value::Bool(rt::is_truthy(interp, &__t188)?)
+                                    Value::bool(rt::is_truthy(interp, &__t188)?)
                                 }
                             };
-                            Value::Bool(rt::is_truthy(interp, &__t190)?)
+                            Value::bool(rt::is_truthy(interp, &__t190)?)
                         }
                     };
                     if match rt::is_truthy(interp, &__t218) {
@@ -963,7 +962,7 @@ pub fn aot_shen_x2e_work_x2d_through(interp: &mut Interp, args: &[Value]) -> She
                             {
                                 let __t199 = {
                                     let __t197 = v_W1261.clone();
-                                    let __t198 = Value::Bool(false);
+                                    let __t198 = Value::bool(false);
                                     rt::eq(&__t197, &__t198)
                                 };
                                 if match rt::is_truthy(interp, &__t199) {
@@ -994,7 +993,7 @@ pub fn aot_shen_x2e_work_x2d_through(interp: &mut Interp, args: &[Value]) -> She
                                                 let __t212 = {
                                                     let __t203 = v_W1262.clone();
                                                     let __t210 = {
-                                                        let __t204 = Value::Str(Rc::from(" : "));
+                                                        let __t204 = Value::str(" : ");
                                                         let __t209 = {
                                                             let __t206 = {
                                                                 let __t205 = v_W1261.clone();
@@ -1004,9 +1003,9 @@ pub fn aot_shen_x2e_work_x2d_through(interp: &mut Interp, args: &[Value]) -> She
                                                                     &[__t205],
                                                                 )?
                                                             };
-                                                            let __t207 = Value::Str(Rc::from("\n"));
+                                                            let __t207 = Value::str("\n");
                                                             let __t208 =
-                                                                Value::Sym(interp.intern("shen.r"));
+                                                                Value::sym(interp.intern("shen.r"));
                                                             rt::apply_direct(
                                                                 interp,
                                                                 "shen.app",
@@ -1020,7 +1019,7 @@ pub fn aot_shen_x2e_work_x2d_through(interp: &mut Interp, args: &[Value]) -> She
                                                         )?
                                                     };
                                                     let __t211 =
-                                                        Value::Sym(interp.intern("shen.s"));
+                                                        Value::sym(interp.intern("shen.s"));
                                                     rt::apply_direct(
                                                         interp,
                                                         "shen.app",
@@ -1068,11 +1067,11 @@ pub fn aot_shen_x2e_work_x2d_through(interp: &mut Interp, args: &[Value]) -> She
                                         };
                                         let __t171 = {
                                             let __t166 = {
-                                                let __t165 = Value::Str(Rc::from(":"));
+                                                let __t165 = Value::str(":");
                                                 rt::apply_direct(interp, "intern", &[__t165])?
                                             };
                                             let __t170 = {
-                                                let __t167 = Value::Sym(interp.intern("A"));
+                                                let __t167 = Value::sym(interp.intern("A"));
                                                 let __t169 = {
                                                     let __t168 = v_V1260.clone();
                                                     rt::tl(&__t168)?
@@ -1088,15 +1087,15 @@ pub fn aot_shen_x2e_work_x2d_through(interp: &mut Interp, args: &[Value]) -> She
                                 }
                             } else {
                                 {
-                                    let __t161 = Value::Bool(true);
+                                    let __t161 = Value::bool(true);
                                     if match rt::is_truthy(interp, &__t161) {
                                         Ok(b) => b,
                                         Err(e) => break Err(e),
                                     } {
                                         break Ok({
-                                            let __t160 = Value::Str(Rc::from(
+                                            let __t160 = Value::str(
                                                 "implementation error in shen.work-through",
-                                            ));
+                                            );
                                             rt::apply_direct(interp, "simple-error", &[__t160])?
                                         });
                                     } else {
@@ -1136,7 +1135,7 @@ pub fn aot_shen_x2e_pretty_x2d_type(interp: &mut Interp, args: &[Value]) -> Shen
                     rt::is_cons(&__t228)
                 };
                 if !rt::is_truthy(interp, &__t362)? {
-                    Value::Bool(false)
+                    Value::bool(false)
                 } else {
                     let __t363 = {
                         let __t360 = {
@@ -1147,11 +1146,11 @@ pub fn aot_shen_x2e_pretty_x2d_type(interp: &mut Interp, args: &[Value]) -> Shen
                             rt::is_cons(&__t230)
                         };
                         if !rt::is_truthy(interp, &__t360)? {
-                            Value::Bool(false)
+                            Value::bool(false)
                         } else {
                             let __t361 = {
                                 let __t358 = {
-                                    let __t231 = Value::Sym(interp.intern("list"));
+                                    let __t231 = Value::sym(interp.intern("list"));
                                     let __t234 = {
                                         let __t233 = {
                                             let __t232 = v_V1265.clone();
@@ -1162,7 +1161,7 @@ pub fn aot_shen_x2e_pretty_x2d_type(interp: &mut Interp, args: &[Value]) -> Shen
                                     rt::eq(&__t231, &__t234)
                                 };
                                 if !rt::is_truthy(interp, &__t358)? {
-                                    Value::Bool(false)
+                                    Value::bool(false)
                                 } else {
                                     let __t359 = {
                                         let __t356 = {
@@ -1176,11 +1175,11 @@ pub fn aot_shen_x2e_pretty_x2d_type(interp: &mut Interp, args: &[Value]) -> Shen
                                             rt::is_cons(&__t237)
                                         };
                                         if !rt::is_truthy(interp, &__t356)? {
-                                            Value::Bool(false)
+                                            Value::bool(false)
                                         } else {
                                             let __t357 = {
                                                 let __t354 = {
-                                                    let __t238 = Value::Nil;
+                                                    let __t238 = Value::nil();
                                                     let __t242 = {
                                                         let __t241 = {
                                                             let __t240 = {
@@ -1194,7 +1193,7 @@ pub fn aot_shen_x2e_pretty_x2d_type(interp: &mut Interp, args: &[Value]) -> Shen
                                                     rt::eq(&__t238, &__t242)
                                                 };
                                                 if !rt::is_truthy(interp, &__t354)? {
-                                                    Value::Bool(false)
+                                                    Value::bool(false)
                                                 } else {
                                                     let __t355 = {
                                                         let __t352 = {
@@ -1205,11 +1204,11 @@ pub fn aot_shen_x2e_pretty_x2d_type(interp: &mut Interp, args: &[Value]) -> Shen
                                                             rt::is_cons(&__t244)
                                                         };
                                                         if !rt::is_truthy(interp, &__t352)? {
-                                                            Value::Bool(false)
+                                                            Value::bool(false)
                                                         } else {
                                                             let __t353 = {
                                                                 let __t350 = {
-                                                                    let __t245 = Value::Sym(
+                                                                    let __t245 = Value::sym(
                                                                         interp.intern("-->"),
                                                                     );
                                                                     let __t248 = {
@@ -1224,7 +1223,7 @@ pub fn aot_shen_x2e_pretty_x2d_type(interp: &mut Interp, args: &[Value]) -> Shen
                                                                 };
                                                                 if !rt::is_truthy(interp, &__t350)?
                                                                 {
-                                                                    Value::Bool(false)
+                                                                    Value::bool(false)
                                                                 } else {
                                                                     let __t351 = {
                                                                         let __t348 = {
@@ -1243,7 +1242,7 @@ pub fn aot_shen_x2e_pretty_x2d_type(interp: &mut Interp, args: &[Value]) -> Shen
                                                                         if !rt::is_truthy(
                                                                             interp, &__t348,
                                                                         )? {
-                                                                            Value::Bool(false)
+                                                                            Value::bool(false)
                                                                         } else {
                                                                             let __t349 = {
                                                                                 let __t346 = {
@@ -1266,54 +1265,54 @@ pub fn aot_shen_x2e_pretty_x2d_type(interp: &mut Interp, args: &[Value]) -> Shen
                                                                                 if !rt::is_truthy(
                                                                                     interp, &__t346,
                                                                                 )? {
-                                                                                    Value::Bool(
+                                                                                    Value::bool(
                                                                                         false,
                                                                                     )
                                                                                 } else {
                                                                                     let __t347 = {
                                                                                         let __t344 = {
-                                                                                            let __t256 = Value::Sym(interp.intern("str"));
+                                                                                            let __t256 = Value::sym(interp.intern("str"));
                                                                                             let __t261 = {
                                                                                                 let __t260 = { let __t259 = { let __t258 = { let __t257 = v_V1265.clone(); rt::tl(&__t257)? }; rt::tl(&__t258)? }; rt::hd(&__t259)? };
                                                                                                 rt::hd(&__t260)?
                                                                                             };
                                                                                             rt::eq(&__t256, &__t261)
                                                                                         };
-                                                                                        if !rt::is_truthy(interp, &__t344)? { Value::Bool(false) } else { let __t345 = { let __t342 = { let __t266 = { let __t265 = { let __t264 = { let __t263 = { let __t262 = v_V1265.clone(); rt::tl(&__t262)? }; rt::tl(&__t263)? }; rt::hd(&__t264)? }; rt::tl(&__t265)? }; rt::is_cons(&__t266) }; if !rt::is_truthy(interp, &__t342)? { Value::Bool(false) } else { let __t343 = { let __t340 = { let __t272 = { let __t271 = { let __t270 = { let __t269 = { let __t268 = { let __t267 = v_V1265.clone(); rt::tl(&__t267)? }; rt::tl(&__t268)? }; rt::hd(&__t269)? }; rt::tl(&__t270)? }; rt::hd(&__t271)? }; rt::is_cons(&__t272) }; if !rt::is_truthy(interp, &__t340)? { Value::Bool(false) } else { let __t341 = { let __t338 = { let __t273 = Value::Sym(interp.intern("list")); let __t280 = { let __t279 = { let __t278 = { let __t277 = { let __t276 = { let __t275 = { let __t274 = v_V1265.clone(); rt::tl(&__t274)? }; rt::tl(&__t275)? }; rt::hd(&__t276)? }; rt::tl(&__t277)? }; rt::hd(&__t278)? }; rt::hd(&__t279)? }; rt::eq(&__t273, &__t280) }; if !rt::is_truthy(interp, &__t338)? { Value::Bool(false) } else { let __t339 = { let __t336 = { let __t287 = { let __t286 = { let __t285 = { let __t284 = { let __t283 = { let __t282 = { let __t281 = v_V1265.clone(); rt::tl(&__t281)? }; rt::tl(&__t282)? }; rt::hd(&__t283)? }; rt::tl(&__t284)? }; rt::hd(&__t285)? }; rt::tl(&__t286)? }; rt::is_cons(&__t287) }; if !rt::is_truthy(interp, &__t336)? { Value::Bool(false) } else { let __t337 = { let __t334 = { let __t288 = Value::Nil; let __t296 = { let __t295 = { let __t294 = { let __t293 = { let __t292 = { let __t291 = { let __t290 = { let __t289 = v_V1265.clone(); rt::tl(&__t289)? }; rt::tl(&__t290)? }; rt::hd(&__t291)? }; rt::tl(&__t292)? }; rt::hd(&__t293)? }; rt::tl(&__t294)? }; rt::tl(&__t295)? }; rt::eq(&__t288, &__t296) }; if !rt::is_truthy(interp, &__t334)? { Value::Bool(false) } else { let __t335 = { let __t332 = { let __t302 = { let __t301 = { let __t300 = { let __t299 = { let __t298 = { let __t297 = v_V1265.clone(); rt::tl(&__t297)? }; rt::tl(&__t298)? }; rt::hd(&__t299)? }; rt::tl(&__t300)? }; rt::tl(&__t301)? }; rt::is_cons(&__t302) }; if !rt::is_truthy(interp, &__t332)? { Value::Bool(false) } else { let __t333 = { let __t330 = { let __t303 = Value::Nil; let __t310 = { let __t309 = { let __t308 = { let __t307 = { let __t306 = { let __t305 = { let __t304 = v_V1265.clone(); rt::tl(&__t304)? }; rt::tl(&__t305)? }; rt::hd(&__t306)? }; rt::tl(&__t307)? }; rt::tl(&__t308)? }; rt::tl(&__t309)? }; rt::eq(&__t303, &__t310) }; if !rt::is_truthy(interp, &__t330)? { Value::Bool(false) } else { let __t331 = { let __t328 = { let __t311 = Value::Nil; let __t315 = { let __t314 = { let __t313 = { let __t312 = v_V1265.clone(); rt::tl(&__t312)? }; rt::tl(&__t313)? }; rt::tl(&__t314)? }; rt::eq(&__t311, &__t315) }; if !rt::is_truthy(interp, &__t328)? { Value::Bool(false) } else { let __t329 = { let __t319 = { let __t318 = { let __t317 = { let __t316 = v_V1265.clone(); rt::hd(&__t316)? }; rt::tl(&__t317)? }; rt::hd(&__t318)? }; let __t327 = { let __t326 = { let __t325 = { let __t324 = { let __t323 = { let __t322 = { let __t321 = { let __t320 = v_V1265.clone(); rt::tl(&__t320)? }; rt::tl(&__t321)? }; rt::hd(&__t322)? }; rt::tl(&__t323)? }; rt::hd(&__t324)? }; rt::tl(&__t325)? }; rt::hd(&__t326)? }; rt::eq(&__t319, &__t327) }; Value::Bool(rt::is_truthy(interp, &__t329)?) } }; Value::Bool(rt::is_truthy(interp, &__t331)?) } }; Value::Bool(rt::is_truthy(interp, &__t333)?) } }; Value::Bool(rt::is_truthy(interp, &__t335)?) } }; Value::Bool(rt::is_truthy(interp, &__t337)?) } }; Value::Bool(rt::is_truthy(interp, &__t339)?) } }; Value::Bool(rt::is_truthy(interp, &__t341)?) } }; Value::Bool(rt::is_truthy(interp, &__t343)?) } }; Value::Bool(rt::is_truthy(interp, &__t345)?) }
+                                                                                        if !rt::is_truthy(interp, &__t344)? { Value::bool(false) } else { let __t345 = { let __t342 = { let __t266 = { let __t265 = { let __t264 = { let __t263 = { let __t262 = v_V1265.clone(); rt::tl(&__t262)? }; rt::tl(&__t263)? }; rt::hd(&__t264)? }; rt::tl(&__t265)? }; rt::is_cons(&__t266) }; if !rt::is_truthy(interp, &__t342)? { Value::bool(false) } else { let __t343 = { let __t340 = { let __t272 = { let __t271 = { let __t270 = { let __t269 = { let __t268 = { let __t267 = v_V1265.clone(); rt::tl(&__t267)? }; rt::tl(&__t268)? }; rt::hd(&__t269)? }; rt::tl(&__t270)? }; rt::hd(&__t271)? }; rt::is_cons(&__t272) }; if !rt::is_truthy(interp, &__t340)? { Value::bool(false) } else { let __t341 = { let __t338 = { let __t273 = Value::sym(interp.intern("list")); let __t280 = { let __t279 = { let __t278 = { let __t277 = { let __t276 = { let __t275 = { let __t274 = v_V1265.clone(); rt::tl(&__t274)? }; rt::tl(&__t275)? }; rt::hd(&__t276)? }; rt::tl(&__t277)? }; rt::hd(&__t278)? }; rt::hd(&__t279)? }; rt::eq(&__t273, &__t280) }; if !rt::is_truthy(interp, &__t338)? { Value::bool(false) } else { let __t339 = { let __t336 = { let __t287 = { let __t286 = { let __t285 = { let __t284 = { let __t283 = { let __t282 = { let __t281 = v_V1265.clone(); rt::tl(&__t281)? }; rt::tl(&__t282)? }; rt::hd(&__t283)? }; rt::tl(&__t284)? }; rt::hd(&__t285)? }; rt::tl(&__t286)? }; rt::is_cons(&__t287) }; if !rt::is_truthy(interp, &__t336)? { Value::bool(false) } else { let __t337 = { let __t334 = { let __t288 = Value::nil(); let __t296 = { let __t295 = { let __t294 = { let __t293 = { let __t292 = { let __t291 = { let __t290 = { let __t289 = v_V1265.clone(); rt::tl(&__t289)? }; rt::tl(&__t290)? }; rt::hd(&__t291)? }; rt::tl(&__t292)? }; rt::hd(&__t293)? }; rt::tl(&__t294)? }; rt::tl(&__t295)? }; rt::eq(&__t288, &__t296) }; if !rt::is_truthy(interp, &__t334)? { Value::bool(false) } else { let __t335 = { let __t332 = { let __t302 = { let __t301 = { let __t300 = { let __t299 = { let __t298 = { let __t297 = v_V1265.clone(); rt::tl(&__t297)? }; rt::tl(&__t298)? }; rt::hd(&__t299)? }; rt::tl(&__t300)? }; rt::tl(&__t301)? }; rt::is_cons(&__t302) }; if !rt::is_truthy(interp, &__t332)? { Value::bool(false) } else { let __t333 = { let __t330 = { let __t303 = Value::nil(); let __t310 = { let __t309 = { let __t308 = { let __t307 = { let __t306 = { let __t305 = { let __t304 = v_V1265.clone(); rt::tl(&__t304)? }; rt::tl(&__t305)? }; rt::hd(&__t306)? }; rt::tl(&__t307)? }; rt::tl(&__t308)? }; rt::tl(&__t309)? }; rt::eq(&__t303, &__t310) }; if !rt::is_truthy(interp, &__t330)? { Value::bool(false) } else { let __t331 = { let __t328 = { let __t311 = Value::nil(); let __t315 = { let __t314 = { let __t313 = { let __t312 = v_V1265.clone(); rt::tl(&__t312)? }; rt::tl(&__t313)? }; rt::tl(&__t314)? }; rt::eq(&__t311, &__t315) }; if !rt::is_truthy(interp, &__t328)? { Value::bool(false) } else { let __t329 = { let __t319 = { let __t318 = { let __t317 = { let __t316 = v_V1265.clone(); rt::hd(&__t316)? }; rt::tl(&__t317)? }; rt::hd(&__t318)? }; let __t327 = { let __t326 = { let __t325 = { let __t324 = { let __t323 = { let __t322 = { let __t321 = { let __t320 = v_V1265.clone(); rt::tl(&__t320)? }; rt::tl(&__t321)? }; rt::hd(&__t322)? }; rt::tl(&__t323)? }; rt::hd(&__t324)? }; rt::tl(&__t325)? }; rt::hd(&__t326)? }; rt::eq(&__t319, &__t327) }; Value::bool(rt::is_truthy(interp, &__t329)?) } }; Value::bool(rt::is_truthy(interp, &__t331)?) } }; Value::bool(rt::is_truthy(interp, &__t333)?) } }; Value::bool(rt::is_truthy(interp, &__t335)?) } }; Value::bool(rt::is_truthy(interp, &__t337)?) } }; Value::bool(rt::is_truthy(interp, &__t339)?) } }; Value::bool(rt::is_truthy(interp, &__t341)?) } }; Value::bool(rt::is_truthy(interp, &__t343)?) } }; Value::bool(rt::is_truthy(interp, &__t345)?) }
                                                                                     };
-                                                                                    Value::Bool(rt::is_truthy(interp, &__t347)?)
+                                                                                    Value::bool(rt::is_truthy(interp, &__t347)?)
                                                                                 }
                                                                             };
-                                                                            Value::Bool(
+                                                                            Value::bool(
                                                                                 rt::is_truthy(
                                                                                     interp, &__t349,
                                                                                 )?,
                                                                             )
                                                                         }
                                                                     };
-                                                                    Value::Bool(rt::is_truthy(
+                                                                    Value::bool(rt::is_truthy(
                                                                         interp, &__t351,
                                                                     )?)
                                                                 }
                                                             };
-                                                            Value::Bool(rt::is_truthy(
+                                                            Value::bool(rt::is_truthy(
                                                                 interp, &__t353,
                                                             )?)
                                                         }
                                                     };
-                                                    Value::Bool(rt::is_truthy(interp, &__t355)?)
+                                                    Value::bool(rt::is_truthy(interp, &__t355)?)
                                                 }
                                             };
-                                            Value::Bool(rt::is_truthy(interp, &__t357)?)
+                                            Value::bool(rt::is_truthy(interp, &__t357)?)
                                         }
                                     };
-                                    Value::Bool(rt::is_truthy(interp, &__t359)?)
+                                    Value::bool(rt::is_truthy(interp, &__t359)?)
                                 }
                             };
-                            Value::Bool(rt::is_truthy(interp, &__t361)?)
+                            Value::bool(rt::is_truthy(interp, &__t361)?)
                         }
                     };
-                    Value::Bool(rt::is_truthy(interp, &__t363)?)
+                    Value::bool(rt::is_truthy(interp, &__t363)?)
                 }
             };
             if match rt::is_truthy(interp, &__t378) {
@@ -1338,7 +1337,7 @@ pub fn aot_shen_x2e_pretty_x2d_type(interp: &mut Interp, args: &[Value]) -> Shen
                         rt::hd(&__t368)?
                     };
                     let __t377 = {
-                        let __t370 = Value::Sym(interp.intern("==>"));
+                        let __t370 = Value::sym(interp.intern("==>"));
                         let __t376 = {
                             let __t375 = {
                                 let __t374 = {
@@ -1389,7 +1388,7 @@ pub fn aot_shen_x2e_pretty_x2d_type(interp: &mut Interp, args: &[Value]) -> Shen
                         });
                     } else {
                         {
-                            let __t222 = Value::Bool(true);
+                            let __t222 = Value::bool(true);
                             if match rt::is_truthy(interp, &__t222) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
@@ -1422,7 +1421,7 @@ pub fn aot_shen_x2e_type_x2d_error(interp: &mut Interp, args: &[Value]) -> ShenR
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t379 = Value::Str(Rc::from("type error\n"));
+            let __t379 = Value::str("type error\n");
             rt::apply_direct(interp, "simple-error", &[__t379])?
         });
     }
@@ -1458,7 +1457,7 @@ pub fn aot_bootstrap(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                 {
                     let v_W1270 = {
                         let __t382 = v_W1268.clone();
-                        let __t383 = Value::Sym(interp.intern("out"));
+                        let __t383 = Value::sym(interp.intern("out"));
                         rt::apply_direct(interp, "open", &[__t382, __t383])?
                     };
                     {
@@ -1526,11 +1525,11 @@ pub fn aot_shen_x2e_partial(interp: &mut Interp, args: &[Value]) -> ShenResult<V
                     rt::is_cons(&__t396)
                 };
                 if !rt::is_truthy(interp, &__t410)? {
-                    Value::Bool(false)
+                    Value::bool(false)
                 } else {
                     let __t411 = {
                         let __t408 = {
-                            let __t397 = Value::Sym(interp.intern("shen.f-error"));
+                            let __t397 = Value::sym(interp.intern("shen.f-error"));
                             let __t399 = {
                                 let __t398 = v_V1274.clone();
                                 rt::hd(&__t398)?
@@ -1538,7 +1537,7 @@ pub fn aot_shen_x2e_partial(interp: &mut Interp, args: &[Value]) -> ShenResult<V
                             rt::eq(&__t397, &__t399)
                         };
                         if !rt::is_truthy(interp, &__t408)? {
-                            Value::Bool(false)
+                            Value::bool(false)
                         } else {
                             let __t409 = {
                                 let __t406 = {
@@ -1549,10 +1548,10 @@ pub fn aot_shen_x2e_partial(interp: &mut Interp, args: &[Value]) -> ShenResult<V
                                     rt::is_cons(&__t401)
                                 };
                                 if !rt::is_truthy(interp, &__t406)? {
-                                    Value::Bool(false)
+                                    Value::bool(false)
                                 } else {
                                     let __t407 = {
-                                        let __t402 = Value::Nil;
+                                        let __t402 = Value::nil();
                                         let __t405 = {
                                             let __t404 = {
                                                 let __t403 = v_V1274.clone();
@@ -1562,13 +1561,13 @@ pub fn aot_shen_x2e_partial(interp: &mut Interp, args: &[Value]) -> ShenResult<V
                                         };
                                         rt::eq(&__t402, &__t405)
                                     };
-                                    Value::Bool(rt::is_truthy(interp, &__t407)?)
+                                    Value::bool(rt::is_truthy(interp, &__t407)?)
                                 }
                             };
-                            Value::Bool(rt::is_truthy(interp, &__t409)?)
+                            Value::bool(rt::is_truthy(interp, &__t409)?)
                         }
                     };
-                    Value::Bool(rt::is_truthy(interp, &__t411)?)
+                    Value::bool(rt::is_truthy(interp, &__t411)?)
                 }
             };
             if match rt::is_truthy(interp, &__t421) {
@@ -1576,10 +1575,10 @@ pub fn aot_shen_x2e_partial(interp: &mut Interp, args: &[Value]) -> ShenResult<V
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t412 = Value::Sym(interp.intern("simple-error"));
+                    let __t412 = Value::sym(interp.intern("simple-error"));
                     let __t420 = {
                         let __t418 = {
-                            let __t413 = Value::Str(Rc::from("partial function "));
+                            let __t413 = Value::str("partial function ");
                             let __t417 = {
                                 let __t416 = {
                                     let __t415 = {
@@ -1592,7 +1591,7 @@ pub fn aot_shen_x2e_partial(interp: &mut Interp, args: &[Value]) -> ShenResult<V
                             };
                             rt::apply_direct(interp, "cn", &[__t413, __t417])?
                         };
-                        let __t419 = Value::Nil;
+                        let __t419 = Value::nil();
                         rt::cons(&__t418, &__t419)
                     };
                     rt::cons(&__t412, &__t420)
@@ -1627,7 +1626,7 @@ pub fn aot_shen_x2e_partial(interp: &mut Interp, args: &[Value]) -> ShenResult<V
                         });
                     } else {
                         {
-                            let __t390 = Value::Bool(true);
+                            let __t390 = Value::bool(true);
                             if match rt::is_truthy(interp, &__t390) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
@@ -1665,7 +1664,7 @@ pub fn aot_shen_x2e_write_x2d_kl(interp: &mut Interp, args: &[Value]) -> ShenRes
     loop {
         {
             let __t444 = {
-                let __t441 = Value::Nil;
+                let __t441 = Value::nil();
                 let __t442 = v_V1278.clone();
                 rt::eq(&__t441, &__t442)
             };
@@ -1685,7 +1684,7 @@ pub fn aot_shen_x2e_write_x2d_kl(interp: &mut Interp, args: &[Value]) -> ShenRes
                             rt::is_cons(&__t429)
                         };
                         if !rt::is_truthy(interp, &__t432)? {
-                            Value::Bool(false)
+                            Value::bool(false)
                         } else {
                             let __t433 = {
                                 let __t431 = {
@@ -1694,7 +1693,7 @@ pub fn aot_shen_x2e_write_x2d_kl(interp: &mut Interp, args: &[Value]) -> ShenRes
                                 };
                                 rt::is_cons(&__t431)
                             };
-                            Value::Bool(rt::is_truthy(interp, &__t433)?)
+                            Value::bool(rt::is_truthy(interp, &__t433)?)
                         }
                     };
                     if match rt::is_truthy(interp, &__t440) {
@@ -1743,13 +1742,13 @@ pub fn aot_shen_x2e_write_x2d_kl(interp: &mut Interp, args: &[Value]) -> ShenRes
                                 }
                             } else {
                                 {
-                                    let __t423 = Value::Bool(true);
+                                    let __t423 = Value::bool(true);
                                     if match rt::is_truthy(interp, &__t423) {
                                         Ok(b) => b,
                                         Err(e) => break Err(e),
                                     } {
                                         break Ok({
-                                            let __t422 = Value::Sym(interp.intern("shen.write-kl"));
+                                            let __t422 = Value::sym(interp.intern("shen.write-kl"));
                                             rt::apply_direct(interp, "shen.f-error", &[__t422])?
                                         });
                                     } else {
@@ -1791,11 +1790,11 @@ pub fn aot_shen_x2e_write_x2d_kl_x2d_h(interp: &mut Interp, args: &[Value]) -> S
                     rt::is_cons(&__t451)
                 };
                 if !rt::is_truthy(interp, &__t491)? {
-                    Value::Bool(false)
+                    Value::bool(false)
                 } else {
                     let __t492 = {
                         let __t489 = {
-                            let __t452 = Value::Sym(interp.intern("defun"));
+                            let __t452 = Value::sym(interp.intern("defun"));
                             let __t454 = {
                                 let __t453 = v_V1282.clone();
                                 rt::hd(&__t453)?
@@ -1803,7 +1802,7 @@ pub fn aot_shen_x2e_write_x2d_kl_x2d_h(interp: &mut Interp, args: &[Value]) -> S
                             rt::eq(&__t452, &__t454)
                         };
                         if !rt::is_truthy(interp, &__t489)? {
-                            Value::Bool(false)
+                            Value::bool(false)
                         } else {
                             let __t490 = {
                                 let __t487 = {
@@ -1814,11 +1813,11 @@ pub fn aot_shen_x2e_write_x2d_kl_x2d_h(interp: &mut Interp, args: &[Value]) -> S
                                     rt::is_cons(&__t456)
                                 };
                                 if !rt::is_truthy(interp, &__t487)? {
-                                    Value::Bool(false)
+                                    Value::bool(false)
                                 } else {
                                     let __t488 = {
                                         let __t485 = {
-                                            let __t457 = Value::Sym(interp.intern("fail"));
+                                            let __t457 = Value::sym(interp.intern("fail"));
                                             let __t460 = {
                                                 let __t459 = {
                                                     let __t458 = v_V1282.clone();
@@ -1829,7 +1828,7 @@ pub fn aot_shen_x2e_write_x2d_kl_x2d_h(interp: &mut Interp, args: &[Value]) -> S
                                             rt::eq(&__t457, &__t460)
                                         };
                                         if !rt::is_truthy(interp, &__t485)? {
-                                            Value::Bool(false)
+                                            Value::bool(false)
                                         } else {
                                             let __t486 = {
                                                 let __t483 = {
@@ -1843,11 +1842,11 @@ pub fn aot_shen_x2e_write_x2d_kl_x2d_h(interp: &mut Interp, args: &[Value]) -> S
                                                     rt::is_cons(&__t463)
                                                 };
                                                 if !rt::is_truthy(interp, &__t483)? {
-                                                    Value::Bool(false)
+                                                    Value::bool(false)
                                                 } else {
                                                     let __t484 = {
                                                         let __t481 = {
-                                                            let __t464 = Value::Nil;
+                                                            let __t464 = Value::nil();
                                                             let __t468 = {
                                                                 let __t467 = {
                                                                     let __t466 = {
@@ -1862,7 +1861,7 @@ pub fn aot_shen_x2e_write_x2d_kl_x2d_h(interp: &mut Interp, args: &[Value]) -> S
                                                             rt::eq(&__t464, &__t468)
                                                         };
                                                         if !rt::is_truthy(interp, &__t481)? {
-                                                            Value::Bool(false)
+                                                            Value::bool(false)
                                                         } else {
                                                             let __t482 = {
                                                                 let __t479 = {
@@ -1881,10 +1880,10 @@ pub fn aot_shen_x2e_write_x2d_kl_x2d_h(interp: &mut Interp, args: &[Value]) -> S
                                                                 };
                                                                 if !rt::is_truthy(interp, &__t479)?
                                                                 {
-                                                                    Value::Bool(false)
+                                                                    Value::bool(false)
                                                                 } else {
                                                                     let __t480 = {
-                                                                        let __t473 = Value::Nil;
+                                                                        let __t473 = Value::nil();
                                                                         let __t478 = {
                                                                             let __t477 = {
                                                                                 let __t476 = {
@@ -1902,29 +1901,29 @@ pub fn aot_shen_x2e_write_x2d_kl_x2d_h(interp: &mut Interp, args: &[Value]) -> S
                                                                         };
                                                                         rt::eq(&__t473, &__t478)
                                                                     };
-                                                                    Value::Bool(rt::is_truthy(
+                                                                    Value::bool(rt::is_truthy(
                                                                         interp, &__t480,
                                                                     )?)
                                                                 }
                                                             };
-                                                            Value::Bool(rt::is_truthy(
+                                                            Value::bool(rt::is_truthy(
                                                                 interp, &__t482,
                                                             )?)
                                                         }
                                                     };
-                                                    Value::Bool(rt::is_truthy(interp, &__t484)?)
+                                                    Value::bool(rt::is_truthy(interp, &__t484)?)
                                                 }
                                             };
-                                            Value::Bool(rt::is_truthy(interp, &__t486)?)
+                                            Value::bool(rt::is_truthy(interp, &__t486)?)
                                         }
                                     };
-                                    Value::Bool(rt::is_truthy(interp, &__t488)?)
+                                    Value::bool(rt::is_truthy(interp, &__t488)?)
                                 }
                             };
-                            Value::Bool(rt::is_truthy(interp, &__t490)?)
+                            Value::bool(rt::is_truthy(interp, &__t490)?)
                         }
                     };
-                    Value::Bool(rt::is_truthy(interp, &__t492)?)
+                    Value::bool(rt::is_truthy(interp, &__t492)?)
                 }
             };
             if match rt::is_truthy(interp, &__t495) {
@@ -1932,13 +1931,13 @@ pub fn aot_shen_x2e_write_x2d_kl_x2d_h(interp: &mut Interp, args: &[Value]) -> S
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t493 = Value::Str(Rc::from("(defun fail () shen.fail!)"));
+                    let __t493 = Value::str("(defun fail () shen.fail!)");
                     let __t494 = v_V1283.clone();
                     rt::apply_direct(interp, "pr", &[__t493, __t494])?
                 });
             } else {
                 {
-                    let __t450 = Value::Bool(true);
+                    let __t450 = Value::bool(true);
                     if match rt::is_truthy(interp, &__t450) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
@@ -1946,8 +1945,8 @@ pub fn aot_shen_x2e_write_x2d_kl_x2d_h(interp: &mut Interp, args: &[Value]) -> S
                         break Ok({
                             let __t448 = {
                                 let __t445 = v_V1282.clone();
-                                let __t446 = Value::Str(Rc::from("\n\n"));
-                                let __t447 = Value::Sym(interp.intern("shen.r"));
+                                let __t446 = Value::str("\n\n");
+                                let __t447 = Value::sym(interp.intern("shen.r"));
                                 rt::apply_direct(interp, "shen.app", &[__t445, __t446, __t447])?
                             };
                             let __t449 = v_V1283.clone();
@@ -1981,7 +1980,7 @@ pub fn aot_shen_x2e_klfile(interp: &mut Interp, args: &[Value]) -> ShenResult<Va
     loop {
         {
             let __t510 = {
-                let __t508 = Value::Str(Rc::from(""));
+                let __t508 = Value::str("");
                 let __t509 = v_V1284.clone();
                 rt::eq(&__t508, &__t509)
             };
@@ -1989,11 +1988,11 @@ pub fn aot_shen_x2e_klfile(interp: &mut Interp, args: &[Value]) -> ShenResult<Va
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
-                break Ok(Value::Str(Rc::from(".kl")));
+                break Ok(Value::str(".kl"));
             } else {
                 {
                     let __t507 = {
-                        let __t505 = Value::Str(Rc::from(".shen"));
+                        let __t505 = Value::str(".shen");
                         let __t506 = v_V1284.clone();
                         rt::eq(&__t505, &__t506)
                     };
@@ -2001,7 +2000,7 @@ pub fn aot_shen_x2e_klfile(interp: &mut Interp, args: &[Value]) -> ShenResult<Va
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
-                        break Ok(Value::Str(Rc::from(".kl")));
+                        break Ok(Value::str(".kl"));
                     } else {
                         {
                             let __t504 = {
@@ -2028,13 +2027,13 @@ pub fn aot_shen_x2e_klfile(interp: &mut Interp, args: &[Value]) -> ShenResult<Va
                                 });
                             } else {
                                 {
-                                    let __t497 = Value::Bool(true);
+                                    let __t497 = Value::bool(true);
                                     if match rt::is_truthy(interp, &__t497) {
                                         Ok(b) => b,
                                         Err(e) => break Err(e),
                                     } {
                                         break Ok({
-                                            let __t496 = Value::Sym(interp.intern("shen.klfile"));
+                                            let __t496 = Value::sym(interp.intern("shen.klfile"));
                                             rt::apply_direct(interp, "shen.f-error", &[__t496])?
                                         });
                                     } else {
