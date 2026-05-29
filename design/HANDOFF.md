@@ -1,5 +1,12 @@
 # shen-cedar Performance — Handoff (2026-05-29)
 
+> **SUPERSEDED for next action (2026-05-29 later):** both GC gating spikes have
+> since PASSED (throughput 3.34× + AOT-frame roots sound — see
+> `perf-state-and-gc-ladder.md` §6f/§6g). The implementation plan to actually
+> ship the GC + word-sized `Value` now lives in
+> **`design/gc-conversion-handoff.md`** — start there. The §-below "NEXT ACTION"
+> (do the spike) is DONE. This doc remains accurate for shipped state + context.
+
 Standalone. Pick up the perf effort without the originating conversation.
 **Read `design/perf-state-and-gc-ladder.md` first** — it's the authoritative
 current-state doc; this is the action-oriented companion.
