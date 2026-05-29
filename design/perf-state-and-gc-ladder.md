@@ -185,7 +185,7 @@ fit for the identity constraints in §6b, with a **shadow stack** for precise
 roots. But this is a decision to validate with a *focused GC spike* (see §7),
 not to lock in here.
 
-### 6d. The precise-roots problem (the real difficulty)
+### 6d. The precise-roots problem (the real difficulty) — PROTOTYPED, see §6g
 A tracing GC must find all live `Value`s. In a Rust tree-walker/VM they live in
 Rust locals, the VM value-stack, `Interp` fields, and AOT Rust stack frames. A
 conservative stack scan is fragile across Rust's unspecified layout; a precise
@@ -193,6 +193,8 @@ conservative stack scan is fragile across Rust's unspecified layout; a precise
 set) is cleaner but the **AOT kernel** holds `Value`s in native Rust frames that
 a shadow stack doesn't see. This interaction — **GC roots inside AOT-compiled
 code** — is the single biggest design risk and must be prototyped early.
+**→ Prototyped 2026-05-29 (§6g): conservative native-stack scan is SOUND for a
+non-moving collector and finds AOT-frame roots, but over-retains (~7.7×).**
 
 ### 6e. Kill-criteria
 - A focused GC spike (§7) must show the **Copy-ref list win survives a real
@@ -224,11 +226,46 @@ corrupt list aborts as a *void* measurement, not a fast one):
   list boundary (empty live set → trivial mark), and there was no correctness
   assert. Fixed by the live `WINDOW` + un-aligned `cap` + sum assertions +
   `peak_live ≥ n` guard. (Logged because "too good" is the tell, per §8.)
-- **Caveat (still open)**: this models collector + representation throughput and
-  a shadow-stack roots story. It does **not** model GC roots in **AOT-compiled
-  Rust frames** (§6d) — the largest remaining design risk, to be prototyped
-  before the full conversion. The spike justifies *proceeding*, not *skipping
-  §6d*.
+- **Caveat (addressed next, §6g)**: this models collector + representation
+  throughput and a shadow-stack roots story. It does **not** model GC roots in
+  **AOT-compiled Rust frames** (§6d) — addressed by the §6g spike.
+
+### 6g. AOT-frame roots spike RESULT (2026-05-29) — §6d feasibility CONFIRMED, with a cost
+`benches/gc_roots_aot_spike.rs`: the §6d question — can the GC find roots that
+live in **AOT-compiled Rust stack frames** (which a shadow stack can't see)?
+Model: `aot_frame` stands in for an AOT kernel fn — holds a list head in a plain
+Rust local across a GC-triggering recursive call, then re-uses it (so the
+compiler keeps it live across the call, exactly like the generated
+`v_V520`/`v_W521` in `aot/kernel/core.rs`). **No shadow stack** — the collector's
+*only* root source is a **conservative scan of the native stack + an aarch64
+callee-saved register flush (x19–x28)**, tag-aware (every node ref is a `Word`
+tagged `CONS`). 25 keeper frames live during deep collections, interleaved
+garbage to force mid-descent GC.
+
+**Result (asserted; a missed root corrupts a list → wrong sum → void):**
+- **SOUND / feasible: YES.** Correctness held across **10,999 collections**; max
+  roots found in one collection = 50 (≥ the 25 live keeper frames) — the scan
+  genuinely discovers heads held *only* in native frames. Non-moving ⇒ a
+  false-positive root can only **over-retain, never corrupt**. So a non-moving
+  mark-sweep **can tolerate AOT frames it cannot precisely enumerate**. The §6d
+  risk is de-risked: **we are not blocked.**
+- **COST: conservative scanning OVER-RETAINS (~7.7× here).** Cause: a returned
+  `make_garbage` frame leaves a stale list-head pointer in its popped, uncleared
+  stack slot; the full-range scan finds it and retains the whole dead chain.
+  **Bounded** (≈ one descent's worth, independent of iteration count — *not* a
+  leak: heap 56k vs 22M-if-leaked), but a real footprint tax.
+- **Design implication**: favors a **hybrid** — a *precise* shadow stack for the
+  VM/interpreter value-stack (which we own), conservative scan *only* for AOT
+  native frames, and/or compiler-emitted **stack-slot clearing on AOT fn exit**
+  to kill the stale-pointer source. Measure the tax on the *real* heap before
+  deciding whether precise stack maps (heavier) are warranted. Also: this is a
+  second independent argument **against a moving GC** (moving needs precise maps
+  for these AOT frames — can't conservatively scan if pointers move).
+- **Production caveats**: register flush is arch-specific (aarch64 here; need
+  setjmp / per-arch spills elsewhere, or restrict the GC build); heap-membership
+  test must be a page/block table, not a `HashSet`, at scale; **no interior
+  pointers** (every ref is a tagged head-of-node `Word`) — this is what makes the
+  tag-aware scan sound and must remain invariant.
 
 ---
 
@@ -242,11 +279,16 @@ corrupt list aborts as a *void* measurement, not a fast one):
    that actually triggers collection. **Gate**: reproduce a material fraction of
    the 2.48× Option-B ceiling *with real collection*, and demonstrate a workable
    precise-roots story including the AOT-frame interaction (§6d).
-   **→ DONE 2026-05-29: throughput half PASSED (3.34×, 98% of ceiling — §6f).
-   The AOT-frame precise-roots half (§6d) is NOT yet prototyped — do that next,
-   it is the remaining gate before step 3.**
+   **→ DONE 2026-05-29: BOTH halves PASSED. Throughput (§6f): 3.34×, 98% of
+   ceiling. AOT-frame precise-roots (§6g): conservative scan is sound + finds
+   AOT roots (10,999 collections, 0 corruption), with a ~7.7× over-retention
+   tax that argues for a hybrid (precise shadow stack + conservative AOT scan +
+   stack-slot clearing). The GC ladder is GREENLIT to design; step 3 can begin
+   once the enabling refactor (step 1) lands.**
 3. **Full `Value` → word-sized + GC** conversion (the big one): AOT regen, all
-   gates, Miri.
+   gates, Miri. Design the collector per §6c option-1 (non-moving mark-sweep) +
+   the §6g hybrid roots story; quantify the over-retention tax on the real heap
+   early and add stack-slot clearing to klcompile's AOT codegen if it's high.
 4. **Re-measure** vs SBCL. Then word-size-dependent VM tuning.
 5. **Cranelift JIT** (only if 1–4 land and a hot compute core remains).
 

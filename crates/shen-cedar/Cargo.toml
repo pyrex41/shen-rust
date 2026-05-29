@@ -30,3 +30,9 @@ harness = false
 name = "gc_spike"
 harness = false
 
+# Spike: §6d gate — can the GC find roots in AOT-compiled Rust frames via a
+# conservative native-stack scan? `cargo bench --bench gc_roots_aot_spike`.
+[[bench]]
+name = "gc_roots_aot_spike"
+harness = false
+
