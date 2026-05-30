@@ -192,6 +192,17 @@ sized* `Value` in registers — that's why this conversion is its prerequisite.
 
 ## 6. Open questions to resolve (mostly before Step 3)
 
+> **RESOLVED 2026-05-29 — see `design/gc-step3-open-questions.md`** (decision
+> record, evidence-backed). Summary: Q1 = 61-bit fixnum + promote-to-`Float` on
+> overflow (matches today's actual non-bignum semantics; no boxed-int). Q2 =
+> boxed float (floats are cold; NaN-boxing rejected). Q3 = settled by Step 2
+> (block=1024×24B + O(1) page table). Q4 = deferred to Step 4 (measure real
+> over-retention). Q5 = precise-root inventory produced **+ a new blocker**: AOT
+> `move`-closure captures inside `Rc<NativeFn>` are untraceable, so klcompile
+> must emit a shadow capture `Vec<Value>` per `make_aot_closure` (expands Step 3
+> scope). That doc also pins the concrete 3-bit tag layout. Original questions
+> kept below for context.
+
 - **Bignum/overflow semantics**: what does today's `Value::Int(i64)` do on
   overflow, and what must the 61-bit fixnum + boxed-wide path preserve? (Shen
   kernel expects unbounded integers in places.) **Blocking for Step 3.**
