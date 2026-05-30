@@ -18,6 +18,17 @@ use shen_cedar::value::Value;
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().collect();
+    // `--served`: the long-running / served entrypoint. Enables the bytecode
+    // VM for the whole process. The VM is ~2.3× faster than the tree-walker
+    // once its per-closure compile cost amortizes across a served session
+    // (load a theory once, serve many type-check / eval requests) — but it is
+    // *not* the bare default, because a one-shot invocation never amortizes
+    // that cost. See `design/perf-next-target-handoff.md`. Must run before any
+    // closure is built, so flip it here, before the worker thread spawns.
+    if args.iter().skip(1).any(|a| a == "--served") {
+        shen_cedar::interp::eval::enable_vm();
+        eprintln!("shen-cedar: served mode — bytecode VM enabled.");
+    }
     if args.iter().skip(1).any(|a| a == "--kernel-tests") {
         // The kernel suite hits deep AOT recursion in places (the reader,
         // YACC, type checker) which we don't trampoline through the Rust

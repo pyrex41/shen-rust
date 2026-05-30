@@ -1160,16 +1160,20 @@ impl Interp {
 /// body to bytecode (the VM path) instead of building a tree-walked
 /// `ClosureKind::Lambda`.
 ///
-/// **Opt-in** (`SHEN_CEDAR_VM=1`), not the default. The bytecode VM is
-/// correct (134/0 kernel-tests + the `vm_differential` oracle) and on
-/// pure user-defined code run via `eval` it beats the tree-walker ~2.7–4×
-/// (see `benches/vm_vs_treewalk.rs`). But it is *not* the default because
-/// `--kernel-tests` is dominated by the AOT-compiled kernel: klcompile
-/// lowers the kernel's hot `lambda`/`freeze` continuations to Rust at
-/// build time, so those never reach this runtime path. Compiling the
-/// minority of *runtime* closures to bytecode there costs more (a compile
-/// pass per closure) than it recoups, regressing kernel-tests ~7%. So the
-/// VM stays behind the flag until the AOT path itself is addressed.
+/// **Opt-in** (`SHEN_CEDAR_VM=1` or the `--served` entrypoint via
+/// [`enable_vm`]), not the bare default. The bytecode VM is correct (134/0
+/// kernel-tests + the `vm_differential` oracle) and the warm/served measurement
+/// is decisive: on a load-once / serve-many type-check-then-execute workload
+/// it beats the tree-walker **~2.3×** (`scripts/warm-bench.sh`), serving 98.9%
+/// of the type-checker's runtime continuations.
+///
+/// It is *not* the bare default only because the *one-shot* metric never
+/// amortizes the runtime compile cost: a fresh `--kernel-tests` boots, compiles
+/// each runtime closure once, runs once, exits — so the compile pass is pure
+/// overhead there (~neutral/slightly slower). The trade is deliberate: the bare
+/// default stays tree-walk for one-shot invocations; long-running / served
+/// sessions opt in with `--served` and get the ~2.3× win. See
+/// `design/perf-next-target-handoff.md` (the warm/served decision).
 ///
 /// Cached in a `OnceLock`: `std::env::var_os` calls `getenv`, which takes
 /// a lock and linearly scans `environ`. This predicate is consulted on
@@ -1177,8 +1181,21 @@ impl Interp {
 /// the environment once and caching the bool keeps it off the profile.
 /// The flag is a process-start switch; re-reading it mid-run is not a
 /// supported use case.
+static VM_ENABLED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+
+/// Force the bytecode VM on for this process — the programmatic equivalent of
+/// `SHEN_CEDAR_VM=1`, used by the `--served` entrypoint (the long-running /
+/// served mode where the VM's per-body win amortizes; see
+/// `design/perf-next-target-handoff.md` and `scripts/warm-bench.sh`).
+///
+/// Must be called before the first [`vm_enabled`] read (i.e. before `boot` /
+/// any closure creation). The flag is a process-start switch — calling this
+/// after the `OnceLock` has been initialised is a no-op.
+pub fn enable_vm() {
+    let _ = VM_ENABLED.set(true);
+}
+
 fn vm_enabled() -> bool {
-    static VM_ENABLED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     *VM_ENABLED.get_or_init(|| std::env::var_os("SHEN_CEDAR_VM").is_some())
 }
 

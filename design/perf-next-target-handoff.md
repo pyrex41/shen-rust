@@ -132,7 +132,45 @@ Either way, **re-profile first** (§2.A.1) so the rung after this is funded off
 fresh evidence, not this doc's priors. Do not fund another per-body engine swap
 for the one-shot metric — that question is answered.
 
+---
+
+## 3b. RESOLUTION (2026-05-30) — warm/served chosen; VM shipped behind `--served`
+
+The goal decision (§2.A.2 / §3) was made: **warm/served.** The warm branch was
+then executed and the thesis **CONFIRMED** (commit `fe1fe57`):
+
+- **Built the warm metric** the one-shot metric couldn't express:
+  `benches/warm_typecheck.rs` + `scripts/warm-bench.sh`. The harness corrects
+  the handoff's literal "reload the corpus N×" recipe — that is **not
+  idempotent** (Shen `datatype` rules accumulate → 2nd load blows the inference
+  budget). The faithful served unit is **load-once / serve-many-queries**
+  (type-check the corpus once, then repeatedly run `normal-form` lambda-calc
+  reductions = runtime-closure execution).
+- **Result (paired, interleaved, best-of-5):** warm exec tree 5.84 ms/batch vs
+  VM 2.50 ms/batch → **VM 2.33× faster** (range 2.19–2.38×, ≫ ~12 % noise).
+  Coherent with the one-shot finding: cold load (no amortization) VM ~0.89×;
+  warm exec (amortized) VM ~2.3×.
+- **Two priors falsified:** (1) the bail-rate worry — the type-checker's
+  `freeze`/`lambda` continuations are **98.9 % VM-served** (372/376), not
+  `trap-error`-bailing, so flipping the flag genuinely covers the hot path;
+  (2) "warm = reload N×" (above).
+- **How it shipped (user decision):** *not* default-on globally — the bare
+  default stays tree-walk so the one-shot cross-port ratio doesn't regress.
+  Instead a **served entrypoint**: `shen-cedar --served` calls
+  `interp::eval::enable_vm()` (programmatic `SHEN_CEDAR_VM=1`), recommended for
+  long-running / served sessions. 134/0 under the flag.
+
+**Still open (NOT done — deliberate):** the handoff's "retire the
+JIT-for-closures line for good" was *not* executed — the JIT machinery stays
+committed, off-by-default, documented FALSIFIED (`jit-productionization-plan.md`
+§5). Ripping it out is a separate destructive action; left for an explicit call.
+Also still available regardless of this branch: **GC Step 4** (collection ON +
+roots; ~2–3 % speed but real memory value — the only remaining greenlit rung).
+
 ## 4. State / anchors
+- Warm/served harness: `cargo run --release --bench warm_typecheck` (tree) vs
+  `SHEN_CEDAR_VM=1 …` (VM); paired via `scripts/warm-bench.sh`. Served
+  entrypoint: `shen-cedar --served`. VM coverage counters: `vm::stats`.
 - J2 closure-JIT committed off-by-default (`1cf0672`): `SHEN_CEDAR_JIT=1` +
   `SHEN_CEDAR_JIT_STATS=1` for the diagnostics; `tests/jit_closure_differential.rs`
   is the oracle; `benches/jit_spike.rs` records where the JIT *does* win.
