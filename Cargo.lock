@@ -1286,6 +1286,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "shen-authz-demo"
+version = "0.1.0"
+dependencies = [
+ "cedar-policy",
+ "shen-cedar",
+]
+
+[[package]]
 name = "shen-cedar"
 version = "0.1.0"
 dependencies = [
