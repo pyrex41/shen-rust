@@ -36,7 +36,9 @@
 //! byte-for-byte. The self tail call uses `CallConv::Tail` + `return_call`
 //! (constant stack), re-entered from Rust through a default-callconv trampoline.
 
+use std::collections::HashMap;
 use std::mem::transmute;
+use std::rc::Rc;
 
 use cranelift_codegen::ir::condcodes::IntCC;
 use cranelift_codegen::ir::{types, AbiParam, BlockArg, InstBuilder, UserFuncName};
@@ -47,9 +49,115 @@ use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{default_libcall_names, FuncId, Linkage, Module};
 
 use crate::aot::runtime as rt;
-use crate::error::ShenError;
+use crate::error::{ShenError, ShenResult};
 use crate::interp::eval::Interp;
+use crate::kl::ast::KlExpr;
+use crate::symbol::SymId;
 use crate::value::Value;
+
+pub mod codegen;
+pub mod ffi;
+
+// ---- Diagnostic counters (Slice-A reassessment) ---------------------------
+// Process-wide execution/creation tallies, reported by `JitEngine::drop` under
+// `SHEN_CEDAR_JIT_STATS`. They answer the decision-relevant question: what
+// fraction of closure *executions* the JIT actually serves vs the tree-walker,
+// and whether the hottest bodies are bailing. Relaxed is fine — single worker
+// thread, and these are coarse diagnostics, not control flow.
+use std::sync::atomic::{AtomicU64, Ordering};
+
+/// Times a `ClosureKind::Jit` body ran (`call_jit`). Only ever incremented when
+/// the JIT is active, so it adds nothing to the default (JIT-off) hot path. The
+/// tree-walk `Lambda` side is intentionally *not* counted here — counting it
+/// would tax the default build's hottest path; the served-fraction figure is
+/// recorded in the design doc instead.
+pub(crate) static JIT_EXEC: AtomicU64 = AtomicU64::new(0);
+/// Closure values created with a JIT body.
+pub(crate) static JIT_CREATE: AtomicU64 = AtomicU64::new(0);
+/// Closure values whose body bailed the JIT (engine present, fell to VM/Lambda).
+pub(crate) static BAIL_CREATE: AtomicU64 = AtomicU64::new(0);
+/// Calls *from* JIT'd code (via `rtj_apply_*`) whose callee is itself a
+/// fully-applied JIT closure — the only edges `return_call_indirect` (Slice C)
+/// could turn into native calls. Bounds Slice C's ceiling.
+pub(crate) static JIT_CALL_TO_JIT: AtomicU64 = AtomicU64::new(0);
+/// Calls from JIT'd code whose callee is NOT a JIT closure (tree-walked / native
+/// / partial) — these keep paying the FFI boundary even with Slice C.
+pub(crate) static JIT_CALL_TO_OTHER: AtomicU64 = AtomicU64::new(0);
+
+// ===========================================================================
+// J2 closure-value ABI — the always-on (cranelift-independent) surface that
+// `ClosureKind::Jit` and the interpreter's dispatch sites speak. The Cranelift
+// *code generator* that produces these entries lives in `codegen`.
+// ===========================================================================
+
+/// Native entry point of a JIT'd closure body. The call convention (see
+/// `design/jit-productionization-plan.md` §"Error ABI"):
+/// `(interp, errflag, captures_ptr, args_ptr, nargs) -> result_word`.
+/// * `errflag` — `*mut u64` the body sets to `1` (via an `rtj_*` helper) when a
+///   Shen error occurs; the rich error rides `Interp::pending_error`.
+/// * `captures_ptr` / `args_ptr` — `*const u64` over `&[Value]` (zero-copy,
+///   `Value` is `#[repr(transparent)]` over `u64`).
+pub type JitEntry = extern "C" fn(*mut Interp, *mut u64, *const u64, *const u64, usize) -> u64;
+
+/// A closure body compiled to native code. Mirrors `BytecodeFn`'s role for the
+/// VM: the cached, immutable artifact a `ClosureKind::Jit` value points at; the
+/// per-creation captured `Value`s live in the `ClosureKind::Jit` vec alongside.
+pub struct JitClosure {
+    /// Default-callconv host-entry trampoline into the (possibly tail-callconv)
+    /// body. Stays valid for the engine's lifetime — the owning `JITModule`
+    /// (on `Interp::jit`) outlives every `JitClosure`.
+    pub entry: JitEntry,
+    pub arity: usize,
+    pub name: Option<SymId>,
+}
+
+impl std::fmt::Debug for JitClosure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("JitClosure")
+            .field("arity", &self.arity)
+            .field("name", &self.name)
+            .finish_non_exhaustive()
+    }
+}
+
+/// The Rust→native boundary for a fully-applied `ClosureKind::Jit`. Marshals the
+/// borrowed capture/arg slices into word pointers (zero-copy), runs the body,
+/// and surfaces a `pending_error` as `Err`. Re-entrant: each call owns its
+/// `errflag` on its own native frame; the error channel is `Interp`-wide and
+/// first-wins (set during J1).
+pub fn call_jit(
+    interp: &mut Interp,
+    jc: &JitClosure,
+    captures: &[Value],
+    args: &[Value],
+) -> ShenResult<Value> {
+    if args.len() != jc.arity {
+        return Err(ShenError::new(format!(
+            "jit: arity mismatch — expected {}, got {}",
+            jc.arity,
+            args.len()
+        )));
+    }
+    JIT_EXEC.fetch_add(1, Ordering::Relaxed);
+    let mut errflag: u64 = 0;
+    // SAFETY: `entry` is a finalized code pointer kept alive by the engine's
+    // `JITModule` (owned by `interp.jit`, which outlives this call). `Value` is
+    // `#[repr(transparent)]` over `u64`, so the slice pointers are valid
+    // `*const u64` arrays of exactly `captures.len()` / `args.len()` words.
+    let w = (jc.entry)(
+        interp as *mut Interp,
+        &mut errflag,
+        captures.as_ptr() as *const u64,
+        args.as_ptr() as *const u64,
+        args.len(),
+    );
+    if errflag != 0 {
+        return Err(interp
+            .take_pending_error()
+            .unwrap_or_else(|| ShenError::new("jit: error flag set without a pending error")));
+    }
+    Ok(Value::from_word(w))
+}
 
 // ---- Value-word constants (must track `value.rs`) --------------------------
 
@@ -117,11 +225,67 @@ type LengthHFn = extern "C" fn(*mut Interp, u64, u64) -> u64;
 /// pointer it hands out — a dropped module frees the code) and the finalized
 /// entry pointers. Lives on `Interp` so its lifetime matches the interpreter's.
 pub struct JitEngine {
-    /// Kept alive for the lifetime of the engine: dropping it invalidates
-    /// `length_h`. Never used after construction, hence the leading underscore.
-    _module: JITModule,
-    /// Finalized native entry for `shen.length-h`.
+    /// The one long-lived module. **Must outlive** every finalized code pointer
+    /// it hands out (`length_h` + every cached `JitClosure::entry`). Kept
+    /// mutable so runtime closure tier-up can declare/define/finalize more
+    /// functions into it on demand.
+    module: JITModule,
+    /// Finalized native entry for `shen.length-h` (the J1 anchor).
     length_h: LengthHFn,
+    /// Runtime closure-body cache, keyed by body address (like the VM's
+    /// `closure_cache`). `Some` = compiled; `None` = known-unJITable (so the
+    /// hot 1.2M-creation path bails instantly instead of re-running Cranelift).
+    /// Each entry holds the `form` guard so the keyed address stays unique/live.
+    cache: HashMap<usize, CacheEntry>,
+    /// Monotonic suffix for unique Cranelift function names per compiled body.
+    counter: u32,
+    /// Cumulative wall-time spent in Cranelift compilation (diagnostics: the
+    /// cold-start tax of runtime tier-up). Reported by `Drop` under
+    /// `SHEN_CEDAR_JIT_STATS`.
+    compile_nanos: u128,
+}
+
+impl Drop for JitEngine {
+    fn drop(&mut self) {
+        if std::env::var_os("SHEN_CEDAR_JIT_STATS").is_some() {
+            let (compiled, failed) = self.stats();
+            let jx = JIT_EXEC.load(Ordering::Relaxed);
+            let jc = JIT_CREATE.load(Ordering::Relaxed);
+            let bc = BAIL_CREATE.load(Ordering::Relaxed);
+            let c2j = JIT_CALL_TO_JIT.load(Ordering::Relaxed);
+            let c2o = JIT_CALL_TO_OTHER.load(Ordering::Relaxed);
+            let c2j_pct = if c2j + c2o > 0 {
+                100.0 * c2j as f64 / (c2j + c2o) as f64
+            } else {
+                0.0
+            };
+            eprintln!(
+                "[jit] bodies: compiled={compiled} bailed={failed} compile_time={:.3}s\n\
+                 [jit] creations: jit={jc} bailed={bc}\n\
+                 [jit] executions: jit={jx}\n\
+                 [jit] calls-from-jit: to_jit={c2j} to_other={c2o}  → {c2j_pct:.1}% JIT→JIT (Slice C ceiling)",
+                self.compile_nanos as f64 / 1e9
+            );
+        }
+    }
+}
+
+struct CacheEntry {
+    /// `Some((compiled, upval order))` or `None` for a body that bailed.
+    result: Option<(Rc<JitClosure>, Vec<SymId>)>,
+    /// Keeps the body address (the cache key) alive and unique — see the VM's
+    /// `CompiledClosure::_form_guard`.
+    _form_guard: Rc<[KlExpr]>,
+}
+
+/// Result of probing the closure-body cache.
+pub(crate) enum Lookup {
+    /// Compiled: the closure + its capture order (to re-gather current values).
+    Hit(Rc<JitClosure>, Vec<SymId>),
+    /// Known-unJITable — bail to the tree-walker/VM without recompiling.
+    Failed,
+    /// Not seen yet — compile it.
+    Miss,
 }
 
 impl JitEngine {
@@ -136,8 +300,13 @@ impl JitEngine {
             .finish(flags)
             .expect("failed to build target ISA");
         let mut jb = JITBuilder::with_isa(isa, default_libcall_names());
-        jb.symbol("rtj_tl", rtj_tl as *const u8);
-        jb.symbol("rtj_add", rtj_add as *const u8);
+        jb.symbol("rtj1_tl", rtj_tl as *const u8);
+        jb.symbol("rtj1_add", rtj_add as *const u8);
+        // J2 closure-body runtime helpers (`ffi::*`), distinct names so the
+        // shared module's symbol table can't collide with J1's two above.
+        for (name, ptr, _n) in ffi::symbol_registry() {
+            jb.symbol(name, ptr);
+        }
         let mut module = JITModule::new(jb);
 
         let entry_id = Self::compile_length_h(&mut module);
@@ -152,9 +321,104 @@ impl JitEngine {
             unsafe { transmute::<*const u8, LengthHFn>(module.get_finalized_function(entry_id)) };
 
         JitEngine {
-            _module: module,
+            module,
             length_h,
+            cache: HashMap::new(),
+            counter: 0,
+            compile_nanos: 0,
         }
+    }
+
+    /// `(compiled bodies, bailed bodies)` — for tests/diagnostics, to confirm the
+    /// JIT path is actually exercised (and how often it bails).
+    pub(crate) fn stats(&self) -> (usize, usize) {
+        let mut compiled = 0;
+        let mut failed = 0;
+        for e in self.cache.values() {
+            if e.result.is_some() {
+                compiled += 1;
+            } else {
+                failed += 1;
+            }
+        }
+        (compiled, failed)
+    }
+
+    /// Probe the closure-body cache by body address. Returns owned clones so the
+    /// caller can drop its borrow of `self` before re-gathering captures.
+    pub(crate) fn lookup(&self, key: usize) -> Lookup {
+        match self.cache.get(&key) {
+            None => Lookup::Miss,
+            Some(CacheEntry { result: None, .. }) => Lookup::Failed,
+            Some(CacheEntry {
+                result: Some((jc, names)),
+                ..
+            }) => Lookup::Hit(Rc::clone(jc), names.clone()),
+        }
+    }
+
+    /// Compile a runtime closure body to native code and cache the result
+    /// (success *or* failure). Returns the compiled closure, or `None` if the
+    /// body uses a form the generator doesn't lower yet (the caller falls back
+    /// to the VM / tree-walker). Mirrors `try_compile_closure` for the VM.
+    pub(crate) fn compile_and_cache(
+        &mut self,
+        interp: &Interp,
+        key: usize,
+        params: &[SymId],
+        upval_names: &[SymId],
+        body: &KlExpr,
+        form: &Rc<[KlExpr]>,
+    ) -> Option<Rc<JitClosure>> {
+        let name = format!("jit_closure_{}", self.counter);
+        self.counter += 1;
+        let t0 = std::time::Instant::now();
+        let result = match codegen::compile_closure_body(
+            &mut self.module,
+            interp,
+            &name,
+            params,
+            upval_names,
+            body,
+        ) {
+            Ok(func_id) => {
+                self.module
+                    .finalize_definitions()
+                    .expect("cranelift: finalize_definitions failed");
+                // SAFETY: `func_id` was just defined+finalized with the
+                // `JitEntry` C-ABI signature `(i64,i64,i64,i64,i64)->i64`; the
+                // module is owned by `self` (on `Interp`) and outlives the ptr.
+                let ptr = self.module.get_finalized_function(func_id);
+                let entry: JitEntry = unsafe { transmute::<*const u8, JitEntry>(ptr) };
+                let jc = Rc::new(JitClosure {
+                    entry,
+                    arity: params.len(),
+                    name: None,
+                });
+                self.cache.insert(
+                    key,
+                    CacheEntry {
+                        result: Some((Rc::clone(&jc), upval_names.to_vec())),
+                        _form_guard: Rc::clone(form),
+                    },
+                );
+                Some(jc)
+            }
+            Err(_reason) => {
+                // Bail recorded so the hot path never re-attempts this body.
+                self.cache.insert(
+                    key,
+                    CacheEntry {
+                        result: None,
+                        _form_guard: Rc::clone(form),
+                    },
+                );
+                None
+            }
+        };
+        // Cold-tax diagnostic: wall-time for IR build + define + finalize.
+        self.compile_nanos += t0.elapsed().as_nanos();
+        result
     }
 
     /// Compile `shen.length-h` into the module and return the *entry*
@@ -167,7 +431,7 @@ impl JitEngine {
         tl_sig.params.push(AbiParam::new(types::I64)); // v
         tl_sig.returns.push(AbiParam::new(types::I64));
         let tl_id = module
-            .declare_function("rtj_tl", Linkage::Import, &tl_sig)
+            .declare_function("rtj1_tl", Linkage::Import, &tl_sig)
             .unwrap();
 
         let mut add_sig = module.make_signature();
@@ -176,7 +440,7 @@ impl JitEngine {
         add_sig.params.push(AbiParam::new(types::I64)); // b
         add_sig.returns.push(AbiParam::new(types::I64));
         let add_id = module
-            .declare_function("rtj_add", Linkage::Import, &add_sig)
+            .declare_function("rtj1_add", Linkage::Import, &add_sig)
             .unwrap();
 
         let tail_id = Self::define_length_h_tail(module, tl_id, add_id);

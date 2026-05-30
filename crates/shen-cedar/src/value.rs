@@ -123,6 +123,13 @@ pub enum ClosureKind {
     /// User-defined function compiled to bytecode (the VM path). Upvals are
     /// captured at closure creation and stored by-value.
     Bytecode(Rc<crate::vm::bytecode::BytecodeFn>, Vec<Value>),
+    /// User-defined closure body compiled to native code by the Cranelift JIT
+    /// (stage J2, `design/jit-productionization-plan.md`). The `Vec<Value>` is
+    /// the traceable shadow-capture list — identical role to `Bytecode`'s
+    /// upvals: the JIT'd body reads captured `Value`s through a raw word
+    /// pointer the collector cannot see, so these handles keep them reachable.
+    #[cfg(feature = "jit")]
+    Jit(Rc<crate::jit::JitClosure>, Vec<Value>),
 }
 
 /// User-defined lambda body: captured lexical env, formal parameter
@@ -160,6 +167,12 @@ impl GcObject for Closure {
                     out.push(v.to_gc());
                 }
                 push_bytecode_consts(bf, out);
+            }
+            #[cfg(feature = "jit")]
+            ClosureKind::Jit(_, captures) => {
+                for v in captures {
+                    out.push(v.to_gc());
+                }
             }
         }
     }

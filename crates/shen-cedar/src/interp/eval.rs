@@ -284,6 +284,14 @@ impl Interp {
         self.jit.is_some()
     }
 
+    /// `(compiled, bailed)` closure-body counts for the installed JIT engine, or
+    /// `None` if no engine is installed. For the differential oracle to assert
+    /// the JIT path was actually taken.
+    #[cfg(feature = "jit")]
+    pub fn jit_stats(&self) -> Option<(usize, usize)> {
+        self.jit.as_ref().map(|e| e.stats())
+    }
+
     pub fn intern(&mut self, name: &str) -> SymId {
         self.symbols.intern(name)
     }
@@ -610,6 +618,13 @@ impl Interp {
                     let v = crate::vm::exec::exec(self, bf, upvals, &total_args)?;
                     return Ok(StepOutcome::Done(v));
                 }
+                #[cfg(feature = "jit")]
+                ClosureKind::Jit(jc, captures) => {
+                    // `jc`/`captures` borrow the pinned closure node, disjoint
+                    // from `self` — same in-place dispatch as the `Native` arm.
+                    let v = crate::jit::call_jit(self, jc, captures, &total_args)?;
+                    return Ok(StepOutcome::Done(v));
+                }
             }
         }
 
@@ -634,6 +649,8 @@ impl Interp {
                 self.eval_in(&body.body, &locals)
             }
             ClosureKind::Bytecode(bf, upvals) => crate::vm::exec::exec(self, bf, upvals, &args),
+            #[cfg(feature = "jit")]
+            ClosureKind::Jit(jc, captures) => crate::jit::call_jit(self, jc, captures, &args),
         }
     }
 
@@ -857,8 +874,13 @@ impl Interp {
         body: &KlExpr,
         locals: &[(SymId, Value)],
     ) -> Value {
+        // Tier preference: JIT (native) → bytecode VM → tree-walked Lambda. Each
+        // tier bails (returns None) on a body it can't lower, falling through to
+        // the next. The JIT tier is a no-op unless `SHEN_CEDAR_JIT` installed an
+        // engine (`self.jit.is_some()`).
         let kind = self
-            .try_compile_closure(form, params, body, locals)
+            .try_compile_jit(form, params, body, locals)
+            .or_else(|| self.try_compile_closure(form, params, body, locals))
             .unwrap_or_else(|| {
                 ClosureKind::Lambda(Rc::new(LambdaBody {
                     captured: capture_used(locals),
@@ -938,6 +960,73 @@ impl Interp {
             }
             Err(_) => None,
         }
+    }
+
+    /// Attempt to compile a runtime closure body to native code via the
+    /// Cranelift JIT (stage J2), parallel to `try_compile_closure` for the VM.
+    /// Returns `None` when no engine is installed (`SHEN_CEDAR_JIT` unset) or the
+    /// body uses a form the generator doesn't lower (caller falls through to the
+    /// VM / tree-walker). The compiled code + capture order is cached on the
+    /// engine by body address, so repeat creations only re-gather the captures.
+    #[cfg(feature = "jit")]
+    fn try_compile_jit(
+        &mut self,
+        form: &Rc<[KlExpr]>,
+        params: &[SymId],
+        body: &KlExpr,
+        locals: &[(SymId, Value)],
+    ) -> Option<ClosureKind> {
+        let key = body as *const KlExpr as usize;
+        // Take the engine out so the codegen can borrow it mutably while we read
+        // `self` immutably; `?` makes this a no-op when no engine is installed.
+        let mut engine = self.jit.take()?;
+        let out = match engine.lookup(key) {
+            crate::jit::Lookup::Failed => None,
+            crate::jit::Lookup::Hit(jc, names) => {
+                let captured = self.gather_captures(&names, locals);
+                Some(ClosureKind::Jit(jc, captured))
+            }
+            crate::jit::Lookup::Miss => {
+                // First sighting: determine captured free vars (same rule as
+                // `try_compile_closure`), then compile + cache.
+                let mut used: SmallVec<[SymId; 16]> = SmallVec::new();
+                collect_used_syms(body, &mut used);
+                let mut upval_names: Vec<SymId> = Vec::new();
+                let mut captured: Vec<Value> = Vec::new();
+                for s in used {
+                    if params.contains(&s) {
+                        continue;
+                    }
+                    if let Some(v) = self.lookup_local(s, locals) {
+                        upval_names.push(s);
+                        captured.push(v);
+                    }
+                }
+                engine
+                    .compile_and_cache(self, key, params, &upval_names, body, form)
+                    .map(|jc| ClosureKind::Jit(jc, captured))
+            }
+        };
+        self.jit = Some(engine);
+        // Creation tally (engine present ⇒ None means a JIT bail, not "no engine").
+        if out.is_some() {
+            crate::jit::JIT_CREATE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        } else {
+            crate::jit::BAIL_CREATE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        }
+        out
+    }
+
+    /// No-JIT build: the JIT tier is always absent.
+    #[cfg(not(feature = "jit"))]
+    fn try_compile_jit(
+        &mut self,
+        _form: &Rc<[KlExpr]>,
+        _params: &[SymId],
+        _body: &KlExpr,
+        _locals: &[(SymId, Value)],
+    ) -> Option<ClosureKind> {
+        None
     }
 
     /// Gather the current values of `names` from `locals`, in order, for a
@@ -1088,6 +1177,8 @@ fn clone_kind(kind: &ClosureKind) -> ClosureKind {
         ClosureKind::Native(f, captures) => ClosureKind::Native(Rc::clone(f), captures.clone()),
         ClosureKind::Lambda(b) => ClosureKind::Lambda(Rc::clone(b)),
         ClosureKind::Bytecode(bf, upvals) => ClosureKind::Bytecode(Rc::clone(bf), upvals.clone()),
+        #[cfg(feature = "jit")]
+        ClosureKind::Jit(jc, captures) => ClosureKind::Jit(Rc::clone(jc), captures.clone()),
     }
 }
 

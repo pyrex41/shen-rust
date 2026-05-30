@@ -137,3 +137,66 @@ by hand.
 A measured, gates-green reduction in the `scripts/cross-port-bench.sh` ratio to
 shen-cl/SBCL, with the JIT differential oracle green, the J3 safepoint gate
 passed, and `benches/jit_spike.rs` retained as the microbench regression anchor.
+
+---
+
+## 5. Stage J2 result (2026-05-30) — FALSIFIED for the closure workload
+
+**Verdict: the closure-value JIT is a measured *regression*, and the path to a
+win is structurally capped. The closure-JIT line is paused.** Stage J2 Slice A
+(general `KlExpr`→Cranelift `BodyTranslator` + `ClosureKind::Jit`, tiered into
+`build_closure` parallel to the VM's `try_compile_closure`, behind
+`--features jit` + `SHEN_CEDAR_JIT`) is **built and correct** — but the economics
+don't work for this workload. It ships as a gated, off-by-default experiment.
+
+### What was proven
+- **Correctness, end to end.** `tests/jit_closure_differential.rs` (JIT == tree-walk,
+  `shen_eq` + Ok/Err, 26-case corpus) is green, and a full `SHEN_CEDAR_JIT=1`
+  kernel boot + kernel-tests is **134/0**. The integration machinery — the
+  flag-pointer error ABI, runtime tier-up with a body-addr cache, the six
+  `ClosureKind::Jit` dispatch arms, nested-closure *bail* fallback — all work.
+- **Runtime tier-up is cheap.** 772 distinct bodies compiled in **0.07–0.16 s**
+  total (Cranelift `opt_level=speed`). Compilation is **not** the cost.
+
+### The measurement (the kill-gate)
+Paired min-of-3, `scripts/cross-port-bench.sh` shape (cold one-shot kernel-tests):
+**JIT-on ≈ 4.13 s vs JIT-off ≈ 3.60 s — a ~15 % regression.** Diagnostics
+(`SHEN_CEDAR_JIT_STATS=1`, reported by `JitEngine::drop`):
+
+| Metric | Value | Reading |
+|---|---|---|
+| compile time | 0.07 s / 772 bodies | tier-up is cheap; not the bottleneck |
+| closure execs served by JIT | **26.6 %** | 73 % bail (nested closures → tree-walk) |
+| JIT-body exec slowdown | net slower | FFI-per-prim + FFI-per-call on tiny bodies |
+| **JIT→JIT call edges** | **0.0 % (416 of 1.9 M)** | **Slice C ceiling ≈ 0** |
+
+### Why it cannot win here (root cause)
+Native codegen wins on **compute loops** (the spike's `fib`/`sumto`: millions of
+iterations inside one compiled body, raw-word ops, native `return_call`). The
+type-checker's closures are the opposite shape: **millions of distinct, tiny,
+call-dominated CPS continuations**, each body run ~1.7 k× but doing almost no
+straight-line compute between calls. For that shape every `rtj_*` primitive call
+and every `rtj_apply_*` is a *tax* the tree-walker's in-process trampoline
+(`tail_apply` rewrites `current`/`scope` and loops — no FFI, no marshal) does not
+pay. Worse, a JIT'd closure calling a **tree-walked** callee pays JIT-call setup
+**on top of** the same tree-walk, so it is strictly slower than tree-walk→tree-walk.
+
+### Why no remaining slice rescues it
+- **Slice C (`return_call_indirect`, native JIT→JIT calls):** ceiling **0 %** —
+  measured 416 of 1.9 M calls-from-JIT target another JIT closure. The continuations
+  call kernel functions and *bailed* (nested) closures, none of which are JIT'd.
+- **Slice B (inline guarded fixnum prims):** trims only the prim-FFI *within* the
+  slow 26 %; cannot touch the dominant call tax or expand coverage.
+- **3b (nested closures via `make_jit_closure`):** would raise coverage above 26 %
+  — but every newly-covered execution runs on the *slower* FFI-all path, so it
+  makes the regression **worse**, not better.
+
+### Decision
+**The closure-value JIT is the wrong lever for the type-checker.** The **VM**
+(`SHEN_CEDAR_VM`, 1.3–4× on closure bodies) already beats it precisely because it
+stays in-process with no FFI boundary. Slice A is committed off-by-default as a
+proven-correct experiment (the machinery is reusable if the JIT is ever re-aimed
+at a genuinely compute-shaped target — e.g. self-recursive numeric kernel leaves,
+the shape J1's `shen.length-h` and the spike actually validated). J3 (GC-roots-in-
+JIT-frames) is moot until then. `benches/jit_spike.rs` stays as the anchor that
+records *where* the JIT does win.

@@ -68,6 +68,10 @@ fn call_or_apply(interp: &mut Interp, f: Value, args: &[Value]) -> ShenResult<Va
                 ClosureKind::Bytecode(bf, upvals) => {
                     return crate::vm::exec::exec(interp, bf, upvals, args)
                 }
+                #[cfg(feature = "jit")]
+                ClosureKind::Jit(jc, captures) => {
+                    return crate::jit::call_jit(interp, jc, captures, args)
+                }
                 ClosureKind::Lambda(_) => {}
             }
         }

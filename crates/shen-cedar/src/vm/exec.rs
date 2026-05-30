@@ -266,6 +266,8 @@ pub fn exec(
                                 continue;
                             }
                             ClosureKind::Lambda(_) => { /* fall through to apply */ }
+                            #[cfg(feature = "jit")]
+                            ClosureKind::Jit(_, _) => { /* fall through to apply */ }
                         }
                     }
                 }
