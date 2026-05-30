@@ -44,6 +44,25 @@ pub mod node;
 
 pub use heap::Heap;
 
+/// A heap object the collector can both **trace** and **down-cast**.
+///
+/// Stored behind a [`node::Kind::Closure`] node (a `Box<dyn GcObject>`). The
+/// collector cannot know the layout of an arbitrary higher-layer type (e.g.
+/// `value::Closure`), so the object itself enumerates its outgoing edges via
+/// [`GcObject::gc_edges`]; the value layer recovers the concrete type via
+/// [`GcObject::as_any`] + `downcast_ref`. This keeps `gc` free of any dependency
+/// on `value` while still letting the collector reach `Value`s sealed inside a
+/// closure (its `partial`, upvals, and the AOT shadow-capture vec).
+pub trait GcObject: std::any::Any {
+    /// Push every outgoing heap edge (as a [`Gc`]) into `out`. Immediates
+    /// (fixnum/sym/nil/bool) need not be pushed — the collector ignores
+    /// non-pointer handles — but pushing them is harmless.
+    fn gc_edges(&self, out: &mut Vec<Gc>);
+
+    /// Up-cast for the value layer to `downcast_ref` to the concrete type.
+    fn as_any(&self) -> &dyn std::any::Any;
+}
+
 /// A `Copy` garbage-collected handle: a tagged `u64` word.
 ///
 /// The low three bits are a tag:

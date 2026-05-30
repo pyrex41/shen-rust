@@ -23,7 +23,7 @@ use std::collections::HashMap;
 use std::ptr::{slice_from_raw_parts_mut, with_exposed_provenance, with_exposed_provenance_mut};
 
 use super::node::{Kind, Node};
-use super::Gc;
+use super::{Gc, GcObject};
 
 /// Expose a freshly-`into_raw`'d box pointer and return its address as a payload
 /// word, so a later `with_exposed_provenance` reconstruction is sound under
@@ -65,6 +65,14 @@ pub struct Heap {
     /// Soft trigger: once `all.len() >= cap` with an empty free-list, collect
     /// before growing — keeps the heap bounded so collection actually runs.
     cap: usize,
+    /// When `false`, [`Heap::obtain_slot`] never auto-collects — the heap only
+    /// ever grows. This is **GC Step 3's mode**: the `Value` representation is
+    /// flipped onto this heap, but the precise root set (VM stack, `Env`,
+    /// closure captures, AOT frames) is not wired until Step 4, so reclaiming
+    /// would free live objects. Grow-only is sound for the bounded Step-3 gate
+    /// runs; explicit [`Heap::collect`] still works (the new-`Kind` unit tests
+    /// drive it directly). See `design/gc-step3-value-flip-handoff.md` §2.
+    collection_enabled: bool,
     /// Reused mark-phase work stack (avoids a per-collection allocation).
     mark_stack: Vec<*mut Node>,
     collections: u64,
@@ -72,7 +80,7 @@ pub struct Heap {
 }
 
 impl Heap {
-    /// A new heap with the given soft node-count cap.
+    /// A new heap with the given soft node-count cap. Auto-collects at the cap.
     pub fn new(cap: usize) -> Heap {
         Heap {
             blocks: Vec::new(),
@@ -81,6 +89,29 @@ impl Heap {
             ranges: Vec::new(),
             pages: HashMap::new(),
             cap,
+            collection_enabled: true,
+            mark_stack: Vec::new(),
+            collections: 0,
+            peak_live: 0,
+        }
+    }
+
+    /// A new **grow-only** heap that never auto-collects (GC Step 3). Allocation
+    /// only ever grows the heap; nothing is reclaimed except explicit
+    /// [`Heap::collect`] calls and the final [`Heap::drop`]. See the
+    /// `collection_enabled` field and `design/gc-step3-value-flip-handoff.md` §2.
+    pub fn grow_only() -> Heap {
+        Heap {
+            blocks: Vec::new(),
+            all: Vec::new(),
+            free: Vec::new(),
+            ranges: Vec::new(),
+            pages: HashMap::new(),
+            // Cap is irrelevant when collection is disabled, but keep it large
+            // so the invariant "never collect" holds even if a future caller
+            // flips the flag without setting a cap.
+            cap: usize::MAX,
+            collection_enabled: false,
             mark_stack: Vec::new(),
             collections: 0,
             peak_live: 0,
@@ -153,6 +184,42 @@ impl Heap {
         Gc::from_node(p)
     }
 
+    /// Allocate a boxed float leaf holding `bits` (`f64::to_bits`). No owned
+    /// allocation; the bits live inline in the node.
+    pub fn alloc_float(&mut self, bits: u64, roots: &[Gc]) -> Gc {
+        let p = self.obtain_slot(roots);
+        // SAFETY: fresh free slot owned by this heap.
+        unsafe {
+            (*p).kind = Kind::Float;
+            (*p).mark = false;
+            (*p).a = bits;
+            (*p).b = 0;
+        }
+        Gc::from_node(p)
+    }
+
+    /// Allocate an immutable string leaf (a UTF-8 [`Kind::Blob`]).
+    pub fn alloc_str(&mut self, s: &str, roots: &[Gc]) -> Gc {
+        self.alloc_blob(s.as_bytes(), roots)
+    }
+
+    /// Allocate a closure node owning `obj`. The collector traces `obj`'s
+    /// [`GcObject::gc_edges`] on mark and runs its Rust `Drop` on sweep.
+    pub fn alloc_closure(&mut self, obj: Box<dyn GcObject>, roots: &[Gc]) -> Gc {
+        let p = self.obtain_slot(roots);
+        // Double-box so the payload word is a *thin* pointer (a `dyn GcObject`
+        // box is a fat pointer); mirrors `alloc_opaque`.
+        let a = expose(Box::into_raw(Box::new(obj)));
+        // SAFETY: fresh free slot; `a` owns the boxed object until reclaimed.
+        unsafe {
+            (*p).kind = Kind::Closure;
+            (*p).mark = false;
+            (*p).a = a;
+            (*p).b = 0;
+        }
+        Gc::from_node(p)
+    }
+
     /// Get a fresh, reusable node slot, collecting (tracing from `roots`) or
     /// growing as needed. The returned node is `Free` (any prior resource was
     /// already dropped on the sweep that freed it), so the caller may overwrite
@@ -160,7 +227,7 @@ impl Heap {
     #[inline]
     fn obtain_slot(&mut self, roots: &[Gc]) -> *mut Node {
         if self.free.is_empty() {
-            if self.all.len() >= self.cap {
+            if self.collection_enabled && self.all.len() >= self.cap {
                 self.collect(roots);
             }
             if self.free.is_empty() {
@@ -265,11 +332,17 @@ impl Heap {
                     let slice = slice_from_raw_parts_mut(data, (*p).b as usize);
                     drop(Box::from_raw(slice));
                 }
+                Kind::Closure => {
+                    let bp = with_exposed_provenance_mut::<Box<dyn GcObject>>((*p).a as usize);
+                    drop(Box::from_raw(bp));
+                }
                 Kind::Opaque => {
                     let bp = with_exposed_provenance_mut::<Box<dyn Any>>((*p).a as usize);
                     drop(Box::from_raw(bp));
                 }
-                Kind::Cons | Kind::Free => {}
+                // `Float` is a leaf with the bits inline in `a` — no owned
+                // allocation, nothing to free. `Cons`/`Free` likewise.
+                Kind::Float | Kind::Cons | Kind::Free => {}
             }
             (*p).kind = Kind::Free;
             (*p).a = 0;
@@ -325,7 +398,22 @@ impl Heap {
                     self.mark_edge(g);
                 }
             }
-            Kind::Blob | Kind::Opaque | Kind::Free => {}
+            Kind::Closure => {
+                // The closure object lives in a *separate* allocation (the
+                // double-boxed `dyn GcObject`), so reading its edges does not
+                // alias node `p`. Collect edges into a buffer first, then mark
+                // — never hold a borrow into the object across `mark_edge`.
+                let a = unsafe { (*p).a };
+                let bp = with_exposed_provenance::<Box<dyn GcObject>>(a as usize);
+                let mut edges: Vec<Gc> = Vec::new();
+                // SAFETY: `bp` is the live double-boxed object this node owns;
+                // it is not mutated or freed during the mark phase.
+                unsafe { (**bp).gc_edges(&mut edges) };
+                for g in edges {
+                    self.mark_edge(g);
+                }
+            }
+            Kind::Float | Kind::Blob | Kind::Opaque | Kind::Free => {}
         }
     }
 
@@ -428,6 +516,39 @@ impl Heap {
         unsafe {
             let data = with_exposed_provenance::<u8>((*p).a as usize);
             std::slice::from_raw_parts(data, (*p).b as usize)
+        }
+    }
+
+    /// The `f64::to_bits` of a float node. Panics if `g` is not a float.
+    pub fn float_bits(&self, g: Gc) -> u64 {
+        let p = self.node_of(g, Kind::Float, "float_bits");
+        // SAFETY: `p` is a live float node; `a` holds the bits inline.
+        unsafe { (*p).a }
+    }
+
+    /// The closure object behind a closure node. Panics if `g` is not a
+    /// closure. The returned reference is valid while `g` stays rooted (the
+    /// non-moving heap pins the node). The value layer `downcast_ref`s it via
+    /// [`GcObject::as_any`].
+    pub fn closure_obj(&self, g: Gc) -> &dyn GcObject {
+        let p = self.node_of(g, Kind::Closure, "closure_obj");
+        // SAFETY: `p` is a live closure node we own; `a` is its double-boxed
+        // object pointer, alive as long as the node (hence borrowed from `&self`).
+        unsafe {
+            let bp = with_exposed_provenance::<Box<dyn GcObject>>((*p).a as usize);
+            &**bp
+        }
+    }
+
+    /// The opaque host object behind an opaque node. Panics if `g` is not
+    /// opaque. Borrowed from `&self`; the value layer `downcast_ref`s it.
+    pub fn opaque_ref(&self, g: Gc) -> &dyn Any {
+        let p = self.node_of(g, Kind::Opaque, "opaque_ref");
+        // SAFETY: `p` is a live opaque node; `a` is its double-boxed `dyn Any`
+        // pointer, alive as long as the node.
+        unsafe {
+            let bp = with_exposed_provenance::<Box<dyn Any>>((*p).a as usize);
+            &**bp
         }
     }
 
@@ -715,6 +836,110 @@ mod tests {
         roots[0] = Gc::nil();
         heap.collect(&roots);
         assert_eq!(heap.free_count(), heap.node_count(), "blob not reclaimed");
+    }
+
+    #[test]
+    fn float_leaf_round_trips_and_reclaims() {
+        let mut heap = Heap::new(64);
+        let mut roots = vec![Gc::nil()];
+        let bits = 3.5f64.to_bits();
+        let g = heap.alloc_float(bits, &roots);
+        roots[0] = g;
+        heap.collect(&roots);
+        assert_eq!(f64::from_bits(heap.float_bits(g)), 3.5);
+        roots[0] = Gc::nil();
+        heap.collect(&roots);
+        assert_eq!(heap.free_count(), heap.node_count(), "float not reclaimed");
+    }
+
+    #[test]
+    fn str_blob_round_trips() {
+        let mut heap = Heap::new(64);
+        let mut roots = vec![Gc::nil()];
+        let g = heap.alloc_str("hello", &roots);
+        roots[0] = g;
+        heap.collect(&roots);
+        assert_eq!(heap.blob_bytes(g), b"hello");
+    }
+
+    /// A test stand-in for `value::Closure`: a node that owns some `Gc` edges
+    /// (its "captures") and counts its own drops.
+    struct FakeClosure {
+        captures: Vec<Gc>,
+        dropped: Rc<Cell<u32>>,
+    }
+    impl Drop for FakeClosure {
+        fn drop(&mut self) {
+            self.dropped.set(self.dropped.get() + 1);
+        }
+    }
+    impl GcObject for FakeClosure {
+        fn gc_edges(&self, out: &mut Vec<Gc>) {
+            out.extend_from_slice(&self.captures);
+        }
+        fn as_any(&self) -> &dyn std::any::Any {
+            self
+        }
+    }
+
+    #[test]
+    fn closure_captures_survive_collect_while_rooted() {
+        // The §5 correctness property: a rooted closure keeps its captured
+        // handles' nodes alive through a collection (they are *only* reachable
+        // via the closure's traced edge list — the analogue of the AOT
+        // move-capture shadow vec).
+        let mut heap = Heap::new(64);
+        let mut roots = vec![Gc::nil(), Gc::nil()];
+        let dropped = Rc::new(Cell::new(0u32));
+
+        // A cons cell that nothing roots directly — only the closure captures it.
+        let captured = heap.alloc_cons(Gc::fixnum(7), Gc::nil(), &roots);
+        roots[0] = captured; // keep it alive across the next alloc only
+        let clo = heap.alloc_closure(
+            Box::new(FakeClosure {
+                captures: vec![captured],
+                dropped: dropped.clone(),
+            }),
+            &roots,
+        );
+        roots[0] = clo; // now ONLY the closure roots `captured`
+        roots[1] = Gc::nil();
+
+        heap.collect(&roots);
+        // Both the closure and its captured cons must survive.
+        assert_eq!(dropped.get(), 0, "live closure dropped");
+        assert_eq!(heap.cons_head(captured).as_fixnum(), 7, "capture freed");
+        // Sanity: the closure object downcasts back.
+        let obj = heap.closure_obj(clo).as_any().downcast_ref::<FakeClosure>();
+        assert!(obj.is_some(), "closure object did not downcast");
+
+        // Drop the only root → both reclaimed, closure Drop runs once.
+        roots[0] = Gc::nil();
+        heap.collect(&roots);
+        assert_eq!(dropped.get(), 1, "swept closure must Drop exactly once");
+        assert_eq!(
+            heap.free_count(),
+            heap.node_count(),
+            "closure+capture leaked"
+        );
+    }
+
+    #[test]
+    fn grow_only_never_auto_collects() {
+        // Step-3 mode: even far past any reasonable cap, allocation only grows;
+        // unreachable garbage is retained (no auto-collect), proving the flag.
+        let mut heap = Heap::grow_only();
+        let mut roots = vec![Gc::nil()];
+        for _ in 0..2000 {
+            roots[0] = Gc::nil();
+            let _garbage = build_list(&mut heap, 50, &mut roots, 0);
+        }
+        roots[0] = Gc::nil();
+        assert_eq!(heap.collections(), 0, "grow-only heap must never collect");
+        assert!(
+            heap.node_count() >= 2000 * 50,
+            "grow-only heap reused/reclaimed nodes it should have retained"
+        );
     }
 
     #[test]

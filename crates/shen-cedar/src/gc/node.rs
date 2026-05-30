@@ -24,13 +24,21 @@
 //!
 //! # Payload encoding by [`Kind`]
 //!
-//! | Kind     | Models               | `a`                       | `b`   | Edges        |
-//! |----------|----------------------|---------------------------|-------|--------------|
-//! | `Cons`   | `Value::Cons`        | head `Gc`                 | tail `Gc` | `a`, `b` |
-//! | `Vec`    | `Value::Vec` absvec  | thin ptr → `Vec<Gc>`      | —     | every cell   |
-//! | `Blob`   | `Value::Str`/`Error` | data ptr → bytes          | len   | none (leaf)  |
-//! | `Opaque` | `Foreign`/`Stream`   | thin ptr → `Box<dyn Any>` | —     | none (opaque)|
-//! | `Free`   | (on the free-list)   | —                         | —     | none         |
+//! | Kind      | Models               | `a`                            | `b`   | Edges        |
+//! |-----------|----------------------|--------------------------------|-------|--------------|
+//! | `Cons`    | `Value::Cons`        | head `Gc`                      | tail `Gc` | `a`, `b` |
+//! | `Vec`     | `Value::Vec` absvec  | thin ptr → `Vec<Gc>`           | —     | every cell   |
+//! | `Blob`    | `Value::Str`/`Error` | data ptr → bytes               | len   | none (leaf)  |
+//! | `Float`   | `Value::Float`       | `f64::to_bits` of the value    | —     | none (leaf)  |
+//! | `Closure` | `Value::Closure`     | thin ptr → `Box<dyn GcObject>` | —     | obj's edges  |
+//! | `Opaque`  | `Foreign`/`Stream`   | thin ptr → `Box<dyn Any>`      | —     | none (opaque)|
+//! | `Free`    | (on the free-list)   | —                              | —     | none         |
+//!
+//! `Float` is a leaf with **no owned Rust allocation** (the f64 bits live inline
+//! in `a`), so — like `Cons` — it needs no reclaim work. `Closure` owns a boxed
+//! [`GcObject`](super::GcObject) trait object: it is **traced** (the collector
+//! asks the object to enumerate its `Value` edges — `partial`, upvals, and the
+//! AOT shadow-capture vec) *and* runs the object's Rust `Drop` on sweep.
 //!
 //! The `Vec`/`Blob`/`Opaque` words own a Rust allocation; the owning [`Heap`]
 //! must reconstruct and drop it on sweep (or on heap drop). Because the node is
@@ -54,6 +62,12 @@ pub(super) enum Kind {
     Vec,
     /// Immutable bytes (`a` = data pointer, `b` = length). A leaf.
     Blob,
+    /// A boxed float (`a` = `f64::to_bits`). A leaf with no owned allocation.
+    Float,
+    /// A closure (`a` = thin pointer to a `Box<dyn GcObject>`). **Traced** — the
+    /// object enumerates its outgoing `Value` edges on mark — and its Rust
+    /// `Drop` runs when reclaimed.
+    Closure,
     /// An opaque host object (`a` = thin pointer to a `Box<dyn Any>`). Traced
     /// through nothing, never moved, but its Rust `Drop` runs when reclaimed.
     Opaque,
