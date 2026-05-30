@@ -143,11 +143,11 @@ pub fn exec(
                     .get(idx as usize)
                     .cloned()
                     .ok_or_else(|| ShenError::new("vm: bad const index for LoadGlobal"))?;
-                let sym = match v {
-                    Value::Sym(s) => s,
-                    other => {
+                let sym = match v.as_sym() {
+                    Some(s) => s,
+                    None => {
                         return Err(ShenError::new(format!(
-                            "vm: LoadGlobal const must be a Sym, got {other:?}"
+                            "vm: LoadGlobal const must be a Sym, got {v:?}"
                         )))
                     }
                 };
@@ -164,14 +164,17 @@ pub fn exec(
                     return Err(ShenError::new("vm: stack underflow on JumpFalse"));
                 }
                 let v = stack.pop().unwrap();
-                let truthy = match v {
-                    Value::Bool(b) => b,
-                    Value::Sym(s) if s == interp.well_known.k_true => true,
-                    Value::Sym(s) if s == interp.well_known.k_false => false,
-                    other => {
-                        return Err(ShenError::new(format!(
-                            "vm: JumpFalse on non-boolean: {other:?}"
-                        )))
+                let truthy = if let Some(b) = v.as_bool() {
+                    b
+                } else {
+                    match v.as_sym() {
+                        Some(s) if s == interp.well_known.k_true => true,
+                        Some(s) if s == interp.well_known.k_false => false,
+                        _ => {
+                            return Err(ShenError::new(format!(
+                                "vm: JumpFalse on non-boolean: {v:?}"
+                            )))
+                        }
                     }
                 };
                 if !truthy {
@@ -195,7 +198,7 @@ pub fn exec(
                     partial: Vec::new(),
                     kind: ClosureKind::Bytecode(inner, captured),
                 };
-                stack.push(Value::Closure(Rc::new(closure)));
+                stack.push(Value::closure(closure));
             }
             Op::Return => {
                 let retval = if stack.len() > floor {
@@ -223,11 +226,11 @@ pub fn exec(
                     return Err(ShenError::new("vm: stack underflow on Call"));
                 }
                 let callee_idx = l - n - 1;
-                let callee = stack[callee_idx].clone();
-                if let Value::Closure(c) = &callee {
+                let callee = stack[callee_idx];
+                if let Some(c) = callee.as_closure() {
                     if c.partial.is_empty() && c.arity == n {
                         match &c.kind {
-                            ClosureKind::Native(nf) => {
+                            ClosureKind::Native(nf, _captures) => {
                                 // Leaf call: dispatch on the borrowed arg
                                 // slice with no allocation, then collapse
                                 // callee+args to the single result slot.
@@ -280,8 +283,8 @@ pub fn exec(
                     return Err(ShenError::new("vm: stack underflow on TailCall"));
                 }
                 let callee_idx = l - n - 1;
-                let callee = stack[callee_idx].clone();
-                if let Value::Closure(c) = &callee {
+                let callee = stack[callee_idx];
+                if let Some(c) = callee.as_closure() {
                     if c.partial.is_empty() && c.arity == n {
                         if let ClosureKind::Bytecode(new_bf, new_up) = &c.kind {
                             // Replace the current frame in place: move the
@@ -456,12 +459,12 @@ mod tests {
     /// no captured upvals.
     fn bytecode_closure(bf: BytecodeFn, name: Option<crate::symbol::SymId>) -> Value {
         let arity = bf.arity;
-        Value::Closure(Rc::new(Closure {
+        Value::closure(Closure {
             name,
             arity,
             partial: Vec::new(),
             kind: ClosureKind::Bytecode(Rc::new(bf), Vec::new()),
-        }))
+        })
     }
 
     #[test]
@@ -478,7 +481,7 @@ mod tests {
         };
         let f = bytecode_closure(bf, Some(name));
         let r = interp.apply(f, vec![Value::int(7)]).expect("apply");
-        assert!(matches!(r, Value::Int(7)));
+        assert!(r.as_int() == Some(7));
     }
 
     #[test]
@@ -497,7 +500,7 @@ mod tests {
         interp.env.set_fn(sym, bytecode_closure(bf, Some(sym)));
         let r = crate::aot::runtime::apply_named(&mut interp, "id-vm", &[Value::int(99)])
             .expect("apply_named");
-        assert!(matches!(r, Value::Int(99)));
+        assert!(r.as_int() == Some(99));
     }
 
     #[test]
@@ -513,7 +516,7 @@ mod tests {
             fn_consts: vec![],
         });
         let result = exec(&mut interp, &bf, &[], &[Value::int(42)]).expect("exec");
-        assert!(matches!(result, Value::Int(42)));
+        assert!(result.as_int() == Some(42));
     }
 
     #[test]
@@ -528,7 +531,7 @@ mod tests {
             fn_consts: vec![],
         });
         let result = exec(&mut interp, &bf, &[], &[]).expect("exec");
-        assert!(matches!(result, Value::Int(42)));
+        assert!(result.as_int() == Some(42));
     }
 
     #[test]
@@ -548,7 +551,7 @@ mod tests {
             fn_consts: vec![],
         });
         let result = exec(&mut interp, &bf, &[], &[Value::int(7)]).expect("exec");
-        assert!(matches!(result, Value::Int(7)));
+        assert!(result.as_int() == Some(7));
     }
 
     #[test]
@@ -577,7 +580,7 @@ mod tests {
             fn_consts: vec![],
         });
         let result = exec(&mut interp, &bf, &[], &[Value::int(41)]).expect("exec");
-        assert!(matches!(result, Value::Int(42)));
+        assert!(result.as_int() == Some(42));
     }
 
     #[test]
@@ -608,7 +611,7 @@ mod tests {
             fn_consts: vec![inner],
         });
         let result = exec(&mut interp, &outer, &[], &[]).expect("exec");
-        assert!(matches!(result, Value::Int(42)));
+        assert!(result.as_int() == Some(42));
     }
 
     #[test]
@@ -646,7 +649,7 @@ mod tests {
             fn_consts: vec![inner],
         });
         let result = exec(&mut interp, &outer, &[], &[]).expect("exec");
-        assert!(matches!(result, Value::Int(15)), "got {result:?}");
+        assert!(result.as_int() == Some(15), "got {result:?}");
     }
 
     #[test]
@@ -680,12 +683,12 @@ mod tests {
         });
         interp.env.set_fn(
             add1_sym,
-            Value::Closure(Rc::new(Closure {
+            Value::closure(Closure {
                 name: Some(add1_sym),
                 arity: 1,
                 partial: Vec::new(),
                 kind: ClosureKind::Bytecode(Rc::clone(&add1), Vec::new()),
-            })),
+            }),
         );
         // caller: LoadGlobal add1, (LoadGlobal add1, LoadLocal0, Call1), Call1
         let caller = Rc::new(BytecodeFn {
@@ -704,7 +707,7 @@ mod tests {
             fn_consts: vec![],
         });
         let r = exec(&mut interp, &caller, &[], &[Value::int(40)]).expect("exec");
-        assert!(matches!(r, Value::Int(42)), "got {r:?}");
+        assert!(r.as_int() == Some(42), "got {r:?}");
     }
 
     #[test]
@@ -770,25 +773,25 @@ mod tests {
         });
         interp.env.set_fn(
             cd_sym,
-            Value::Closure(Rc::new(Closure {
+            Value::closure(Closure {
                 name: Some(cd_sym),
                 arity: 1,
                 partial: Vec::new(),
                 kind: ClosureKind::Bytecode(Rc::clone(&cd), Vec::new()),
-            })),
+            }),
         );
         interp.env.set_fn(
             cd2_sym,
-            Value::Closure(Rc::new(Closure {
+            Value::closure(Closure {
                 name: Some(cd2_sym),
                 arity: 1,
                 partial: Vec::new(),
                 kind: ClosureKind::Bytecode(Rc::clone(&cd2), Vec::new()),
-            })),
+            }),
         );
         // 2,000,000 mutual tail calls — would overflow an 8MB Rust stack if
         // each call recursed. Must complete in constant space.
         let r = exec(&mut interp, &cd, &[], &[Value::int(2_000_000)]).expect("exec");
-        assert!(matches!(r, Value::Int(99)), "got {r:?}");
+        assert!(r.as_int() == Some(99), "got {r:?}");
     }
 }

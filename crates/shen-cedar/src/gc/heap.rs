@@ -23,7 +23,7 @@ use std::collections::HashMap;
 use std::ptr::{slice_from_raw_parts_mut, with_exposed_provenance, with_exposed_provenance_mut};
 
 use super::node::{Kind, Node};
-use super::{Gc, GcObject};
+use super::{Gc, GcObject, HeapKind};
 
 /// Expose a freshly-`into_raw`'d box pointer and return its address as a payload
 /// word, so a later `with_exposed_provenance` reconstruction is sound under
@@ -203,6 +203,24 @@ impl Heap {
         self.alloc_blob(s.as_bytes(), roots)
     }
 
+    /// Allocate an immutable error-object leaf ([`Kind::Error`]) from its UTF-8
+    /// message bytes. Same storage as a blob; a distinct kind so error objects
+    /// are distinguishable from strings.
+    pub fn alloc_err(&mut self, s: &str, roots: &[Gc]) -> Gc {
+        let p = self.obtain_slot(roots);
+        let bytes: Box<[u8]> = Box::from(s.as_bytes());
+        let len = bytes.len() as u64;
+        let a = expose(Box::into_raw(bytes));
+        // SAFETY: fresh free slot; `a`/`len` own the boxed bytes until reclaimed.
+        unsafe {
+            (*p).kind = Kind::Error;
+            (*p).mark = false;
+            (*p).a = a;
+            (*p).b = len;
+        }
+        Gc::from_node(p)
+    }
+
     /// Allocate a closure node owning `obj`. The collector traces `obj`'s
     /// [`GcObject::gc_edges`] on mark and runs its Rust `Drop` on sweep.
     pub fn alloc_closure(&mut self, obj: Box<dyn GcObject>, roots: &[Gc]) -> Gc {
@@ -327,7 +345,7 @@ impl Heap {
                     let vp = with_exposed_provenance_mut::<Vec<Gc>>((*p).a as usize);
                     drop(Box::from_raw(vp));
                 }
-                Kind::Blob => {
+                Kind::Blob | Kind::Error => {
                     let data = with_exposed_provenance_mut::<u8>((*p).a as usize);
                     let slice = slice_from_raw_parts_mut(data, (*p).b as usize);
                     drop(Box::from_raw(slice));
@@ -413,7 +431,7 @@ impl Heap {
                     self.mark_edge(g);
                 }
             }
-            Kind::Float | Kind::Blob | Kind::Opaque | Kind::Free => {}
+            Kind::Float | Kind::Blob | Kind::Error | Kind::Opaque | Kind::Free => {}
         }
     }
 
@@ -516,6 +534,83 @@ impl Heap {
         unsafe {
             let data = with_exposed_provenance::<u8>((*p).a as usize);
             std::slice::from_raw_parts(data, (*p).b as usize)
+        }
+    }
+
+    /// Classify the node a heap-pointer `g` names, for the value layer's
+    /// tag-dispatch. Returns `None` if `g` is not a heap pointer (an immediate)
+    /// or names a `Free` node (never handed out live).
+    pub fn classify(&self, g: Gc) -> Option<HeapKind> {
+        if !g.is_ptr() {
+            return None;
+        }
+        let p = g.node_ptr();
+        // SAFETY: a `TAG_PTR` handle names one of our live nodes.
+        Some(match unsafe { (*p).kind } {
+            Kind::Cons => HeapKind::Cons,
+            Kind::Vec => HeapKind::Vec,
+            Kind::Blob => HeapKind::Str,
+            Kind::Error => HeapKind::Error,
+            Kind::Float => HeapKind::Float,
+            Kind::Closure => HeapKind::Closure,
+            Kind::Opaque => HeapKind::Opaque,
+            Kind::Free => return None,
+        })
+    }
+
+    // ---- raw-pointer accessors (the value layer's lifetime bridge) ---------
+    //
+    // These return a *raw pointer* into a node rather than a borrow, so the
+    // caller can drop the (thread-local `RefCell`) heap borrow and then form a
+    // reference whose lifetime it ties to its own `&self` — sound because the
+    // heap is non-moving (the node address is stable) and, in Step 3, grow-only
+    // (the node is never freed). See `value::Value::{head,tail,as_str}`.
+
+    /// Raw pointers to a cons node's `(head, tail)` words, or `None` if `g` is
+    /// not a cons node. Each `*const Gc` aliases a payload word in the pinned
+    /// node; it stays valid while `g` is reachable.
+    pub fn cons_word_ptrs(&self, g: Gc) -> Option<(*const Gc, *const Gc)> {
+        if !g.is_ptr() {
+            return None;
+        }
+        let p = g.node_ptr();
+        // SAFETY: a `TAG_PTR` handle names one of our live nodes.
+        if unsafe { (*p).kind } != Kind::Cons {
+            return None;
+        }
+        // The payload words are `u64`; a `Gc` is `repr(transparent)` over `u64`,
+        // so `&(*p).a as *const u64 as *const Gc` is a valid reinterpretation.
+        unsafe {
+            let head = core::ptr::addr_of!((*p).a) as *const Gc;
+            let tail = core::ptr::addr_of!((*p).b) as *const Gc;
+            Some((head, tail))
+        }
+    }
+
+    /// Raw `(data, len)` of a string ([`Kind::Blob`]) node, or `None`. The
+    /// pointer aliases the node's owned byte buffer, valid while `g` is rooted.
+    pub fn blob_raw(&self, g: Gc) -> Option<(*const u8, usize)> {
+        self.bytes_raw(g, Kind::Blob)
+    }
+
+    /// Raw `(data, len)` of an error ([`Kind::Error`]) node, or `None`.
+    pub fn err_raw(&self, g: Gc) -> Option<(*const u8, usize)> {
+        self.bytes_raw(g, Kind::Error)
+    }
+
+    #[inline]
+    fn bytes_raw(&self, g: Gc, kind: Kind) -> Option<(*const u8, usize)> {
+        if !g.is_ptr() {
+            return None;
+        }
+        let p = g.node_ptr();
+        // SAFETY: a `TAG_PTR` handle names one of our live nodes.
+        unsafe {
+            if (*p).kind != kind {
+                return None;
+            }
+            let data = with_exposed_provenance::<u8>((*p).a as usize);
+            Some((data, (*p).b as usize))
         }
     }
 

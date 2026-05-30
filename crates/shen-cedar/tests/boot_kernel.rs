@@ -47,8 +47,8 @@ fn kernel_boots_clean() {
 fn version_global_is_set() {
     let mut interp = fresh_booted();
     let v = eval(&mut interp, "(value *version*)");
-    if let Value::Str(s) = v {
-        assert_eq!(&*s, "41.1");
+    if let Some(s) = v.as_str() {
+        assert_eq!(s, "41.1");
     } else {
         panic!("expected string, got {v:?}");
     }
@@ -58,8 +58,8 @@ fn version_global_is_set() {
 fn implementation_global() {
     let mut interp = fresh_booted();
     let v = eval(&mut interp, "(value *implementation*)");
-    if let Value::Str(s) = v {
-        assert_eq!(&*s, "shen-cedar");
+    if let Some(s) = v.as_str() {
+        assert_eq!(s, "shen-cedar");
     } else {
         panic!("expected string, got {v:?}");
     }
@@ -69,21 +69,21 @@ fn implementation_global() {
 fn simple_arithmetic_post_boot() {
     let mut interp = fresh_booted();
     let v = eval(&mut interp, "(+ 1 1)");
-    assert!(matches!(v, Value::Int(2)));
+    assert!((v.as_int() == Some(2)));
 }
 
 #[test]
 fn let_binds_post_boot() {
     let mut interp = fresh_booted();
     let v = eval(&mut interp, "(let X 5 (+ X 1))");
-    assert!(matches!(v, Value::Int(6)));
+    assert!((v.as_int() == Some(6)));
 }
 
 #[test]
 fn cons_hd_post_boot() {
     let mut interp = fresh_booted();
     let v = eval(&mut interp, "(hd (cons 1 (cons 2 ())))");
-    assert!(matches!(v, Value::Int(1)));
+    assert!((v.as_int() == Some(1)));
 }
 
 #[test]
@@ -91,7 +91,7 @@ fn defun_and_call_post_boot() {
     let mut interp = fresh_booted();
     eval(&mut interp, "(defun double (X) (* X 2))");
     let v = eval(&mut interp, "(double 21)");
-    assert!(matches!(v, Value::Int(42)));
+    assert!((v.as_int() == Some(42)));
 }
 
 #[test]
@@ -101,8 +101,8 @@ fn trap_error_post_boot() {
         &mut interp,
         "(trap-error (simple-error \"boom\") (lambda E (error-to-string E)))",
     );
-    if let Value::Str(s) = v {
-        assert_eq!(&*s, "boom");
+    if let Some(s) = v.as_str() {
+        assert_eq!(s, "boom");
     } else {
         panic!("expected string, got {v:?}");
     }
@@ -115,7 +115,7 @@ fn kernel_eval_pipeline_runs() {
     // macro expansion + process-applications, which is the real bar.
     let mut interp = fresh_booted();
     let v = eval(&mut interp, "(eval (cons + (cons 1 (cons 1 ()))))");
-    assert!(matches!(v, Value::Int(2)));
+    assert!((v.as_int() == Some(2)));
 }
 
 #[test]
@@ -123,5 +123,5 @@ fn fn_lookup_post_metadata() {
     // After register_all_metadata, `(fn +)` should return the closure.
     let mut interp = fresh_booted();
     let v = eval(&mut interp, "(fn +)");
-    assert!(matches!(v, Value::Closure(_)));
+    assert!((v.is_closure()));
 }

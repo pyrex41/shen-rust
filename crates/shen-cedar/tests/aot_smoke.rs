@@ -44,11 +44,11 @@ fn aot_factorial_matches_treewalker() {
     let aot_result = run(&mut aot, "(fact 10)");
 
     assert!(
-        matches!(tw_result, Value::Int(3628800)),
+        (tw_result.as_int() == Some(3628800)),
         "tree-walker fact(10) was {tw_result:?}"
     );
     assert!(
-        matches!(aot_result, Value::Int(3628800)),
+        (aot_result.as_int() == Some(3628800)),
         "AOT fact(10) was {aot_result:?}"
     );
 }
@@ -62,8 +62,8 @@ fn aot_loop_sum_matches_treewalker() {
     generated::install(&mut aot);
     let aot_result = run(&mut aot, "(loop-sum 1000 0)");
 
-    assert!(matches!(tw_result, Value::Int(1000)));
-    assert!(matches!(aot_result, Value::Int(1000)));
+    assert!((tw_result.as_int() == Some(1000)));
+    assert!((aot_result.as_int() == Some(1000)));
 }
 
 #[test]
@@ -75,8 +75,8 @@ fn aot_double_matches_treewalker() {
     generated::install(&mut aot);
     let aot_result = run(&mut aot, "(double 21)");
 
-    assert!(matches!(tw_result, Value::Int(42)));
-    assert!(matches!(aot_result, Value::Int(42)));
+    assert!((tw_result.as_int() == Some(42)));
+    assert!((aot_result.as_int() == Some(42)));
 }
 
 /// Crude throughput comparison — not a rigorous benchmark, just a sanity
@@ -92,7 +92,7 @@ fn aot_perf_smoke() {
     let mut tw = fresh_with_defuns();
     let parsed_tw = parse_one("(loop-sum 50 0)", &mut tw.symbols).unwrap();
     let t0 = Instant::now();
-    let mut last_tw = Value::Nil;
+    let mut last_tw = Value::nil();
     for _ in 0..RUNS {
         last_tw = tw.eval(&parsed_tw).unwrap();
     }
@@ -102,7 +102,7 @@ fn aot_perf_smoke() {
     generated::install(&mut aot);
     let parsed_aot = parse_one("(loop-sum 50 0)", &mut aot.symbols).unwrap();
     let t0 = Instant::now();
-    let mut last_aot = Value::Nil;
+    let mut last_aot = Value::nil();
     for _ in 0..RUNS {
         last_aot = aot.eval(&parsed_aot).unwrap();
     }
@@ -113,6 +113,6 @@ fn aot_perf_smoke() {
         "aot_perf_smoke: {RUNS} iterations of (loop-sum 50 0)\n  tree-walker: {tw_elapsed:?}\n  AOT:         {aot_elapsed:?}\n  speedup:     {ratio:.2}x"
     );
 
-    assert!(matches!(last_tw, Value::Int(50)));
-    assert!(matches!(last_aot, Value::Int(50)));
+    assert!((last_tw.as_int() == Some(50)));
+    assert!((last_aot.as_int() == Some(50)));
 }

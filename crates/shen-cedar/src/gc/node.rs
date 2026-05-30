@@ -60,8 +60,13 @@ pub(super) enum Kind {
     /// and **can form cycles** — the one thing tracing reclaims that `Rc`
     /// cannot.
     Vec,
-    /// Immutable bytes (`a` = data pointer, `b` = length). A leaf.
+    /// Immutable bytes (`a` = data pointer, `b` = length). A leaf. Models a
+    /// Shen string.
     Blob,
+    /// Immutable bytes (`a` = data pointer, `b` = length). A leaf. Models a
+    /// Shen *error object* — same storage as [`Kind::Blob`] but a distinct kind
+    /// so `string?`/`error?` and `error-to-string` can tell the two apart.
+    Error,
     /// A boxed float (`a` = `f64::to_bits`). A leaf with no owned allocation.
     Float,
     /// A closure (`a` = thin pointer to a `Box<dyn GcObject>`). **Traced** — the

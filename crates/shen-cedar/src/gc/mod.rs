@@ -44,6 +44,20 @@ pub mod node;
 
 pub use heap::Heap;
 
+/// The runtime kind of a heap node, exposed to the value layer so it can
+/// classify a heap-pointer [`Gc`] (the node's private [`node::Kind`] header is
+/// internal to the collector). Mirrors the heap-backed `Value` variants.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum HeapKind {
+    Cons,
+    Vec,
+    Str,
+    Error,
+    Float,
+    Closure,
+    Opaque,
+}
+
 /// A heap object the collector can both **trace** and **down-cast**.
 ///
 /// Stored behind a [`node::Kind::Closure`] node (a `Box<dyn GcObject>`). The

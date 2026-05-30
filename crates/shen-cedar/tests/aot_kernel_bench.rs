@@ -46,7 +46,7 @@ fn kernel_loop_sum() {
 
     let parsed = parse_one("(bench-body)", &mut interp.symbols).unwrap();
     let t0 = Instant::now();
-    let mut last = Value::Nil;
+    let mut last = Value::nil();
     for _ in 0..RUNS {
         last = interp.eval(&parsed).unwrap();
     }
@@ -58,7 +58,7 @@ fn kernel_loop_sum() {
     );
 
     // Sanity: result should be (6 5 4 3 2 1) — a 6-element list.
-    if let Value::Cons(_) = last {
+    if last.is_cons() {
         // pass
     } else {
         panic!("expected cons, got {last:?}");

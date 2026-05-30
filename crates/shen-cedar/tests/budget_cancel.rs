@@ -29,7 +29,7 @@ fn unbounded_eval_completes() {
     let mut interp = Interp::new();
     define_spin(&mut interp);
     let v = eval(&mut interp, "(spin 5000)").expect("should complete unbounded");
-    assert!(matches!(v, Value::Sym(_)), "expected `done`, got {v:?}");
+    assert!((v.is_sym()), "expected `done`, got {v:?}");
 }
 
 #[test]
@@ -53,7 +53,7 @@ fn clear_budget_restores_unbounded() {
     assert!(eval(&mut interp, "(spin 1000000)").is_err());
     interp.clear_budget();
     let v = eval(&mut interp, "(spin 5000)").expect("should complete after clear");
-    assert!(matches!(v, Value::Sym(_)));
+    assert!((v.is_sym()));
 }
 
 #[test]

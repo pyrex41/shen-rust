@@ -73,7 +73,7 @@ fn run_kernel_tests() -> ExitCode {
     // and calls `(error "kill")` if the user answers no. Override with a
     // native primitive that unconditionally answers yes, so the suite
     // runs to completion instead of stopping at the first failure.
-    interp.register_native("y-or-n?", 1, |_, _args| Ok(Value::Bool(true)));
+    interp.register_native("y-or-n?", 1, |_, _args| Ok(Value::bool(true)));
 
     // The kernel's `cd` only updates `*home-directory*` — it doesn't
     // chdir the process. `(load "runme.shen")` opens the file with a
@@ -99,7 +99,7 @@ fn run_kernel_tests() -> ExitCode {
     ];
     for src in steps {
         if src.is_empty() {
-            interp.register_native("reset", 0, |_, _args| Ok(Value::Nil));
+            interp.register_native("reset", 0, |_, _args| Ok(Value::nil()));
             continue;
         }
         match parse_one(src, &mut interp.symbols) {
@@ -125,10 +125,11 @@ fn run_kernel_tests() -> ExitCode {
     // unbound as 0 rather than an error.
     let read_int = |interp: &mut Interp, name: &str| -> i64 {
         let sym = interp.intern(name);
-        match interp.env.get_global(sym) {
-            Some(Value::Int(n)) => *n,
-            _ => 0,
-        }
+        interp
+            .env
+            .get_global(sym)
+            .and_then(|v| v.as_int())
+            .unwrap_or_default()
     };
     let passed = read_int(&mut interp, "test-harness.*passed*");
     let failed = read_int(&mut interp, "test-harness.*failed*");
@@ -145,8 +146,12 @@ fn print_banner(interp: &Interp) {
     let get = |name: &str| -> String {
         let mut symbols = interp.symbols.clone_for_lookup();
         let sym = symbols.intern(name);
-        match interp.env.get_global(sym) {
-            Some(Value::Str(s)) => s.to_string(),
+        match interp
+            .env
+            .get_global(sym)
+            .and_then(|v| v.as_str().map(str::to_string))
+        {
+            Some(s) => s,
             _ => String::from("?"),
         }
     };
@@ -217,12 +222,12 @@ fn dispatch_through_kernel_eval(interp: &mut Interp, expr: &KlExpr) -> ShenResul
 fn klexpr_to_value(e: &KlExpr) -> Value {
     use shen_cedar::value::Value as V;
     match e {
-        KlExpr::Nil => V::Nil,
-        KlExpr::Bool(b) => V::Bool(*b),
-        KlExpr::Int(n) => V::Int(*n),
-        KlExpr::Float(x) => V::Float(*x),
-        KlExpr::Str(s) => V::Str(s.clone()),
-        KlExpr::Sym(s) => V::Sym(*s),
+        KlExpr::Nil => V::nil(),
+        KlExpr::Bool(b) => V::bool(*b),
+        KlExpr::Int(n) => V::int(*n),
+        KlExpr::Float(x) => V::float(*x),
+        KlExpr::Str(s) => V::str(s.clone()),
+        KlExpr::Sym(s) => V::sym(*s),
         KlExpr::App(items) => V::list(items.iter().map(klexpr_to_value)),
     }
 }
@@ -286,20 +291,40 @@ fn parens_balanced(src: &str) -> bool {
 }
 
 fn render(interp: &Interp, v: &Value) -> String {
-    match v {
-        Value::Nil => "()".to_string(),
-        Value::Bool(b) => b.to_string(),
-        Value::Int(n) => n.to_string(),
-        Value::Float(x) => format_float(*x),
-        Value::Str(s) => s.to_string(),
-        Value::Sym(s) => interp.resolve(*s).to_string(),
-        Value::Cons(_) => render_list(interp, v),
-        Value::Vec(cells) => render_vec(interp, cells),
-        Value::Closure(_) => "<closure>".to_string(),
-        Value::Stream(_) => "<stream>".to_string(),
-        Value::Error(s) => format!("<error: {s}>"),
-        Value::Foreign(_) => "<foreign>".to_string(),
+    if v.is_nil() {
+        return "()".to_string();
     }
+    if let Some(b) = v.as_bool() {
+        return b.to_string();
+    }
+    if let Some(n) = v.as_int() {
+        return n.to_string();
+    }
+    if let Some(x) = v.as_float() {
+        return format_float(x);
+    }
+    if let Some(s) = v.as_str() {
+        return s.to_string();
+    }
+    if let Some(s) = v.as_sym() {
+        return interp.resolve(s).to_string();
+    }
+    if let Some(s) = v.error_message() {
+        return format!("<error: {s}>");
+    }
+    if v.is_cons() {
+        return render_list(interp, v);
+    }
+    if v.is_vec() {
+        return render_vec(interp, v);
+    }
+    if v.is_closure() {
+        return "<closure>".to_string();
+    }
+    if v.as_stream().is_some() {
+        return "<stream>".to_string();
+    }
+    "<foreign>".to_string()
 }
 
 /// Print whole-number floats with `.0` so `4000.0` doesn't display as
@@ -318,31 +343,33 @@ fn format_float(x: f64) -> String {
 /// symbol (e.g. `shen.printF`) and slot 1 holds the string to display.
 /// They're the standard representation for `(fn NAME)` results from
 /// `defun` and similar.
-fn render_vec(interp: &Interp, cells: &shen_cedar::value::AbsVec) -> String {
-    let borrow = cells.borrow();
-    if borrow.len() == 2 {
-        if let (Value::Sym(_), Value::Str(s)) = (&borrow[0], &borrow[1]) {
+fn render_vec(interp: &Interp, v: &Value) -> String {
+    let cells = v.vec_cells();
+    if cells.len() == 2 && cells[0].is_sym() {
+        if let Some(s) = cells[1].as_str() {
             return s.to_string();
         }
     }
-    let inner: Vec<String> = borrow.iter().map(|c| render(interp, c)).collect();
+    let inner: Vec<String> = cells.iter().map(|c| render(interp, c)).collect();
     format!("<vector {}>", inner.join(" "))
 }
 
 fn render_list(interp: &Interp, v: &Value) -> String {
     let mut out = String::from("(");
-    let mut cur = v.clone();
+    let mut cur = *v;
     let mut first = true;
     loop {
-        match cur {
-            Value::Nil => break,
-            Value::Cons(p) => {
+        if cur.is_nil() {
+            break;
+        }
+        match (cur.head(), cur.tail()) {
+            (Some(h), Some(t)) => {
                 if !first {
                     out.push(' ');
                 }
-                out.push_str(&render(interp, &p.0));
+                out.push_str(&render(interp, h));
                 first = false;
-                cur = p.1.clone();
+                cur = *t;
             }
             _ => {
                 out.push_str(" . ");

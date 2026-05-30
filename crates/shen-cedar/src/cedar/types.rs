@@ -11,21 +11,19 @@ use cedar_policy::{Authorizer, Entities, Policy, PolicySet, Request, Schema};
 use crate::error::{ShenError, ShenResult};
 use crate::value::Value;
 
-/// Wrap a concrete Cedar type as a Shen `Value::Foreign`.
+/// Wrap a concrete Cedar type as a Shen `Foreign` value.
 pub fn wrap<T: 'static>(x: T) -> Value {
-    Value::Foreign(Rc::new(x))
+    Value::foreign(Rc::new(x))
 }
 
-/// Downcast a `Value::Foreign` to a specific Cedar type. Returns a clear
-/// error naming the expected and actual types if the cast fails.
+/// Downcast a `Foreign` value to a specific Cedar type. Returns a clear error
+/// naming the expected and actual types if the cast fails.
 pub fn downcast<T: 'static>(v: &Value, expected: &str) -> ShenResult<Rc<T>> {
-    match v {
-        Value::Foreign(any) => Rc::clone(any).downcast::<T>().map_err(|_| {
+    match v.as_foreign() {
+        Some(any) => any.downcast::<T>().map_err(|_| {
             ShenError::new(format!("expected {expected}, got Foreign of another type"))
         }),
-        other => Err(ShenError::new(format!(
-            "expected {expected}, got {other:?}"
-        ))),
+        None => Err(ShenError::new(format!("expected {expected}, got {v:?}"))),
     }
 }
 

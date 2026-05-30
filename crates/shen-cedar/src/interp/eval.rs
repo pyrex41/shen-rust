@@ -319,9 +319,9 @@ impl Interp {
             name: Some(sym),
             arity,
             partial: Vec::new(),
-            kind: ClosureKind::Native(Rc::new(f) as Rc<NativeFn>),
+            kind: ClosureKind::Native(Rc::new(f) as Rc<NativeFn>, Vec::new()),
         };
-        self.env.set_fn(sym, Value::Closure(Rc::new(closure)));
+        self.env.set_fn(sym, Value::closure(closure));
         // Grow direct table in lockstep (slot left empty for closure-based
         // natives; real fn pointers are installed via register_aot_direct).
         let idx = sym.0 as usize;
@@ -520,9 +520,9 @@ impl Interp {
         scope: &mut Scope,
         current: &mut KlExpr,
     ) -> ShenResult<StepOutcome> {
-        let closure = match f {
-            Value::Closure(c) => c,
-            other => return Err(ShenError::new(format!("not callable: {other:?}"))),
+        let closure = match f.as_closure() {
+            Some(c) => c,
+            None => return Err(ShenError::new(format!("not callable: {f:?}"))),
         };
 
         // Combine partial-application args with the new ones. The common
@@ -532,7 +532,7 @@ impl Interp {
         let mut total_args: ArgVec = if closure.partial.is_empty() {
             argv
         } else {
-            closure.partial.iter().cloned().chain(argv).collect()
+            closure.partial.iter().copied().chain(argv).collect()
         };
 
         if total_args.len() < closure.arity {
@@ -543,14 +543,14 @@ impl Interp {
                 partial: total_args.into_vec(), // keep the rare partial path on Vec for API compat
                 kind: clone_kind(&closure.kind),
             };
-            return Ok(StepOutcome::Done(Value::Closure(Rc::new(new))));
+            return Ok(StepOutcome::Done(Value::closure(new)));
         }
 
         if total_args.len() == closure.arity {
             match &closure.kind {
-                ClosureKind::Native(f) => {
-                    // Call in-place: `f` borrows `closure.kind`, disjoint from
-                    // `self`; no `Rc::clone` needed on this hot path.
+                ClosureKind::Native(f, _captures) => {
+                    // Call in-place: `f` borrows `closure.kind` (a pinned heap
+                    // node), disjoint from `self`; no `Rc::clone` on this path.
                     let v = f(self, &total_args)?;
                     return Ok(StepOutcome::Done(v));
                 }
@@ -570,7 +570,7 @@ impl Interp {
         // Over-application: invoke with the first `arity` args, then apply
         // the result to the rest.
         let extra: Vec<_> = total_args.drain(closure.arity..).collect();
-        let first = self.call_strict(&closure, total_args)?;
+        let first = self.call_strict(closure, total_args)?;
         let v = self.apply(first, extra)?;
         Ok(StepOutcome::Done(v))
     }
@@ -579,7 +579,7 @@ impl Interp {
     /// the over-application path).
     fn call_strict(&mut self, closure: &Closure, args: ArgVec) -> ShenResult<Value> {
         match &closure.kind {
-            ClosureKind::Native(f) => f(self, &args),
+            ClosureKind::Native(f, _captures) => f(self, &args),
             ClosureKind::Lambda(body) => {
                 let mut locals: Locals = body.captured.clone();
                 for (p, a) in body.params.iter().zip(args) {
@@ -594,16 +594,16 @@ impl Interp {
     /// Public apply — used by primitives like `apply` and by higher-order
     /// callers. Non-tail-position (always returns a final value).
     pub fn apply(&mut self, f: Value, args: Vec<Value>) -> ShenResult<Value> {
-        let closure = match f {
-            Value::Closure(c) => c,
-            other => return Err(ShenError::new(format!("not callable: {other:?}"))),
+        let closure = match f.as_closure() {
+            Some(c) => c,
+            None => return Err(ShenError::new(format!("not callable: {f:?}"))),
         };
 
         // Convert once at the public boundary; internal paths stay on ArgVec.
         let mut total: ArgVec = if closure.partial.is_empty() {
             args.into()
         } else {
-            closure.partial.iter().cloned().chain(args).collect()
+            closure.partial.iter().copied().chain(args).collect()
         };
 
         if total.len() < closure.arity {
@@ -613,15 +613,15 @@ impl Interp {
                 partial: total.into_vec(),
                 kind: clone_kind(&closure.kind),
             };
-            return Ok(Value::Closure(Rc::new(new)));
+            return Ok(Value::closure(new));
         }
 
         if total.len() == closure.arity {
-            return self.call_strict(&closure, total);
+            return self.call_strict(closure, total);
         }
 
         let extra: Vec<_> = total.drain(closure.arity..).collect();
-        let first = self.call_strict(&closure, total)?;
+        let first = self.call_strict(closure, total)?;
         self.apply(first, extra)
     }
 
@@ -637,12 +637,13 @@ impl Interp {
             return Err(ShenError::new("if: expected 3 args"));
         }
         let cond = self.eval_in(&args[0], scope.slice())?;
-        let taken = match cond {
-            Value::Bool(true) => &args[1],
-            Value::Bool(false) => &args[2],
-            Value::Sym(s) if s == self.well_known.k_true => &args[1],
-            Value::Sym(s) if s == self.well_known.k_false => &args[2],
-            other => return Err(ShenError::new(format!("if: not a boolean: {other:?}"))),
+        let taken = if self
+            .truthy(&cond)
+            .map_err(|_| ShenError::new(format!("if: not a boolean: {cond:?}")))?
+        {
+            &args[1]
+        } else {
+            &args[2]
         };
         *current = taken.clone();
         Ok(StepOutcome::Continue)
@@ -683,12 +684,9 @@ impl Interp {
                 _ => return Err(ShenError::new("cond: clauses must be 2-element lists")),
             };
             let test = self.eval_in(&pair[0], scope.slice())?;
-            let truthy = match test {
-                Value::Bool(b) => b,
-                Value::Sym(s) if s == self.well_known.k_true => true,
-                Value::Sym(s) if s == self.well_known.k_false => false,
-                other => return Err(ShenError::new(format!("cond: not a boolean: {other:?}"))),
-            };
+            let truthy = self
+                .truthy(&test)
+                .map_err(|_| ShenError::new(format!("cond: not a boolean: {test:?}")))?;
             if truthy {
                 *current = pair[1].clone();
                 return Ok(StepOutcome::Continue);
@@ -751,11 +749,13 @@ impl Interp {
     }
 
     fn truthy(&self, v: &Value) -> ShenResult<bool> {
-        match v {
-            Value::Bool(b) => Ok(*b),
-            Value::Sym(s) if *s == self.well_known.k_true => Ok(true),
-            Value::Sym(s) if *s == self.well_known.k_false => Ok(false),
-            other => Err(ShenError::new(format!("not a boolean: {other:?}"))),
+        if let Some(b) = v.as_bool() {
+            return Ok(b);
+        }
+        match v.as_sym() {
+            Some(s) if s == self.well_known.k_true => Ok(true),
+            Some(s) if s == self.well_known.k_false => Ok(false),
+            _ => Err(ShenError::new(format!("not a boolean: {v:?}"))),
         }
     }
 
@@ -820,12 +820,12 @@ impl Interp {
                     body: body.clone(),
                 }))
             });
-        Value::Closure(Rc::new(Closure {
+        Value::closure(Closure {
             name: None,
             arity,
             partial: Vec::new(),
             kind,
-        }))
+        })
     }
 
     /// Attempt to compile a runtime closure body to bytecode. Returns
@@ -994,7 +994,7 @@ impl Interp {
             partial: Vec::new(),
             kind,
         };
-        self.env.set_fn(name, Value::Closure(Rc::new(closure)));
+        self.env.set_fn(name, Value::closure(closure));
         Ok(Value::sym(name))
     }
 
@@ -1039,7 +1039,7 @@ fn vm_enabled() -> bool {
 
 fn clone_kind(kind: &ClosureKind) -> ClosureKind {
     match kind {
-        ClosureKind::Native(f) => ClosureKind::Native(Rc::clone(f)),
+        ClosureKind::Native(f, captures) => ClosureKind::Native(Rc::clone(f), captures.clone()),
         ClosureKind::Lambda(b) => ClosureKind::Lambda(Rc::clone(b)),
         ClosureKind::Bytecode(bf, upvals) => ClosureKind::Bytecode(Rc::clone(bf), upvals.clone()),
     }

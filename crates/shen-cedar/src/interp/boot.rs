@@ -172,13 +172,13 @@ pub fn boot_with_kernel(interp: &mut Interp, kernel_dir: &Path) -> ShenResult<()
 /// The kernel reads these inside `shen.initialise` to install the default
 /// `stinput`/`stoutput` global accessor functions.
 fn set_standard_streams(interp: &mut Interp) {
-    let stdin = Value::Stream(Rc::new(RefCell::new(Stream::In(
+    let stdin = Value::stream(Rc::new(RefCell::new(Stream::In(
         Box::new(std::io::stdin()),
     ))));
-    let stdout = Value::Stream(Rc::new(RefCell::new(Stream::Out(Box::new(
+    let stdout = Value::stream(Rc::new(RefCell::new(Stream::Out(Box::new(
         std::io::stdout(),
     )))));
-    let stderr = Value::Stream(Rc::new(RefCell::new(Stream::Out(Box::new(
+    let stderr = Value::stream(Rc::new(RefCell::new(Stream::Out(Box::new(
         std::io::stderr(),
     )))));
     let stin = interp.intern("*stinput*");

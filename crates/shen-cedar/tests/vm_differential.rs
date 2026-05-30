@@ -75,7 +75,7 @@ fn install(interp: &mut Interp, src: &str, engine: Engine) {
         partial: Vec::new(),
         kind,
     };
-    interp.env.set_fn(name, Value::Closure(Rc::new(closure)));
+    interp.env.set_fn(name, Value::closure(closure));
 }
 
 /// Install `defuns` under `engine` in a fresh interpreter, then evaluate

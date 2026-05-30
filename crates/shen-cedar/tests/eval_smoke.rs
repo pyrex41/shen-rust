@@ -19,79 +19,74 @@ fn run_in(interp: &mut Interp, src: &str) -> ShenResult<Value> {
 
 #[test]
 fn arithmetic() {
-    assert!(matches!(run("(+ 1 1)").unwrap(), Value::Int(2)));
-    assert!(matches!(run("(- 10 3)").unwrap(), Value::Int(7)));
-    assert!(matches!(run("(* 6 7)").unwrap(), Value::Int(42)));
-    assert!(matches!(run("(+ 1 (* 2 3))").unwrap(), Value::Int(7)));
+    assert!((run("(+ 1 1)").unwrap().as_int() == Some(2)));
+    assert!((run("(- 10 3)").unwrap().as_int() == Some(7)));
+    assert!((run("(* 6 7)").unwrap().as_int() == Some(42)));
+    assert!((run("(+ 1 (* 2 3))").unwrap().as_int() == Some(7)));
 }
 
 #[test]
 fn comparisons() {
-    assert!(matches!(run("(> 5 3)").unwrap(), Value::Bool(true)));
-    assert!(matches!(run("(< 5 3)").unwrap(), Value::Bool(false)));
-    assert!(matches!(run("(>= 5 5)").unwrap(), Value::Bool(true)));
+    assert!((run("(> 5 3)").unwrap().as_bool() == Some(true)));
+    assert!((run("(< 5 3)").unwrap().as_bool() == Some(false)));
+    assert!((run("(>= 5 5)").unwrap().as_bool() == Some(true)));
 }
 
 #[test]
 fn equality_across_int_float() {
-    assert!(matches!(run("(= 1 1.0)").unwrap(), Value::Bool(true)));
-    assert!(matches!(run("(= 1 2)").unwrap(), Value::Bool(false)));
+    assert!((run("(= 1 1.0)").unwrap().as_bool() == Some(true)));
+    assert!((run("(= 1 2)").unwrap().as_bool() == Some(false)));
 }
 
 #[test]
 fn cons_hd_tl() {
-    assert!(matches!(
-        run("(hd (cons 1 (cons 2 ())))").unwrap(),
-        Value::Int(1)
-    ));
+    assert!((run("(hd (cons 1 (cons 2 ())))").unwrap().as_int() == Some(1)));
     // (tl (cons 1 ())) → ()
-    assert!(matches!(run("(tl (cons 1 ()))").unwrap(), Value::Nil));
+    assert!((run("(tl (cons 1 ()))").unwrap().is_nil()));
 }
 
 #[test]
 fn let_binds() {
-    assert!(matches!(run("(let X 5 (+ X 1))").unwrap(), Value::Int(6)));
+    assert!((run("(let X 5 (+ X 1))").unwrap().as_int() == Some(6)));
     // Nested let with the same name — innermost wins.
-    assert!(matches!(
-        run("(let X 1 (let X 2 X))").unwrap(),
-        Value::Int(2)
-    ));
+    assert!((run("(let X 1 (let X 2 X))").unwrap().as_int() == Some(2)));
 }
 
 #[test]
 fn if_branch() {
-    assert!(matches!(run("(if true 1 2)").unwrap(), Value::Int(1)));
-    assert!(matches!(run("(if false 1 2)").unwrap(), Value::Int(2)));
-    assert!(matches!(run("(if (> 5 3) 1 2)").unwrap(), Value::Int(1)));
+    assert!((run("(if true 1 2)").unwrap().as_int() == Some(1)));
+    assert!((run("(if false 1 2)").unwrap().as_int() == Some(2)));
+    assert!((run("(if (> 5 3) 1 2)").unwrap().as_int() == Some(1)));
 }
 
 #[test]
 fn cond_falls_through() {
     let v = run("(cond ((> 1 2) 100) ((= 3 3) 42) (true 0))").unwrap();
-    assert!(matches!(v, Value::Int(42)));
+    assert!((v.as_int() == Some(42)));
 }
 
 #[test]
 fn and_or_short_circuit() {
-    assert!(matches!(
-        run("(and true (> 5 3))").unwrap(),
-        Value::Bool(true)
-    ));
-    assert!(matches!(
-        run("(and false (simple-error \"should not run\"))").unwrap(),
-        Value::Bool(false)
-    ));
-    assert!(matches!(run("(or false true)").unwrap(), Value::Bool(true)));
-    assert!(matches!(
-        run("(or true (simple-error \"should not run\"))").unwrap(),
-        Value::Bool(true)
-    ));
+    assert!((run("(and true (> 5 3))").unwrap().as_bool() == Some(true)));
+    assert!(
+        (run("(and false (simple-error \"should not run\"))")
+            .unwrap()
+            .as_bool()
+            == Some(false))
+    );
+    assert!((run("(or false true)").unwrap().as_bool() == Some(true)));
+    assert!(
+        (run("(or true (simple-error \"should not run\"))")
+            .unwrap()
+            .as_bool()
+            == Some(true))
+    );
 }
 
 #[test]
 fn lambda_and_apply() {
     let v = run("((lambda X (+ X 1)) 41)").unwrap();
-    assert!(matches!(v, Value::Int(42)));
+    assert!((v.as_int() == Some(42)));
 }
 
 #[test]
@@ -99,7 +94,7 @@ fn defun_and_call() {
     let mut interp = Interp::new();
     run_in(&mut interp, "(defun double (X) (* X 2))").unwrap();
     let v = run_in(&mut interp, "(double 21)").unwrap();
-    assert!(matches!(v, Value::Int(42)));
+    assert!((v.as_int() == Some(42)));
 }
 
 #[test]
@@ -111,7 +106,7 @@ fn recursive_factorial() {
     )
     .unwrap();
     let v = run_in(&mut interp, "(fact 5)").unwrap();
-    assert!(matches!(v, Value::Int(120)));
+    assert!((v.as_int() == Some(120)));
 }
 
 #[test]
@@ -125,7 +120,7 @@ fn tail_recursive_loop_does_not_overflow() {
     )
     .unwrap();
     let v = run_in(&mut interp, "(loop 50000 0)").unwrap();
-    assert!(matches!(v, Value::Int(50000)));
+    assert!((v.as_int() == Some(50000)));
 }
 
 #[test]
@@ -134,14 +129,14 @@ fn partial_application() {
     // Curry add via partial application.
     run_in(&mut interp, "(defun add (X Y) (+ X Y))").unwrap();
     let v = run_in(&mut interp, "(((fn add) 10) 32)").unwrap();
-    assert!(matches!(v, Value::Int(42)));
+    assert!((v.as_int() == Some(42)));
 }
 
 #[test]
 fn trap_error_catches_simple_error() {
     let v = run("(trap-error (simple-error \"boom\") (lambda E (error-to-string E)))").unwrap();
-    if let Value::Str(s) = v {
-        assert_eq!(&*s, "boom");
+    if let Some(s) = v.as_str() {
+        assert_eq!(s, "boom");
     } else {
         panic!("expected string");
     }
@@ -150,7 +145,7 @@ fn trap_error_catches_simple_error() {
 #[test]
 fn freeze_and_thaw() {
     let v = run("(thaw (freeze (+ 1 2)))").unwrap();
-    assert!(matches!(v, Value::Int(3)));
+    assert!((v.as_int() == Some(3)));
 }
 
 #[test]
@@ -158,7 +153,7 @@ fn set_and_value() {
     let mut interp = Interp::new();
     run_in(&mut interp, "(set my-flag 99)").unwrap();
     let v = run_in(&mut interp, "(value my-flag)").unwrap();
-    assert!(matches!(v, Value::Int(99)));
+    assert!((v.as_int() == Some(99)));
 }
 
 #[test]
@@ -168,26 +163,20 @@ fn absvector_round_trip() {
     run_in(&mut interp, "(address-> (value v) 0 100)").unwrap();
     run_in(&mut interp, "(address-> (value v) 1 200)").unwrap();
     let v = run_in(&mut interp, "(<-address (value v) 1)").unwrap();
-    assert!(matches!(v, Value::Int(200)));
+    assert!((v.as_int() == Some(200)));
 }
 
 #[test]
 fn intern_and_back() {
     let v = run("(intern \"abc\")").unwrap();
-    assert!(matches!(v, Value::Sym(_)));
+    assert!((v.is_sym()));
 }
 
 #[test]
 fn predicates() {
-    assert!(matches!(run("(number? 1)").unwrap(), Value::Bool(true)));
-    assert!(matches!(
-        run("(number? \"x\")").unwrap(),
-        Value::Bool(false)
-    ));
-    assert!(matches!(run("(string? \"x\")").unwrap(), Value::Bool(true)));
-    assert!(matches!(
-        run("(cons? (cons 1 ()))").unwrap(),
-        Value::Bool(true)
-    ));
-    assert!(matches!(run("(cons? ())").unwrap(), Value::Bool(false)));
+    assert!((run("(number? 1)").unwrap().as_bool() == Some(true)));
+    assert!((run("(number? \"x\")").unwrap().as_bool() == Some(false)));
+    assert!((run("(string? \"x\")").unwrap().as_bool() == Some(true)));
+    assert!((run("(cons? (cons 1 ()))").unwrap().as_bool() == Some(true)));
+    assert!((run("(cons? ())").unwrap().as_bool() == Some(false)));
 }

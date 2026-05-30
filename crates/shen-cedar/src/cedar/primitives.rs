@@ -45,30 +45,34 @@ pub const CEDAR_PRIMITIVES: &[(&str, usize)] = &[
 /// Register every `cedar.*` primitive. Called from `boot.rs` after
 /// kernel boot so the `cedar.*` names are available at the REPL.
 pub fn register_all(interp: &mut Interp) {
-    interp.register_native("cedar.parse-policy", 1, |_, args| match &args[0] {
-        Value::Str(s) => {
+    interp.register_native("cedar.parse-policy", 1, |_, args| match args[0].as_str() {
+        Some(s) => {
             let p = Policy::from_str(s)
                 .map_err(|e| ShenError::new(format!("cedar.parse-policy: {e}")))?;
             Ok(wrap(p))
         }
-        other => Err(ShenError::new(format!(
-            "cedar.parse-policy: expected string, got {other:?}"
+        None => Err(ShenError::new(format!(
+            "cedar.parse-policy: expected string, got {:?}",
+            args[0]
         ))),
     });
 
-    interp.register_native("cedar.parse-policy-set", 1, |_, args| match &args[0] {
-        Value::Str(s) => {
-            let ps = PolicySet::from_str(s)
-                .map_err(|e| ShenError::new(format!("cedar.parse-policy-set: {e}")))?;
-            Ok(wrap(ps))
+    interp.register_native("cedar.parse-policy-set", 1, |_, args| {
+        match args[0].as_str() {
+            Some(s) => {
+                let ps = PolicySet::from_str(s)
+                    .map_err(|e| ShenError::new(format!("cedar.parse-policy-set: {e}")))?;
+                Ok(wrap(ps))
+            }
+            None => Err(ShenError::new(format!(
+                "cedar.parse-policy-set: expected string, got {:?}",
+                args[0]
+            ))),
         }
-        other => Err(ShenError::new(format!(
-            "cedar.parse-policy-set: expected string, got {other:?}"
-        ))),
     });
 
-    interp.register_native("cedar.parse-schema", 1, |_, args| match &args[0] {
-        Value::Str(s) => {
+    interp.register_native("cedar.parse-schema", 1, |_, args| match args[0].as_str() {
+        Some(s) => {
             // Cedar 4.x exposes both human-readable (cedar schema) and
             // JSON schema parsers. Default to human-readable since
             // that's the canonical authoring format.
@@ -76,61 +80,72 @@ pub fn register_all(interp: &mut Interp) {
                 .map_err(|e| ShenError::new(format!("cedar.parse-schema: {e}")))?;
             Ok(wrap(schema))
         }
-        other => Err(ShenError::new(format!(
-            "cedar.parse-schema: expected string, got {other:?}"
+        None => Err(ShenError::new(format!(
+            "cedar.parse-schema: expected string, got {:?}",
+            args[0]
         ))),
     });
 
-    interp.register_native("cedar.parse-entities", 1, |_, args| match &args[0] {
-        Value::Str(s) => {
-            let ents = Entities::from_json_str(s, None)
-                .map_err(|e| ShenError::new(format!("cedar.parse-entities: {e}")))?;
-            Ok(wrap(ents))
+    interp.register_native("cedar.parse-entities", 1, |_, args| {
+        match args[0].as_str() {
+            Some(s) => {
+                let ents = Entities::from_json_str(s, None)
+                    .map_err(|e| ShenError::new(format!("cedar.parse-entities: {e}")))?;
+                Ok(wrap(ents))
+            }
+            None => Err(ShenError::new(format!(
+                "cedar.parse-entities: expected string, got {:?}",
+                args[0]
+            ))),
         }
-        other => Err(ShenError::new(format!(
-            "cedar.parse-entities: expected string, got {other:?}"
-        ))),
     });
 
     interp.register_native("cedar.make-entity-uid", 2, |_, args| {
-        match (&args[0], &args[1]) {
-            (Value::Str(type_name), Value::Str(id)) => {
+        match (args[0].as_str(), args[1].as_str()) {
+            (Some(type_name), Some(id)) => {
                 let etype = EntityTypeName::from_str(type_name)
                     .map_err(|e| ShenError::new(format!("cedar.make-entity-uid: type {e}")))?;
                 let eid = EntityId::from_str(id)
                     .map_err(|e| ShenError::new(format!("cedar.make-entity-uid: id {e}")))?;
                 Ok(wrap(EntityUid::from_type_name_and_id(etype, eid)))
             }
-            (a, b) => Err(ShenError::new(format!(
-                "cedar.make-entity-uid: expected two strings, got {a:?}, {b:?}"
+            _ => Err(ShenError::new(format!(
+                "cedar.make-entity-uid: expected two strings, got {:?}, {:?}",
+                args[0], args[1]
             ))),
         }
     });
 
-    interp.register_native("cedar.entity-uid->string", 1, |_, args| match &args[0] {
-        Value::Foreign(_) => {
+    interp.register_native("cedar.entity-uid->string", 1, |_, args| {
+        if args[0].as_foreign().is_some() {
             let uid = crate::cedar::types::downcast::<EntityUid>(&args[0], "cedar.entity-uid")?;
             Ok(Value::str(Rc::from(uid.to_string())))
+        } else {
+            Err(ShenError::new(format!(
+                "cedar.entity-uid->string: not a cedar.entity-uid: {:?}",
+                args[0]
+            )))
         }
-        other => Err(ShenError::new(format!(
-            "cedar.entity-uid->string: not a cedar.entity-uid: {other:?}"
-        ))),
     });
 
     interp.register_native("cedar.make-request", 4, |_, args| {
         let principal = coerce_entity_uid(&args[0], "cedar.make-request principal")?;
         let action = coerce_entity_uid(&args[1], "cedar.make-request action")?;
         let resource = coerce_entity_uid(&args[2], "cedar.make-request resource")?;
-        let context = match &args[3] {
-            Value::Str(s) if s.trim().is_empty() => Context::empty(),
-            Value::Str(s) => Context::from_json_str(s, None)
-                .map_err(|e| ShenError::new(format!("cedar.make-request: context: {e}")))?,
-            Value::Nil => Context::empty(),
-            other => {
-                return Err(ShenError::new(format!(
-                    "cedar.make-request: context must be a JSON string or (), got {other:?}"
-                )))
+        let context = if let Some(s) = args[3].as_str() {
+            if s.trim().is_empty() {
+                Context::empty()
+            } else {
+                Context::from_json_str(s, None)
+                    .map_err(|e| ShenError::new(format!("cedar.make-request: context: {e}")))?
             }
+        } else if args[3].is_nil() {
+            Context::empty()
+        } else {
+            return Err(ShenError::new(format!(
+                "cedar.make-request: context must be a JSON string or (), got {:?}",
+                args[3]
+            )));
         };
         let req = Request::new(principal, action, resource, context, None)
             .map_err(|e| ShenError::new(format!("cedar.make-request: {e}")))?;
@@ -231,14 +246,14 @@ pub fn register_all(interp: &mut Interp) {
 /// Accept either an already-constructed `cedar.entity-uid` foreign value
 /// or a raw Cedar entity-uid string like `User::"alice"`.
 fn coerce_entity_uid(v: &Value, what: &str) -> ShenResult<EntityUid> {
-    match v {
-        Value::Str(s) => EntityUid::from_str(s).map_err(|e| ShenError::new(format!("{what}: {e}"))),
-        Value::Foreign(_) => {
-            let uid = crate::cedar::types::downcast::<EntityUid>(v, what)?;
-            Ok((*uid).clone())
-        }
-        other => Err(ShenError::new(format!(
-            "{what}: expected entity-uid handle or string, got {other:?}"
-        ))),
+    if let Some(s) = v.as_str() {
+        EntityUid::from_str(s).map_err(|e| ShenError::new(format!("{what}: {e}")))
+    } else if v.as_foreign().is_some() {
+        let uid = crate::cedar::types::downcast::<EntityUid>(v, what)?;
+        Ok((*uid).clone())
+    } else {
+        Err(ShenError::new(format!(
+            "{what}: expected entity-uid handle or string, got {v:?}"
+        )))
     }
 }

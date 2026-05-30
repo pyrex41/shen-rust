@@ -111,7 +111,7 @@ fn install(interp: &mut Interp, w: &Workload, engine: Engine) {
             partial: Vec::new(),
             kind,
         };
-        interp.env.set_fn(name, Value::Closure(Rc::new(closure)));
+        interp.env.set_fn(name, Value::closure(closure));
     }
 }
 
@@ -124,7 +124,7 @@ fn run_once(interp: &mut Interp, w: &Workload) -> Value {
         .cloned()
         .unwrap_or_else(|| panic!("entry {} not installed", w.entry));
     interp
-        .apply(f, vec![Value::Int(black_box(w.arg))])
+        .apply(f, vec![Value::int(black_box(w.arg))])
         .unwrap_or_else(|e| panic!("run {}: {e}", w.name))
 }
 
@@ -167,7 +167,7 @@ fn main() {
             defuns: &["(defun fib (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2)))))"],
             entry: "fib",
             arg: 28,
-            expect: Value::Int(317811),
+            expect: Value::int(317811),
         },
         Workload {
             name: "sumto(200000) — self-tail-call accumulator loop",
@@ -178,7 +178,7 @@ fn main() {
             entry: "sumto",
             arg: 200_000,
             // 200000*200001/2
-            expect: Value::Int(20_000_100_000),
+            expect: Value::int(20_000_100_000),
         },
         Workload {
             name: "count-down-list(4000) — cons build + hd/tl walk",
@@ -190,7 +190,7 @@ fn main() {
             ],
             entry: "count-down-list",
             arg: 4000,
-            expect: Value::Int(8_002_000),
+            expect: Value::int(8_002_000),
         },
     ];
 

@@ -61,10 +61,10 @@ fn call_or_apply(interp: &mut Interp, f: Value, args: &[Value]) -> ShenResult<Va
     // search, and a per-call `Rc::clone`/`Vec::clone` here is pure refcount/
     // alloc traffic that SBCL's native `funcall` does not pay. The slow path
     // (partial, arity mismatch, tree-walked lambda) still materialises args.
-    if let Value::Closure(c) = &f {
+    if let Some(c) = f.as_closure() {
         if c.partial.is_empty() && args.len() == c.arity {
             match &c.kind {
-                ClosureKind::Native(nf) => return nf(interp, args),
+                ClosureKind::Native(nf, _captures) => return nf(interp, args),
                 ClosureKind::Bytecode(bf, upvals) => {
                     return crate::vm::exec::exec(interp, bf, upvals, args)
                 }
@@ -78,11 +78,13 @@ fn call_or_apply(interp: &mut Interp, f: Value, args: &[Value]) -> ShenResult<Va
 /// Match Shen's boolean semantics: `Bool(true)`, `Sym(true)` → true;
 /// `Bool(false)`, `Sym(false)` → false; anything else → error.
 pub fn is_truthy(interp: &Interp, v: &Value) -> ShenResult<bool> {
-    match v {
-        Value::Bool(b) => Ok(*b),
-        Value::Sym(s) if *s == interp.well_known.k_true => Ok(true),
-        Value::Sym(s) if *s == interp.well_known.k_false => Ok(false),
-        other => Err(ShenError::new(format!("aot: not a boolean: {other:?}"))),
+    if let Some(b) = v.as_bool() {
+        return Ok(b);
+    }
+    match v.as_sym() {
+        Some(s) if s == interp.well_known.k_true => Ok(true),
+        Some(s) if s == interp.well_known.k_false => Ok(false),
+        _ => Err(ShenError::new(format!("aot: not a boolean: {v:?}"))),
     }
 }
 
@@ -98,9 +100,12 @@ where
         name: Some(sym),
         arity,
         partial: Vec::new(),
-        kind: ClosureKind::Native(Rc::new(f) as Rc<NativeFn>),
+        // Empty shadow captures for now: GC Step 3 runs collection OFF, so the
+        // captures need not be traceable yet. Sub-step 4f wires klcompile to
+        // emit the real capture vec here and regenerates AOT. See §5.
+        kind: ClosureKind::Native(Rc::new(f) as Rc<NativeFn>, Vec::new()),
     };
-    Value::Closure(Rc::new(closure))
+    Value::closure(closure)
 }
 
 /// Look up a global. Used for `(value GLOBAL)` form.
@@ -134,54 +139,51 @@ pub fn fn_value(interp: &mut Interp, name: &str) -> ShenResult<Value> {
 
 #[inline(always)]
 pub fn add(a: &Value, b: &Value) -> ShenResult<Value> {
-    match (a, b) {
-        (Value::Int(x), Value::Int(y)) => match x.checked_add(*y) {
-            Some(v) => Ok(Value::int(v)),
-            None => Ok(Value::float(*x as f64 + *y as f64)),
-        },
-        (Value::Int(x), Value::Float(y)) => Ok(Value::Float(*x as f64 + *y)),
-        (Value::Float(x), Value::Int(y)) => Ok(Value::Float(*x + *y as f64)),
-        (Value::Float(x), Value::Float(y)) => Ok(Value::Float(*x + *y)),
-        (x, y) => Err(ShenError::new(format!("+: bad args: {x:?}, {y:?}"))),
+    if let (Some(x), Some(y)) = (a.as_int(), b.as_int()) {
+        return Ok(match x.checked_add(y) {
+            Some(v) => Value::int(v),
+            None => Value::float(x as f64 + y as f64),
+        });
+    }
+    match (a.as_number_f64(), b.as_number_f64()) {
+        (Some(x), Some(y)) => Ok(Value::float(x + y)),
+        _ => Err(ShenError::new(format!("+: bad args: {a:?}, {b:?}"))),
     }
 }
 
 #[inline(always)]
 pub fn sub(a: &Value, b: &Value) -> ShenResult<Value> {
-    match (a, b) {
-        (Value::Int(x), Value::Int(y)) => match x.checked_sub(*y) {
-            Some(v) => Ok(Value::int(v)),
-            None => Ok(Value::float(*x as f64 - *y as f64)),
-        },
-        (Value::Int(x), Value::Float(y)) => Ok(Value::Float(*x as f64 - *y)),
-        (Value::Float(x), Value::Int(y)) => Ok(Value::Float(*x - *y as f64)),
-        (Value::Float(x), Value::Float(y)) => Ok(Value::Float(*x - *y)),
-        (x, y) => Err(ShenError::new(format!("-: bad args: {x:?}, {y:?}"))),
+    if let (Some(x), Some(y)) = (a.as_int(), b.as_int()) {
+        return Ok(match x.checked_sub(y) {
+            Some(v) => Value::int(v),
+            None => Value::float(x as f64 - y as f64),
+        });
+    }
+    match (a.as_number_f64(), b.as_number_f64()) {
+        (Some(x), Some(y)) => Ok(Value::float(x - y)),
+        _ => Err(ShenError::new(format!("-: bad args: {a:?}, {b:?}"))),
     }
 }
 
 #[inline(always)]
 pub fn mul(a: &Value, b: &Value) -> ShenResult<Value> {
-    match (a, b) {
-        (Value::Int(x), Value::Int(y)) => match x.checked_mul(*y) {
-            Some(v) => Ok(Value::int(v)),
-            None => Ok(Value::float(*x as f64 * *y as f64)),
-        },
-        (Value::Int(x), Value::Float(y)) => Ok(Value::Float(*x as f64 * *y)),
-        (Value::Float(x), Value::Int(y)) => Ok(Value::Float(*x * *y as f64)),
-        (Value::Float(x), Value::Float(y)) => Ok(Value::Float(*x * *y)),
-        (x, y) => Err(ShenError::new(format!("*: bad args: {x:?}, {y:?}"))),
+    if let (Some(x), Some(y)) = (a.as_int(), b.as_int()) {
+        return Ok(match x.checked_mul(y) {
+            Some(v) => Value::int(v),
+            None => Value::float(x as f64 * y as f64),
+        });
+    }
+    match (a.as_number_f64(), b.as_number_f64()) {
+        (Some(x), Some(y)) => Ok(Value::float(x * y)),
+        _ => Err(ShenError::new(format!("*: bad args: {a:?}, {b:?}"))),
     }
 }
 
 #[inline(always)]
 pub fn div(a: &Value, b: &Value) -> ShenResult<Value> {
-    let (x, y, both_int) = match (a, b) {
-        (Value::Int(x), Value::Int(y)) => (*x as f64, *y as f64, true),
-        (Value::Int(x), Value::Float(y)) => (*x as f64, *y, false),
-        (Value::Float(x), Value::Int(y)) => (*x, *y as f64, false),
-        (Value::Float(x), Value::Float(y)) => (*x, *y, false),
-        (x, y) => return Err(ShenError::new(format!("/: bad args: {x:?}, {y:?}"))),
+    let both_int = a.as_int().is_some() && b.as_int().is_some();
+    let (Some(x), Some(y)) = (a.as_number_f64(), b.as_number_f64()) else {
+        return Err(ShenError::new(format!("/: bad args: {a:?}, {b:?}")));
     };
     if y == 0.0 {
         return Err(ShenError::new("/: division by zero"));
@@ -196,14 +198,14 @@ pub fn div(a: &Value, b: &Value) -> ShenResult<Value> {
 
 #[inline(always)]
 fn cmp_op(a: &Value, b: &Value, name: &str) -> ShenResult<std::cmp::Ordering> {
-    let ord_opt = match (a, b) {
-        (Value::Int(x), Value::Int(y)) => Some(x.cmp(y)),
-        (Value::Int(x), Value::Float(y)) => (*x as f64).partial_cmp(y),
-        (Value::Float(x), Value::Int(y)) => x.partial_cmp(&(*y as f64)),
-        (Value::Float(x), Value::Float(y)) => x.partial_cmp(y),
-        (x, y) => return Err(ShenError::new(format!("{name}: bad args: {x:?}, {y:?}"))),
+    if let (Some(x), Some(y)) = (a.as_int(), b.as_int()) {
+        return Ok(x.cmp(&y));
+    }
+    let (Some(x), Some(y)) = (a.as_number_f64(), b.as_number_f64()) else {
+        return Err(ShenError::new(format!("{name}: bad args: {a:?}, {b:?}")));
     };
-    ord_opt.ok_or_else(|| ShenError::new(format!("{name}: NaN comparison")))
+    x.partial_cmp(&y)
+        .ok_or_else(|| ShenError::new(format!("{name}: NaN comparison")))
 }
 
 #[inline(always)]
@@ -237,46 +239,46 @@ pub fn eq(a: &Value, b: &Value) -> Value {
 
 #[inline(always)]
 pub fn cons(a: &Value, b: &Value) -> Value {
-    Value::cons(a.clone(), b.clone())
+    Value::cons(*a, *b)
 }
 
 #[inline(always)]
 pub fn hd(v: &Value) -> ShenResult<Value> {
-    match v {
-        Value::Cons(p) => Ok(p.0.clone()),
-        other => Err(ShenError::new(format!("hd: not a cons: {other:?}"))),
+    match v.head() {
+        Some(h) => Ok(*h),
+        None => Err(ShenError::new(format!("hd: not a cons: {v:?}"))),
     }
 }
 
 #[inline(always)]
 pub fn tl(v: &Value) -> ShenResult<Value> {
-    match v {
-        Value::Cons(p) => Ok(p.1.clone()),
-        other => Err(ShenError::new(format!("tl: not a cons: {other:?}"))),
+    match v.tail() {
+        Some(t) => Ok(*t),
+        None => Err(ShenError::new(format!("tl: not a cons: {v:?}"))),
     }
 }
 
 #[inline(always)]
 pub fn is_cons(v: &Value) -> Value {
-    Value::bool(matches!(v, Value::Cons(_)))
+    Value::bool(v.is_cons())
 }
 
 #[inline(always)]
 pub fn is_number(v: &Value) -> Value {
-    Value::bool(matches!(v, Value::Int(_) | Value::Float(_)))
+    Value::bool(v.is_number())
 }
 
 #[inline(always)]
 pub fn is_string(v: &Value) -> Value {
-    Value::bool(matches!(v, Value::Str(_)))
+    Value::bool(v.is_str())
 }
 
 #[inline(always)]
 pub fn is_symbol(v: &Value) -> Value {
-    Value::bool(matches!(v, Value::Sym(_)))
+    Value::bool(v.is_sym())
 }
 
 #[inline(always)]
 pub fn is_absvector(v: &Value) -> Value {
-    Value::bool(matches!(v, Value::Vec(_)))
+    Value::bool(v.is_vec())
 }

@@ -17,13 +17,13 @@ fn run(src: &str) -> ShenResult<Value> {
 #[test]
 fn parse_policy_returns_foreign() {
     let v = run(r#"(cedar.parse-policy "permit(principal, action, resource);")"#).unwrap();
-    assert!(matches!(v, Value::Foreign(_)));
+    assert!((v.as_foreign().is_some()));
 }
 
 #[test]
 fn parse_policy_set_returns_foreign() {
     let v = run(r#"(cedar.parse-policy-set "permit(principal, action, resource);")"#).unwrap();
-    assert!(matches!(v, Value::Foreign(_)));
+    assert!((v.as_foreign().is_some()));
 }
 
 #[test]
@@ -45,7 +45,7 @@ fn empty_policy_set_denies_by_default() {
     let v = go(r#"(cedar.is-authorized (value pset) (value ents) (value req))"#);
     let deny = interp.intern("Deny");
     assert!(
-        shen_eq(&v, &Value::Sym(deny)),
+        shen_eq(&v, &Value::sym(deny)),
         "empty policy set should Deny, got {v:?}"
     );
 }
@@ -71,7 +71,7 @@ fn permit_all_policy_allows() {
     go(r#"(set req (cedar.make-request (value principal) (value action) (value resource) ()))"#);
     let v = go(r#"(cedar.is-authorized (value pset) (value ents) (value req))"#);
     let allow = interp.intern("Allow");
-    assert!(shen_eq(&v, &Value::Sym(allow)), "expected Allow, got {v:?}");
+    assert!(shen_eq(&v, &Value::sym(allow)), "expected Allow, got {v:?}");
 }
 
 #[test]
@@ -94,7 +94,7 @@ fn forbid_all_policy_denies() {
     go(r#"(set req (cedar.make-request (value principal) (value action) (value resource) ()))"#);
     let v = go(r#"(cedar.is-authorized (value pset) (value ents) (value req))"#);
     let deny = interp.intern("Deny");
-    assert!(shen_eq(&v, &Value::Sym(deny)), "expected Deny, got {v:?}");
+    assert!(shen_eq(&v, &Value::sym(deny)), "expected Deny, got {v:?}");
 }
 
 #[test]
@@ -109,7 +109,7 @@ fn policy_to_string_roundtrip() {
     };
     go(r#"(set p (cedar.parse-policy "permit(principal, action, resource);"))"#);
     let v = go(r#"(cedar.policy->string (value p))"#);
-    if let Value::Str(s) = v {
+    if let Some(s) = v.as_str() {
         // Cedar formatter may add whitespace/newlines, just check the keyword.
         assert!(s.contains("permit"), "expected 'permit' in {s:?}");
     } else {
