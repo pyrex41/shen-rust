@@ -43,3 +43,21 @@ harness = false
 name = "gc_module_bench"
 harness = false
 
+# Spike: GC ladder rung 3 — does Cranelift-JIT'd native code, operating on the
+# word-sized `Copy` Value, materially beat the interpreter dispatch path?
+# Three shapes (fib / sumto-acc / cons-build), three engines (tree-walk /
+# AOT-direct-dispatch / JIT), paired min-of-N. `cargo run --release --bench
+# jit_spike`. See `design/jit-spike-handoff.md`.
+[[bench]]
+name = "jit_spike"
+harness = false
+
+# Cranelift, dev-only — pulled in solely by the `jit_spike` bench (rung 3 of the
+# perf ladder). Not a runtime dependency of the crate.
+[dev-dependencies]
+cranelift-codegen = "0.132"
+cranelift-frontend = "0.132"
+cranelift-jit = "0.132"
+cranelift-module = "0.132"
+cranelift-native = "0.132"
+

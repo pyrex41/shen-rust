@@ -249,3 +249,60 @@ honestly. Those two data points tell you whether the JIT closes the 3.55× or
 whether cons-FFI is the next wall (→ inline allocation, or tier only arith
 leaves). Report both numbers with the kill-criterion verdict before
 productionizing.
+
+---
+
+## 10. SPIKE RESULT (2026-05-29) — kill-criterion PASSED, lever is real
+
+`benches/jit_spike.rs` (Cranelift 0.132, harness=false, paired min-of-N,
+PAIRS=10, all engines asserted `shen_eq`-equal). Three shapes × three engines:
+**tree** (tree-walked `Lambda` via `Interp::apply`), **aot** (a `DirectFn`
+recursing through the real `intern_static`→`get_aot_direct`→indirect-call seam —
+the dispatch the profile is dominated by), **jit** (Cranelift native on the
+`Value` word). Run on a 1 GiB-stack thread (the `aot` baseline is genuinely
+Rust-recursive, like real AOT leaning on the binary's big stack).
+
+| shape | tree ms/call | aot ms/call | jit ms/call | **JIT vs aot** | JIT vs tree |
+|---|---|---|---|---|---|
+| `fib(30)` — non-tail, fixnum, shallow stack | 254.5 | 9.59 | 2.77 | **3.46×** | 91.8× |
+| `sumto-acc(200000)` — self-tail (return_call TCO) | 17.7 | 1.79 | 0.050 | **35.67×** | 353× |
+| `build(2000)` — one cons/step (rt_cons FFI) | 0.195 | 0.029 | 0.013 | **2.28×** | 15.1× |
+
+**Verdict: PASS (≥2× over aot-dispatch on fib → productionize).** The JIT is the
+structural lever the scoreboard demanded: shen-cedar is ~3.55× off SBCL and the
+gap is *dispatch* (`call_or_apply`/`eval_in`), not real work — and JIT'd native
+code removes 3.46× of that dispatch cost on the hot fixnum path.
+
+**De-risked by the spike (these were the open questions):**
+- **`CallConv::Tail` + `return_call` self-recursion works on aarch64/Cranelift
+  0.132** — sumto recursed 200k deep at *constant* stack (0.050 ms/call). This is
+  the mechanism Shen's pervasive (and mutual) tail recursion needs.
+- **A default-callconv (host C ABI) entry trampoline can `call` a tail-callconv
+  callee** — the Cranelift verifier accepts it; this is how Rust calls into the
+  tail-recursive JIT code. (Pattern: `define_entry` → normal `call` → tail fn.)
+- **The `Value` word + `rt_cons` FFI path is correct** — all three engines built
+  `shen_eq`-identical lists; immediates and heap cons round-trip through the JIT.
+- **Allocation is not a wall.** The cons-FFI tax narrows the win (3.46→2.28 vs
+  aot) but the JIT still beats dispatch with a heap op per step. Inlining
+  allocation (bump-in-JIT) would widen it but is *not* required to win.
+
+**Honest caveats / what the spike did NOT prove (address in productionization):**
+- **Fixnum arith was raw-word** (no tag-check / overflow-to-float guard). Real
+  codegen adds a fixnum tag test + `checked_add` overflow path (a couple of
+  predicted branches) — will shave some of the 3.46×, but there is large margin.
+- **GC roots in JIT frames (§5.1) is still UNVERIFIED.** The spike ran the heap
+  **grow-only** (Step 3; collection off), so a register-resident `Value` not
+  spilled at a safepoint could be missed once Step 4 turns collection on. JIT
+  frames are ordinary native frames so the conservative scan *should* reach them,
+  but verify register-spill-at-safepoint before relying on it. **This is the #1
+  gate before Step 4 + JIT coexist.**
+- **Microbenchmark on isolated shapes.** Real kernel-tests speedup depends on the
+  JIT-able fraction and on the cross-function (non-self) tail-call / apply-of-
+  closure paths, which still FFI back to the runtime. The 3.46× is the *ceiling*
+  for the pure-dispatch component, not a whole-suite multiplier.
+
+**Next (productionization sketch):** add `ClosureKind::Jit(JitFn, …)` and/or
+populate `aot_direct` with JIT'd fn pointers; tier the hottest kernel/continuation
+shapes; emit fixnum tag+overflow guards; wire a JIT differential oracle
+(`tests/vm_differential.rs` pattern); then settle the §5.1 safepoint-spill story
+before Step 4. `benches/jit_spike.rs` is the regression anchor.
