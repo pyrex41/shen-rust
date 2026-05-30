@@ -5,6 +5,7 @@ pub mod cedar;
 pub mod cons;
 pub mod env;
 pub mod error;
+pub mod gc;
 pub mod generated;
 pub mod interp;
 pub mod kl;
