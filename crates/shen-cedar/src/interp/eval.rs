@@ -956,9 +956,13 @@ impl Interp {
                         _form_guard: Rc::clone(form),
                     },
                 );
+                crate::vm::stats::record_closure(true);
                 Some(ClosureKind::Bytecode(bf, captured))
             }
-            Err(_) => None,
+            Err(_) => {
+                crate::vm::stats::record_closure(false);
+                None
+            }
         }
     }
 
@@ -1109,12 +1113,18 @@ impl Interp {
         // `trap-error` or `thaw`). Off by default — see `vm_enabled`.
         let kind = if vm_enabled() {
             match crate::vm::compile_fn(self, Some(name), &params, &args[2]) {
-                Ok(bf) => ClosureKind::Bytecode(Rc::new(bf), Vec::new()),
-                Err(_) => ClosureKind::Lambda(Rc::new(LambdaBody {
-                    captured: Vec::new(),
-                    params: params.clone(),
-                    body: args[2].clone(),
-                })),
+                Ok(bf) => {
+                    crate::vm::stats::record_defun(true);
+                    ClosureKind::Bytecode(Rc::new(bf), Vec::new())
+                }
+                Err(_) => {
+                    crate::vm::stats::record_defun(false);
+                    ClosureKind::Lambda(Rc::new(LambdaBody {
+                        captured: Vec::new(),
+                        params: params.clone(),
+                        body: args[2].clone(),
+                    }))
+                }
             }
         } else {
             ClosureKind::Lambda(Rc::new(LambdaBody {

@@ -28,6 +28,7 @@ pub mod bytecode;
 pub mod compiler;
 pub mod exec;
 pub mod opcode;
+pub mod stats;
 
 pub use bytecode::BytecodeFn;
 pub use compiler::{compile_closure, compile_fn};

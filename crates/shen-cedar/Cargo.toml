@@ -42,6 +42,14 @@ jit = [
 name = "vm_vs_treewalk"
 harness = false
 
+# Warm/served measurement: does the VM beat the tree-walker on a *repeated*
+# type-check of the heavy kernel corpus (the warm thesis the one-shot metric
+# can't test)? `cargo run --release --bench warm_typecheck` (tree-walk) vs
+# `SHEN_CEDAR_VM=1 … ` (VM); paired via `scripts/warm-bench.sh`.
+[[bench]]
+name = "warm_typecheck"
+harness = false
+
 # Spike: word-sized tagged Value vs current 24-byte Rc enum (JIT prereq
 # de-risk). `cargo bench --bench value_repr_spike`.
 [[bench]]
