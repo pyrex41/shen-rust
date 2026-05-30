@@ -218,6 +218,25 @@ impl Value {
         Value(g.bits())
     }
 
+    /// The raw tagged word, for the JIT FFI boundary (`src/jit/`). `Value` is
+    /// `#[repr(transparent)]` over this `u64`, so JIT'd native code operates on
+    /// exactly these bits. Sound and lossless — the inverse of [`Value::from_word`].
+    #[cfg(feature = "jit")]
+    #[inline]
+    pub(crate) fn to_word(self) -> u64 {
+        self.0
+    }
+
+    /// Rebuild a `Value` from a raw tagged word produced by JIT'd code or an
+    /// `rtj_*` helper. The word must be a valid tagged `Value` bit pattern
+    /// (it always is on this path — it originated from [`Value::to_word`] or a
+    /// runtime helper that returns one).
+    #[cfg(feature = "jit")]
+    #[inline]
+    pub(crate) fn from_word(w: u64) -> Value {
+        Value(w)
+    }
+
     #[inline]
     fn tag(self) -> u64 {
         self.0 & TAG_MASK

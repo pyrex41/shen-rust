@@ -16,6 +16,8 @@ pub mod error;
 pub mod gc;
 pub mod generated;
 pub mod interp;
+#[cfg(feature = "jit")]
+pub mod jit;
 pub mod kl;
 pub mod primitives;
 pub mod symbol;

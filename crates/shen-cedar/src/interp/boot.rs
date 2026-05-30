@@ -165,6 +165,13 @@ pub fn boot_with_kernel(interp: &mut Interp, kernel_dir: &Path) -> ShenResult<()
     // I/O) with native Rust. See `register_hot_overrides` for rationale.
     crate::primitives::register_hot_overrides(interp);
 
+    // Stage J1: tier one hand-JIT'd kernel leaf (`shen.length-h`) into the
+    // direct-call table, overriding its AOT version. Gated by the `jit` feature
+    // *and* the `SHEN_CEDAR_JIT` env var, so it's a no-op unless both are on.
+    // See `design/jit-j1-handoff.md`.
+    #[cfg(feature = "jit")]
+    crate::jit::install_jit(interp);
+
     Ok(())
 }
 

@@ -140,6 +140,22 @@ pub struct Interp {
     /// capture path, which deliberately avoids an address memo precisely
     /// because it holds no such guard.)
     closure_cache: std::collections::HashMap<usize, CompiledClosure>,
+    /// Error ABI for JIT'd code (stage J1, `design/jit-j1-handoff.md` §3c).
+    /// A fallible `rtj_*` helper that fails records the `ShenError` here and
+    /// returns a sentinel word; JIT'd code keeps running on the sentinel, and
+    /// the Rust entry shim (`jit::jit_shim_*`) checks this slot after the JIT
+    /// call returns and converts a present error into `Err`. First-error wins
+    /// (`set_pending_error` keeps the earliest), matching KL's left-to-right
+    /// argument evaluation. `None` outside an erroring JIT call.
+    #[cfg(feature = "jit")]
+    pending_error: Option<ShenError>,
+    /// The process-long-lived Cranelift JIT engine, when built. Owns the
+    /// `JITModule` (which **must outlive** every finalized code pointer) plus
+    /// the code cache, so it lives here on `Interp` rather than transiently.
+    /// Populated during boot by `jit::install_jit` only when `SHEN_CEDAR_JIT`
+    /// is set; `None` otherwise (and always, in a non-`jit` build).
+    #[cfg(feature = "jit")]
+    pub(crate) jit: Option<Box<crate::jit::JitEngine>>,
 }
 
 /// A cached compiled closure body for the VM path. `upval_names` are the
@@ -233,9 +249,39 @@ impl Interp {
             deadline: None,
             deadline_counter: 0,
             closure_cache: std::collections::HashMap::new(),
+            #[cfg(feature = "jit")]
+            pending_error: None,
+            #[cfg(feature = "jit")]
+            jit: None,
         };
         crate::primitives::register_all(&mut interp);
         interp
+    }
+
+    /// Record a pending JIT error (keeping the first one). See the
+    /// `pending_error` field and `design/jit-j1-handoff.md` §3c.
+    #[cfg(feature = "jit")]
+    #[inline]
+    pub(crate) fn set_pending_error(&mut self, e: ShenError) {
+        if self.pending_error.is_none() {
+            self.pending_error = Some(e);
+        }
+    }
+
+    /// Take and clear any pending JIT error. Called by the JIT entry shim
+    /// immediately after the JIT call returns.
+    #[cfg(feature = "jit")]
+    #[inline]
+    pub(crate) fn take_pending_error(&mut self) -> Option<ShenError> {
+        self.pending_error.take()
+    }
+
+    /// Whether a JIT engine has been installed on this interpreter (i.e.
+    /// `jit::install_jit` ran with `SHEN_CEDAR_JIT` set). For the differential
+    /// oracle / introspection.
+    #[cfg(feature = "jit")]
+    pub fn jit_active(&self) -> bool {
+        self.jit.is_some()
     }
 
     pub fn intern(&mut self, name: &str) -> SymId {
