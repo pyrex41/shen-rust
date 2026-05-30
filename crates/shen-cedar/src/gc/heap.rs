@@ -19,7 +19,7 @@
 //! reclaims every live node's owned resource and then frees the block storage.
 
 use std::any::Any;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::ptr::{slice_from_raw_parts_mut, with_exposed_provenance, with_exposed_provenance_mut};
 
 use super::node::{Kind, Node};
@@ -60,8 +60,11 @@ pub struct Heap {
     ranges: Vec<(usize, usize)>,
     /// Membership index: page → the block(s) overlapping it. Consulted only by
     /// [`Heap::is_heap_ptr`] (Step 4's conservative scan) — never on the
-    /// precise-root `alloc`/`collect` hot path.
-    pages: HashMap<usize, Vec<usize>>,
+    /// precise-root `alloc`/`collect` hot path. A `BTreeMap` (not `HashMap`) so
+    /// it has a `const` constructor, which lets [`Heap::grow_only`] be `const fn`
+    /// and the value-layer thread-local use `const`-init (no per-access lazy-init
+    /// guard on the hot path). Off the hot path, so O(log n) vs O(1) is moot.
+    pages: BTreeMap<usize, Vec<usize>>,
     /// Soft trigger: once `all.len() >= cap` with an empty free-list, collect
     /// before growing — keeps the heap bounded so collection actually runs.
     cap: usize,
@@ -87,7 +90,7 @@ impl Heap {
             all: Vec::new(),
             free: Vec::new(),
             ranges: Vec::new(),
-            pages: HashMap::new(),
+            pages: BTreeMap::new(),
             cap,
             collection_enabled: true,
             mark_stack: Vec::new(),
@@ -100,13 +103,17 @@ impl Heap {
     /// only ever grows the heap; nothing is reclaimed except explicit
     /// [`Heap::collect`] calls and the final [`Heap::drop`]. See the
     /// `collection_enabled` field and `design/gc-step3-value-flip-handoff.md` §2.
-    pub fn grow_only() -> Heap {
+    ///
+    /// `const fn` so the value-layer thread-local can `const`-init it — that
+    /// removes the per-access lazy-initialization branch the `thread_local!`
+    /// macro otherwise emits, which sits on every `Value` heap access.
+    pub const fn grow_only() -> Heap {
         Heap {
             blocks: Vec::new(),
             all: Vec::new(),
             free: Vec::new(),
             ranges: Vec::new(),
-            pages: HashMap::new(),
+            pages: BTreeMap::new(),
             // Cap is irrelevant when collection is disabled, but keep it large
             // so the invariant "never collect" holds even if a future caller
             // flips the flag without setting a cap.
@@ -632,6 +639,26 @@ impl Heap {
         unsafe {
             let bp = with_exposed_provenance::<Box<dyn GcObject>>((*p).a as usize);
             &**bp
+        }
+    }
+
+    /// Hot-path combined accessor: if `g` is a closure node, return a raw
+    /// pointer to its object in **one** heap access (vs `classify` *then*
+    /// `closure_obj` — two thread-local round-trips). `None` for any non-closure.
+    /// The pointer is valid while `g` stays rooted (non-moving + grow-only).
+    #[inline]
+    pub fn closure_obj_ptr(&self, g: Gc) -> Option<*const dyn GcObject> {
+        if !g.is_ptr() {
+            return None;
+        }
+        let p = g.node_ptr();
+        // SAFETY: a `TAG_PTR` handle names one of our live nodes.
+        unsafe {
+            if (*p).kind != Kind::Closure {
+                return None;
+            }
+            let bp = with_exposed_provenance::<Box<dyn GcObject>>((*p).a as usize);
+            Some(&**bp as *const dyn GcObject)
         }
     }
 

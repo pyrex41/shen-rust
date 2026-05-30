@@ -45,7 +45,7 @@ thread_local! {
     /// in Step 3 (see the module docs). Lazily initialized on first use, so
     /// `value.rs` unit tests and the differential oracle — which build `Value`s
     /// with no `Interp` — work with no explicit setup.
-    static HEAP: RefCell<Heap> = RefCell::new(Heap::grow_only());
+    static HEAP: RefCell<Heap> = const { RefCell::new(Heap::grow_only()) };
 }
 
 /// Run `f` with shared access to the thread-local heap.
@@ -530,11 +530,13 @@ impl Value {
     /// Borrow the closure behind a closure value, if this is one. Borrowed from
     /// the pinned node (sound: non-moving + grow-only).
     pub fn as_closure(&self) -> Option<&Closure> {
-        if self.heap_kind() != Some(HeapKind::Closure) {
+        // Hot path (every AOT/VM/tree-walker call dispatches through here):
+        // a single thread-local heap access resolves node→kind→object pointer,
+        // then we drop the borrow and bridge the lifetime to `&self`.
+        if self.tag() != TAG_PTR {
             return None;
         }
-        let g = self.to_gc();
-        let obj_ptr: *const dyn GcObject = with_heap(|h| h.closure_obj(g) as *const dyn GcObject);
+        let obj_ptr = with_heap(|h| h.closure_obj_ptr(self.to_gc()))?;
         // SAFETY: the closure object lives in immovable, never-freed storage
         // while `self` is reachable; lifetime tied to `&self`.
         let obj: &dyn GcObject = unsafe { &*obj_ptr };
