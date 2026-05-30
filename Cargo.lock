@@ -1314,6 +1314,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "shen-cedar-demos"
+version = "0.1.0"
+dependencies = [
+ "cedar-policy",
+ "shen-cedar",
+]
+
+[[package]]
 name = "shengen-rust"
 version = "0.1.0"
 

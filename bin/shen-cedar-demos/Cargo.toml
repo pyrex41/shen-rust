@@ -1,0 +1,28 @@
+[package]
+name = "shen-cedar-demos"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+publish = false
+
+# Two prototypes of deeper Shen+Cedar integration, sharing one ShenHost lib:
+#   verify   — Shen's engine reasons ABOUT Cedar policies (conflict/shadow)
+#   generate — Cedar policies generated FROM a Shen spec (inheritance closure)
+
+[lib]
+name = "shen_cedar_demos"
+path = "src/lib.rs"
+
+[[bin]]
+name = "verify"
+path = "src/bin/verify.rs"
+
+[[bin]]
+name = "generate"
+path = "src/bin/generate.rs"
+
+[dependencies]
+shen-cedar = { workspace = true }
+cedar-policy = { workspace = true }

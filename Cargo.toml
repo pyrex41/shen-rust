@@ -6,6 +6,7 @@ members = [
     "crates/klcompile",
     "bin/shen-cedar",
     "bin/shen-authz-demo",
+    "bin/shen-cedar-demos",
 ]
 
 [workspace.package]
