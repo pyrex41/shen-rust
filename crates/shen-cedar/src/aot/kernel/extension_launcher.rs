@@ -55,6 +55,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_quiet_x2d_load(
                                 rt::apply_direct(interp, "eval", &[__t1])?
                             })
                         },
+                        Vec::new(),
                         interp,
                     )
                 };
@@ -558,6 +559,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                 rt::apply_direct(interp, "pr", &[__t191, __t192])?
                                             })
                                         },
+                                        vec![v_V7091],
                                         interp,
                                     )
                                 };
@@ -633,6 +635,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                         rt::apply_direct(interp, "load", &[__t167])?
                                                     })
                                                 },
+                                                vec![v_V7091],
                                                 interp,
                                             )
                                         };
@@ -691,6 +694,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                                 )?
                                                             })
                                                         },
+                                                        Vec::new(),
                                                         interp,
                                                     )
                                                 };
@@ -818,6 +822,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                                         )?
                                                                     })
                                                                 },
+                                                                vec![v_V7091],
                                                                 interp,
                                                             )
                                                         };
@@ -897,6 +902,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                                                     if rt::is_truthy(interp, &__t77)? { { let __t67 = Value::sym(interp.intern("error")); let __t76 = { let __t74 = { let __t68 = Value::str("Invalid eval argument: "); let __t73 = { let __t70 = { let __t69 = v_V7091.clone(); rt::hd(&__t69)? }; let __t71 = Value::str(""); let __t72 = Value::sym(interp.intern("shen.a")); rt::apply_direct(interp, "shen.app", &[__t70, __t71, __t72])? }; rt::apply_direct(interp, "cn", &[__t68, __t73])? }; let __t75 = Value::nil(); rt::cons(&__t74, &__t75) }; rt::cons(&__t67, &__t76) } } else { { let __t65 = Value::bool(true); if rt::is_truthy(interp, &__t65)? { { let __t64 = Value::sym(interp.intern("shen.x.launcher.eval-command-h")); rt::apply_direct(interp, "shen.f-error", &[__t64])? } } else { return Err(ShenError::new("cond: no clause matched")) } } }
                                                                                 })
                                                                             },
+                                                                            vec![v_V7091],
                                                                             interp,
                                                                         )
                                                                     };

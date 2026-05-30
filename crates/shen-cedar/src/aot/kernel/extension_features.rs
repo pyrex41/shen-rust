@@ -1281,6 +1281,7 @@ pub fn aot_shen_x2e_x_x2e_features_x2e_initialise(
                                                                 rt::apply_direct(interp, "shen.x.features.cond-expand-macro", &[__t362])?
                                                             })
                                                         },
+                                                        Vec::new(),
                                                         interp,
                                                     )
                                                 };
@@ -1311,6 +1312,7 @@ pub fn aot_shen_x2e_x_x2e_features_x2e_initialise(
                                                             )?
                                                         })
                                                     },
+                                                    Vec::new(),
                                                     interp,
                                                 )
                                             };
@@ -1323,6 +1325,7 @@ pub fn aot_shen_x2e_x_x2e_features_x2e_initialise(
                                     }
                                 })
                             },
+                            Vec::new(),
                             interp,
                         )
                     };

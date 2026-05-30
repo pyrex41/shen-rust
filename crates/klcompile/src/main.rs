@@ -674,13 +674,18 @@ impl<'a> Codegen<'a> {
 
         let body_src = self.compile_expr(&args[1], &mut inner_scope)?;
 
-        // Emit a Rust closure. `move` captures all clones by value.
+        // Emit a Rust closure. `move` captures all clones by value. Alongside,
+        // emit a traceable shadow capture vec of the same handles so the GC can
+        // reach `Value`s sealed inside the opaque `dyn Fn` (GC Step 3 §5). Since
+        // `Value` is `Copy`, the move-closure and the vec hold copies of the
+        // same tagged words.
         let mut clone_list = String::new();
         for c in &captures {
             clone_list.push_str(&format!("let {0} = {0}.clone(); ", rust_var(c)));
         }
+        let capture_vec = capture_vec_src(&captures);
         Ok(format!(
-            "{{ {clone_list}rt::make_aot_closure(\"<lambda>\", 1, move |interp, args| {{ let {} = args[0].clone(); Ok({body_src}) }}, interp) }}",
+            "{{ {clone_list}rt::make_aot_closure(\"<lambda>\", 1, move |interp, args| {{ let {} = args[0].clone(); Ok({body_src}) }}, {capture_vec}, interp) }}",
             rust_var(&var)
         ))
     }
@@ -701,8 +706,9 @@ impl<'a> Codegen<'a> {
         for c in &captures {
             clone_list.push_str(&format!("let {0} = {0}.clone(); ", rust_var(c)));
         }
+        let capture_vec = capture_vec_src(&captures);
         Ok(format!(
-            "{{ {clone_list}rt::make_aot_closure(\"<freeze>\", 0, move |interp, _args| Ok({body_src}), interp) }}"
+            "{{ {clone_list}rt::make_aot_closure(\"<freeze>\", 0, move |interp, _args| Ok({body_src}), {capture_vec}, interp) }}"
         ))
     }
 
@@ -820,6 +826,18 @@ impl Scope {
 /// Map a KL identifier to a Rust variable name (`v_<sanitized>`).
 fn rust_var(name: &str) -> String {
     format!("v_{}", sanitize_ident(name))
+}
+
+/// Source for a closure's traceable shadow capture vec (GC Step 3 §5): a
+/// `vec![v_A, v_B, …]` of the same handles the body `move`-captures, so the GC
+/// can reach `Value`s sealed inside the opaque `dyn Fn`. Empty captures emit
+/// `Vec::new()` (typed from the `make_aot_closure` parameter).
+fn capture_vec_src(captures: &[String]) -> String {
+    if captures.is_empty() {
+        return "Vec::new()".to_string();
+    }
+    let items: Vec<String> = captures.iter().map(|c| rust_var(c)).collect();
+    format!("vec![{}]", items.join(", "))
 }
 
 /// Kernel defuns whose source is so large (deeply nested cons literals)

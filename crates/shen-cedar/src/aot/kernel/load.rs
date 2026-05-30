@@ -220,6 +220,7 @@ pub fn aot_shen_x2e_eval_x2d_and_x2d_print(
                             rt::apply_direct(interp, "pr", &[__t34, __t35])?
                         })
                     },
+                    Vec::new(),
                     interp,
                 )
             };
@@ -266,6 +267,7 @@ pub fn aot_shen_x2e_check_x2d_eval_x2d_and_x2d_print(
                                 rt::apply_direct(interp, "shen.typetable", &[__t38])?
                             })
                         },
+                        Vec::new(),
                         interp,
                     )
                 };
@@ -298,6 +300,7 @@ pub fn aot_shen_x2e_check_x2d_eval_x2d_and_x2d_print(
                                         )?
                                     })
                                 },
+                                vec![v_W1231],
                                 interp,
                             )
                         };
@@ -331,6 +334,7 @@ pub fn aot_shen_x2e_check_x2d_eval_x2d_and_x2d_print(
                                             )?
                                         })
                                     },
+                                    vec![v_W1231],
                                     interp,
                                 )
                             };
@@ -1380,6 +1384,7 @@ pub fn aot_shen_x2e_pretty_x2d_type(interp: &mut Interp, args: &[Value]) -> Shen
                                             rt::apply_direct(interp, "shen.pretty-type", &[__t224])?
                                         })
                                     },
+                                    Vec::new(),
                                     interp,
                                 )
                             };
@@ -1480,6 +1485,7 @@ pub fn aot_bootstrap(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                             rt::apply_direct(interp, "shen.partial", &[__t385])?
                                         })
                                     },
+                                    Vec::new(),
                                     interp,
                                 )
                             };
@@ -1618,6 +1624,7 @@ pub fn aot_shen_x2e_partial(interp: &mut Interp, args: &[Value]) -> ShenResult<V
                                             rt::apply_direct(interp, "shen.partial", &[__t392])?
                                         })
                                     },
+                                    Vec::new(),
                                     interp,
                                 )
                             };

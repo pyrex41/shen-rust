@@ -88,10 +88,24 @@ pub fn is_truthy(interp: &Interp, v: &Value) -> ShenResult<bool> {
     }
 }
 
-/// Wrap a Rust closure as a Shen `Value::Closure`. Used for AOT-compiled
-/// lambdas. `arity` is the formal-parameter count; partial application
-/// works via the same path as any other closure.
-pub fn make_aot_closure<F>(name: &str, arity: usize, f: F, interp: &mut Interp) -> Value
+/// Wrap a Rust closure as a Shen closure value. Used for AOT-compiled lambdas.
+/// `arity` is the formal-parameter count; partial application works via the same
+/// path as any other closure.
+///
+/// `captures` is the **traceable shadow capture list** (GC Step 3 §5): the
+/// generated AOT body `move`-captures `Value`s into the opaque `dyn Fn`, where
+/// the collector cannot see them. klcompile emits the *same* handles here so the
+/// `Closure` node's [`crate::value::Closure`] `GcObject::gc_edges` keeps them
+/// reachable across a collection (Step 4). Because `Value` is `Copy`, this list
+/// and the move-captures hold copies of the same tagged words — the closure body
+/// is unchanged. Empty when the lambda captures nothing.
+pub fn make_aot_closure<F>(
+    name: &str,
+    arity: usize,
+    f: F,
+    captures: Vec<Value>,
+    interp: &mut Interp,
+) -> Value
 where
     F: Fn(&mut Interp, &[Value]) -> ShenResult<Value> + 'static,
 {
@@ -100,10 +114,7 @@ where
         name: Some(sym),
         arity,
         partial: Vec::new(),
-        // Empty shadow captures for now: GC Step 3 runs collection OFF, so the
-        // captures need not be traceable yet. Sub-step 4f wires klcompile to
-        // emit the real capture vec here and regenerates AOT. See §5.
-        kind: ClosureKind::Native(Rc::new(f) as Rc<NativeFn>, Vec::new()),
+        kind: ClosureKind::Native(Rc::new(f) as Rc<NativeFn>, captures),
     };
     Value::closure(closure)
 }

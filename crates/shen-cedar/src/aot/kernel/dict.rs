@@ -176,6 +176,7 @@ pub fn aot_shen_x2e_dict_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult
                                         let v_Z4145 = args[0].clone();
                                         Ok(Value::sym(interp.intern("shen.not-dictionary")))
                                     },
+                                    Vec::new(),
                                     interp,
                                 )
                             };
@@ -918,14 +919,17 @@ pub fn aot_shen_x2e_dict_x2d_keys(interp: &mut Interp, args: &[Value]) -> ShenRe
                                                     rt::cons(&__t148, &__t149)
                                                 })
                                             },
+                                            vec![v_Z4195],
                                             interp,
                                         )
                                     })
                                 },
+                                vec![v_Z4195],
                                 interp,
                             )
                         })
                     },
+                    Vec::new(),
                     interp,
                 )
             };
@@ -979,14 +983,17 @@ pub fn aot_shen_x2e_dict_x2d_values(interp: &mut Interp, args: &[Value]) -> Shen
                                                     rt::cons(&__t153, &__t154)
                                                 })
                                             },
+                                            vec![v_Z4200],
                                             interp,
                                         )
                                     })
                                 },
+                                Vec::new(),
                                 interp,
                             )
                         })
                     },
+                    Vec::new(),
                     interp,
                 )
             };

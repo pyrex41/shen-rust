@@ -1239,6 +1239,7 @@ pub fn aot_shen_x2e_compile_x2d_prolog(interp: &mut Interp, args: &[Value]) -> S
                             rt::apply_direct(interp, "shen.<defprolog>", &[__t246])?
                         })
                     },
+                    Vec::new(),
                     interp,
                 )
             };
@@ -1342,6 +1343,7 @@ pub fn aot_shen_x2e__x3c_defprolog_x3e_(interp: &mut Interp, args: &[Value]) -> 
                                                                                 rt::apply_direct(interp, "shen.linearise-clause", &[__t261])?
                                                                             })
                                                                         },
+                                                                        Vec::new(),
                                                                         interp,
                                                                     )
                                                                 };
@@ -6482,6 +6484,7 @@ pub fn aot_shen_x2e_deref_x2d_calls(interp: &mut Interp, args: &[Value]) -> Shen
                                                 )?
                                             })
                                         },
+                                        vec![v_V1932],
                                         interp,
                                     )
                                 };
@@ -7247,6 +7250,7 @@ pub fn aot_shen_x2e_deref_x2d_terms(interp: &mut Interp, args: &[Value]) -> Shen
                                                                     )?
                                                                 })
                                                             },
+                                                            vec![v_V1955, v_V1956],
                                                             interp,
                                                         )
                                                     };
@@ -9454,6 +9458,7 @@ pub fn aot_shen_x2e_demode(interp: &mut Interp, args: &[Value]) -> ShenResult<Va
                                                     )?
                                                 })
                                             },
+                                            Vec::new(),
                                             interp,
                                         )
                                     };
@@ -9533,6 +9538,7 @@ pub fn aot_shen_x2e_tame(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
                                             rt::apply_direct(interp, "shen.tame", &[__t2217])?
                                         })
                                     },
+                                    Vec::new(),
                                     interp,
                                 )
                             };
@@ -9836,6 +9842,7 @@ pub fn aot_shen_x2e_pvar_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult
                                         let v_Z2064 = args[0].clone();
                                         Ok(Value::sym(interp.intern("shen.not-pvar")))
                                     },
+                                    Vec::new(),
                                     interp,
                                 )
                             };
@@ -10866,6 +10873,7 @@ pub fn aot_shen_x2e_lzy_x3d__x21_(interp: &mut Interp, args: &[Value]) -> ShenRe
                                                             )?
                                                         })
                                                     },
+                                                    vec![v_V2121, v_V2122, v_V2123, v_V2124],
                                                     interp,
                                                 )
                                             };
@@ -11069,6 +11077,7 @@ pub fn aot_shen_x2e_lzy_x3d_(interp: &mut Interp, args: &[Value]) -> ShenResult<
                                                             )?
                                                         })
                                                     },
+                                                    vec![v_V2136, v_V2137, v_V2138, v_V2139],
                                                     interp,
                                                 )
                                             };
@@ -11717,6 +11726,10 @@ pub fn aot_findall(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                                 )?
                                             })
                                         },
+                                        vec![
+                                            v_V2228, v_V2229, v_V2230, v_V2231, v_V2232, v_V2233,
+                                            v_V2234, v_W2235,
+                                        ],
                                         interp,
                                     )
                                 };
@@ -11810,6 +11823,7 @@ pub fn aot_shen_x2e_findall_x2d_h(interp: &mut Interp, args: &[Value]) -> ShenRe
                                             )?
                                         })
                                     },
+                                    vec![v_V2236, v_V2239, v_V2240, v_V2241, v_V2242, v_V2243],
                                     interp,
                                 )
                             };

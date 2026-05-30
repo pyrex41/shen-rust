@@ -748,4 +748,27 @@ mod tests {
             &Value::absvector(vec![Value::int(10), Value::int(99), Value::int(30)])
         ));
     }
+
+    #[test]
+    fn native_closure_captures_are_traced() {
+        // GC Step 3 §5: a Native closure's shadow captures (and `partial`) must
+        // appear as GC edges, so the collector can reach `Value`s sealed inside
+        // the opaque `dyn Fn` that the AOT generator `move`-captures into.
+        let cap_heap = Value::cons(Value::int(1), Value::nil()); // a heap handle
+        let cap_imm = Value::int(7); // an immediate (harmless to push)
+        let partial = Value::str("p");
+        let f: Rc<NativeFn> =
+            Rc::new(|_: &mut crate::interp::eval::Interp, _: &[Value]| Ok(Value::nil()));
+        let c = Closure {
+            name: None,
+            arity: 1,
+            partial: vec![partial],
+            kind: ClosureKind::Native(f, vec![cap_heap, cap_imm]),
+        };
+        let mut edges = Vec::new();
+        c.gc_edges(&mut edges);
+        // The captured heap handle and the partial arg must be enumerated.
+        assert!(edges.contains(&cap_heap.to_gc()), "heap capture not traced");
+        assert!(edges.contains(&partial.to_gc()), "partial not traced");
+    }
 }

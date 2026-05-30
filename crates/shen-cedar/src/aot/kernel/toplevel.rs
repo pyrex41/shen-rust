@@ -80,6 +80,7 @@ pub fn aot_shen_x2e_loop(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
                                             )?
                                         })
                                     },
+                                    Vec::new(),
                                     interp,
                                 )
                             };
@@ -497,6 +498,7 @@ pub fn aot_shen_x2e_package_x2d_user_x2d_input(
                                                     )?
                                                 })
                                             },
+                                            vec![v_W5650, v_W5651],
                                             interp,
                                         )
                                     };
@@ -699,6 +701,7 @@ pub fn aot_shen_x2e_pui_x2d_h(interp: &mut Interp, args: &[Value]) -> ShenResult
                                                         )?
                                                     })
                                                 },
+                                                vec![v_V5657, v_V5658],
                                                 interp,
                                             )
                                         };
@@ -743,6 +746,7 @@ pub fn aot_shen_x2e_pui_x2d_h(interp: &mut Interp, args: &[Value]) -> ShenResult
                                                             )?
                                                         })
                                                     },
+                                                    vec![v_V5657, v_V5658],
                                                     interp,
                                                 )
                                             };
@@ -775,6 +779,7 @@ pub fn aot_shen_x2e_pui_x2d_h(interp: &mut Interp, args: &[Value]) -> ShenResult
                                                                 )?
                                                             })
                                                         },
+                                                        vec![v_V5657, v_V5658],
                                                         interp,
                                                     )
                                                 };

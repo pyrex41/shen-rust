@@ -160,6 +160,7 @@ pub fn aot_external(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                                     )?
                                                 })
                                             },
+                                            vec![v_V3745],
                                             interp,
                                         )
                                     };
@@ -261,6 +262,7 @@ pub fn aot_internal(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                                     )?
                                                 })
                                             },
+                                            vec![v_V3747],
                                             interp,
                                         )
                                     };
@@ -481,6 +483,7 @@ pub fn aot_ps(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                     rt::apply_direct(interp, "simple-error", &[__t49])?
                                 })
                             },
+                            vec![v_V3753],
                             interp,
                         )
                     };
@@ -698,6 +701,7 @@ pub fn aot_vector_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value>
                                         let v_Z3766 = args[0].clone();
                                         Ok(Value::int(-1i64))
                                     },
+                                    Vec::new(),
                                     interp,
                                 )
                             };
@@ -1060,6 +1064,7 @@ pub fn aot_symbol_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value>
                                                         let v_Z3777 = args[0].clone();
                                                         Ok(Value::bool(false))
                                                     },
+                                                    Vec::new(),
                                                     interp,
                                                 )
                                             };
@@ -1343,6 +1348,7 @@ pub fn aot_variable_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
                                                 let v_Z3787 = args[0].clone();
                                                 Ok(Value::bool(false))
                                             },
+                                            Vec::new(),
                                             interp,
                                         )
                                     };
@@ -1665,6 +1671,7 @@ pub fn aot_tuple_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> 
                                         let v_Z3803 = args[0].clone();
                                         Ok(Value::sym(interp.intern("shen.not-tuple")))
                                     },
+                                    Vec::new(),
                                     interp,
                                 )
                             };
@@ -1967,6 +1974,7 @@ pub fn aot_shen_x2e_copyfromvector(interp: &mut Interp, args: &[Value]) -> ShenR
                                 let v_Z3824 = args[0].clone();
                                 Ok(v_V3821.clone())
                             },
+                            vec![v_V3821],
                             interp,
                         )
                     };
@@ -2017,6 +2025,7 @@ pub fn aot_hdv(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                     rt::apply_direct(interp, "simple-error", &[__t282])?
                                 })
                             },
+                            Vec::new(),
                             interp,
                         )
                     };
@@ -3141,6 +3150,7 @@ pub fn aot_put(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                 let v_Z3904 = args[0].clone();
                                 Ok(Value::nil())
                             },
+                            Vec::new(),
                             interp,
                         )
                     };
@@ -3208,6 +3218,7 @@ pub fn aot_unput(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                 let v_Z3911 = args[0].clone();
                                 Ok(Value::nil())
                             },
+                            Vec::new(),
                             interp,
                         )
                     };
@@ -3301,6 +3312,7 @@ pub fn aot_get(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                     rt::apply_direct(interp, "simple-error", &[__t504])?
                                 })
                             },
+                            vec![v_V3914, v_V3915],
                             interp,
                         )
                     };
@@ -3438,6 +3450,7 @@ pub fn aot_shen_x2e_hashkey(interp: &mut Interp, args: &[Value]) -> ShenResult<V
                                 rt::apply_direct(interp, "string->n", &[__t527])?
                             })
                         },
+                        Vec::new(),
                         interp,
                     )
                 };
@@ -5648,6 +5661,7 @@ pub fn aot_bound_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> 
                                         let v_Z4054 = args[0].clone();
                                         Ok(Value::sym(interp.intern("shen.this-symbol-is-unbound")))
                                     },
+                                    Vec::new(),
                                     interp,
                                 )
                             };
@@ -6217,6 +6231,7 @@ pub fn aot_package_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value
                                                 let v_Z4064 = args[0].clone();
                                                 Ok(Value::bool(false))
                                             },
+                                            Vec::new(),
                                             interp,
                                         )
                                     };

@@ -120,18 +120,29 @@ pub fn aot_declare(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                                                                     }
                                                                                 })
                                                                             },
+                                                                            vec![
+                                                                                v_V5883, v_W5885,
+                                                                                v_Z5887, v_Z5888,
+                                                                                v_Z5889,
+                                                                            ],
                                                                             interp,
                                                                         )
                                                                     })
                                                                 },
+                                                                vec![
+                                                                    v_V5883, v_W5885, v_Z5887,
+                                                                    v_Z5888,
+                                                                ],
                                                                 interp,
                                                             )
                                                         })
                                                     },
+                                                    vec![v_V5883, v_W5885, v_Z5887],
                                                     interp,
                                                 )
                                             })
                                         },
+                                        vec![v_V5883, v_W5885],
                                         interp,
                                     )
                                 };
@@ -161,6 +172,7 @@ pub fn aot_declare(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                             "<freeze>",
                             0,
                             move |interp, _args| Ok(Value::bool(true)),
+                            Vec::new(),
                             interp,
                         )
                     };
@@ -278,6 +290,10 @@ pub fn aot_shen_x2e_variancy(interp: &mut Interp, args: &[Value]) -> ShenResult<
                                                 )?
                                             })
                                         },
+                                        vec![
+                                            v_V5893, v_V5894, v_V5895, v_V5896, v_V5897, v_V5898,
+                                            v_W5899,
+                                        ],
                                         interp,
                                     )
                                 };
@@ -373,6 +389,7 @@ pub fn aot_shen_x2e_variants_x3f_(interp: &mut Interp, args: &[Value]) -> ShenRe
                                                 }
                                             })
                                         },
+                                        vec![v_V5903, v_V5904, v_V5906, v_W5907],
                                         interp,
                                     )
                                 };

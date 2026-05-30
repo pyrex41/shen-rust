@@ -4233,6 +4233,7 @@ pub fn aot_shen_x2e_rules_x2d__x3e_prolog(
                                 rt::apply_direct(interp, "shen.rule->clause", &[__t656])?
                             })
                         },
+                        Vec::new(),
                         interp,
                     )
                 };
@@ -6948,6 +6949,7 @@ pub fn aot_preclude(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                 rt::apply_direct(interp, "shen.intern-type", &[__t1364])?
                             })
                         },
+                        Vec::new(),
                         interp,
                     )
                 };
@@ -7095,6 +7097,7 @@ pub fn aot_shen_x2e_show_x2d_datatypes(interp: &mut Interp, args: &[Value]) -> S
                             rt::hd(&__t1386)?
                         })
                     },
+                    Vec::new(),
                     interp,
                 )
             };
@@ -7134,6 +7137,7 @@ pub fn aot_include(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                 rt::apply_direct(interp, "shen.intern-type", &[__t1389])?
                             })
                         },
+                        Vec::new(),
                         interp,
                     )
                 };
@@ -7161,6 +7165,7 @@ pub fn aot_include(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                     )?
                                 })
                             },
+                            Vec::new(),
                             interp,
                         )
                     };
@@ -7218,6 +7223,7 @@ pub fn aot_preclude_x2d_all_x2d_but(interp: &mut Interp, args: &[Value]) -> Shen
                                     rt::apply_direct(interp, "shen.intern-type", &[__t1401])?
                                 })
                             },
+                            Vec::new(),
                             interp,
                         )
                     };
@@ -7245,6 +7251,7 @@ pub fn aot_preclude_x2d_all_x2d_but(interp: &mut Interp, args: &[Value]) -> Shen
                                         )?
                                     })
                                 },
+                                Vec::new(),
                                 interp,
                             )
                         };
@@ -7294,6 +7301,7 @@ pub fn aot_include_x2d_all_x2d_but(interp: &mut Interp, args: &[Value]) -> ShenR
                                 rt::apply_direct(interp, "shen.intern-type", &[__t1411])?
                             })
                         },
+                        Vec::new(),
                         interp,
                     )
                 };

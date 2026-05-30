@@ -45,6 +45,7 @@ pub fn aot_datatypes(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                             rt::apply_direct(interp, "shen.typename", &[__t0])?
                         })
                     },
+                    Vec::new(),
                     interp,
                 )
             };
@@ -84,6 +85,7 @@ pub fn aot_shen_x2e_included(interp: &mut Interp, args: &[Value]) -> ShenResult<
                             rt::apply_direct(interp, "shen.typename", &[__t4])?
                         })
                     },
+                    Vec::new(),
                     interp,
                 )
             };
@@ -326,6 +328,7 @@ pub fn aot_arity(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                 let v_Z888 = args[0].clone();
                                 Ok(Value::int(-1i64))
                             },
+                            Vec::new(),
                             interp,
                         )
                     };
@@ -717,6 +720,7 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                                 rt::apply_direct(interp, "shen.lambda-entry", &[__t105])?
                             })
                         },
+                        Vec::new(),
                         interp,
                     )
                 };
@@ -735,6 +739,7 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                                 rt::apply_direct(interp, "shen.set-lambda-form-entry", &[__t108])?
                             })
                         },
+                        Vec::new(),
                         interp,
                     )
                 };
@@ -752,6 +757,7 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                                         rt::apply_direct(interp, "shen.tuple", &[__t111])?
                                     })
                                 },
+                                Vec::new(),
                                 interp,
                             )
                         };
@@ -771,6 +777,7 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                                             rt::apply_direct(interp, "shen.pvar", &[__t115])?
                                         })
                                     },
+                                    Vec::new(),
                                     interp,
                                 )
                             };
@@ -794,6 +801,7 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                                                 )?
                                             })
                                         },
+                                        Vec::new(),
                                         interp,
                                     )
                                 };
@@ -818,6 +826,7 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                                                     )?
                                                 })
                                             },
+                                            Vec::new(),
                                             interp,
                                         )
                                     };
@@ -842,6 +851,7 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                                                         )?
                                                     })
                                                 },
+                                                Vec::new(),
                                                 interp,
                                             )
                                         };
@@ -865,6 +875,7 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                                                             )?
                                                         })
                                                     },
+                                                    Vec::new(),
                                                     interp,
                                                 )
                                             };

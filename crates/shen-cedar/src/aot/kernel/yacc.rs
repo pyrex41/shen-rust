@@ -459,6 +459,7 @@ pub fn aot_shen_x2e_yacc_x2d__x3e_shen(interp: &mut Interp, args: &[Value]) -> S
                             rt::apply_direct(interp, "shen.<yacc>", &[__t65])?
                         })
                     },
+                    Vec::new(),
                     interp,
                 )
             };
@@ -1626,6 +1627,7 @@ pub fn aot_shen_x2e_non_x2d_terminal_x3f_(
                                         rt::apply_direct(interp, "shen.<non-terminal?>", &[__t295])?
                                     })
                                 },
+                                Vec::new(),
                                 interp,
                             )
                         };
@@ -5710,6 +5712,7 @@ pub fn aot_shen_x2e_process_x2d_yacc_x2d_semantics(
                                             )?
                                         })
                                     },
+                                    Vec::new(),
                                     interp,
                                 )
                             };

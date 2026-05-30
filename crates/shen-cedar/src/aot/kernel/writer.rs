@@ -160,6 +160,7 @@ pub fn aot_shen_x2e_string_x2d__x3e_byte(interp: &mut Interp, args: &[Value]) ->
                                 let v_Z6786 = args[0].clone();
                                 Ok(Value::sym(interp.intern("shen.eos")))
                             },
+                            Vec::new(),
                             interp,
                         )
                     };
@@ -2924,6 +2925,7 @@ pub fn aot_shen_x2e_iter_x2d_vector(interp: &mut Interp, args: &[Value]) -> Shen
                                                 let v_Z6876 = args[0].clone();
                                                 Ok(Value::sym(interp.intern("shen.out-of-bounds")))
                                             },
+                                            Vec::new(),
                                             interp,
                                         )
                                     };
@@ -2955,6 +2957,7 @@ pub fn aot_shen_x2e_iter_x2d_vector(interp: &mut Interp, args: &[Value]) -> Shen
                                                         interp.intern("shen.out-of-bounds"),
                                                     ))
                                                 },
+                                                Vec::new(),
                                                 interp,
                                             )
                                         };
@@ -3088,6 +3091,7 @@ pub fn aot_shen_x2e_atom_x2d__x3e_str(interp: &mut Interp, args: &[Value]) -> Sh
                                 let v_Z6880 = args[0].clone();
                                 Ok({ rt::apply_direct(interp, "shen.funexstring", &[])? })
                             },
+                            Vec::new(),
                             interp,
                         )
                     };

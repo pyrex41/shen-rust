@@ -1782,6 +1782,7 @@ pub fn aot_untrack(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                     let v_Z5808 = args[0].clone();
                                     Ok(v_V5807.clone())
                                 },
+                                vec![v_V5807],
                                 interp,
                             )
                         };
@@ -2332,6 +2333,7 @@ pub fn aot_unprofile(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                     let v_Z5833 = args[0].clone();
                                     Ok(v_V5832.clone())
                                 },
+                                vec![v_V5832],
                                 interp,
                             )
                         };
@@ -2626,6 +2628,7 @@ pub fn aot_shen_x2e_get_x2d_profile(interp: &mut Interp, args: &[Value]) -> Shen
                                 let v_Z5842 = args[0].clone();
                                 Ok(Value::int(0i64))
                             },
+                            Vec::new(),
                             interp,
                         )
                     };

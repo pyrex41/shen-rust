@@ -711,6 +711,7 @@ pub fn aot_shen_x2e_shen_x2d__x3e_kl_x2d_h(
                                                                     )?
                                                                 })
                                                             },
+                                                            Vec::new(),
                                                             interp,
                                                         )
                                                     };
@@ -782,6 +783,7 @@ pub fn aot_shen_x2e_shendef_x2d__x3e_kldef(
                             rt::apply_direct(interp, "shen.<define>", &[__t179])?
                         })
                     },
+                    Vec::new(),
                     interp,
                 )
             };
@@ -1150,6 +1152,7 @@ pub fn aot_shen_x2e_shendef_x2d__x3e_kldef_x2d_h(
                                 rt::apply_direct(interp, "fst", &[__t228])?
                             })
                         },
+                        Vec::new(),
                         interp,
                     )
                 };
@@ -1181,6 +1184,7 @@ pub fn aot_shen_x2e_shendef_x2d__x3e_kldef_x2d_h(
                                         )?
                                     })
                                 },
+                                vec![v_V551],
                                 interp,
                             )
                         };
@@ -1359,6 +1363,7 @@ pub fn aot_shen_x2e_unprotect(interp: &mut Interp, args: &[Value]) -> ShenResult
                                                     )?
                                                 })
                                             },
+                                            Vec::new(),
                                             interp,
                                         )
                                     };
@@ -4339,6 +4344,7 @@ pub fn aot_shen_x2e_free_x2d_variable_x2d_error_x2d_message(
                                             rt::apply_direct(interp, "pr", &[__t801, __t802])?
                                         })
                                     },
+                                    Vec::new(),
                                     interp,
                                 )
                             };
@@ -6633,6 +6639,7 @@ pub fn aot_shen_x2e_alpha_x2d_convert(interp: &mut Interp, args: &[Value]) -> Sh
                                             )?
                                         })
                                     },
+                                    Vec::new(),
                                     interp,
                                 )
                             };
@@ -6820,6 +6827,7 @@ pub fn aot_shen_x2e_alpha_x2d_convert(interp: &mut Interp, args: &[Value]) -> Sh
                                                     )?
                                                 })
                                             },
+                                            Vec::new(),
                                             interp,
                                         )
                                     };
@@ -6854,6 +6862,7 @@ pub fn aot_shen_x2e_alpha_x2d_convert(interp: &mut Interp, args: &[Value]) -> Sh
                                                     )?
                                                 })
                                             },
+                                            Vec::new(),
                                             interp,
                                         )
                                     };
@@ -6929,6 +6938,7 @@ pub fn aot_shen_x2e_kl_x2d_body(interp: &mut Interp, args: &[Value]) -> ShenResu
                             )?
                         })
                     },
+                    vec![v_V796],
                     interp,
                 )
             };
@@ -8046,6 +8056,7 @@ pub fn aot_shen_x2e_beta(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
                                                             )?
                                                         })
                                                     },
+                                                    vec![v_V822, v_V823],
                                                     interp,
                                                 )
                                             };

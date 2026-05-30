@@ -3170,6 +3170,7 @@ pub fn aot_shen_x2d_cl_x2e_emit_x2d_trap_x2d_error(
                             }
                         })
                     },
+                    vec![v_V456, v_V457, v_V458],
                     interp,
                 )
             };
@@ -4509,6 +4510,7 @@ pub fn aot_shen_x2d_cl_x2e_emit_x2d_partial_x2d_application(
                                         )?
                                     })
                                 },
+                                vec![v_V496],
                                 interp,
                             )
                         };
@@ -4585,6 +4587,7 @@ pub fn aot_shen_x2d_cl_x2e_emit_x2d_partial_x2d_application(
                                                     )?
                                                 })
                                             },
+                                            vec![v_V496],
                                             interp,
                                         )
                                     };
@@ -4769,6 +4772,7 @@ pub fn aot_shen_x2d_cl_x2e_emit_x2d_dynamic_x2d_application(
                                                 )?
                                             })
                                         },
+                                        vec![v_V506],
                                         interp,
                                     )
                                 };
@@ -6880,6 +6884,7 @@ pub fn aot_shen_x2d_cl_x2e_emit_x2d_static_x2d_application(
                                                                                 rt::apply_direct(interp, "shen-cl.compile-expression", &[__t2877, __t2878])?
                                                                             })
                                                                         },
+                                                                        vec![v_V539],
                                                                         interp,
                                                                     )
                                                                 };
@@ -6910,6 +6915,7 @@ pub fn aot_shen_x2d_cl_x2e_emit_x2d_static_x2d_application(
                                                     }
                                                 })
                                             },
+                                            vec![v_V536, v_V538, v_V539],
                                             interp,
                                         )
                                     };
@@ -6943,7 +6949,7 @@ pub fn aot_shen_x2d_cl_x2e_emit_x2d_static_x2d_application(
                                                                         let __t2891 = {
                                                                             let v_V539 =
                                                                                 v_V539.clone();
-                                                                            rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z545 = args[0].clone(); Ok({ let __t2889 = v_Z545.clone(); let __t2890 = v_V539.clone(); rt::apply_direct(interp, "shen-cl.compile-expression", &[__t2889, __t2890])? }) }, interp)
+                                                                            rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z545 = args[0].clone(); Ok({ let __t2889 = v_Z545.clone(); let __t2890 = v_V539.clone(); rt::apply_direct(interp, "shen-cl.compile-expression", &[__t2889, __t2890])? }) }, vec![v_V539], interp)
                                                                         };
                                                                         let __t2892 =
                                                                             v_V538.clone();
@@ -6962,6 +6968,7 @@ pub fn aot_shen_x2d_cl_x2e_emit_x2d_static_x2d_application(
                                                                     }
                                                                 })
                                                             },
+                                                            vec![v_V538, v_V539],
                                                             interp,
                                                         )
                                                     };
@@ -7000,6 +7007,7 @@ pub fn aot_shen_x2d_cl_x2e_emit_x2d_static_x2d_application(
                             }
                         })
                     },
+                    vec![v_V536, v_V537, v_V538, v_V539],
                     interp,
                 )
             };
@@ -7046,6 +7054,7 @@ pub fn aot_shen_x2d_cl_x2e_emit_x2d_static_x2d_application(
                                                                 )?
                                                             })
                                                         },
+                                                        vec![v_V539],
                                                         interp,
                                                     )
                                                 };
@@ -7063,6 +7072,7 @@ pub fn aot_shen_x2d_cl_x2e_emit_x2d_static_x2d_application(
                                             }
                                         })
                                     },
+                                    vec![v_V538, v_V539],
                                     interp,
                                 )
                             };

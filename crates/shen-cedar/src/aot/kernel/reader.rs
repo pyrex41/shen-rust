@@ -54,6 +54,7 @@ pub fn aot_read_x2d_file(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
                                         rt::apply_direct(interp, "shen.<s-exprs>", &[__t1])?
                                     })
                                 },
+                                Vec::new(),
                                 interp,
                             )
                         };
@@ -77,6 +78,7 @@ pub fn aot_read_x2d_file(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
                                         rt::apply_direct(interp, "shen.reader-error", &[__t5])?
                                     })
                                 },
+                                Vec::new(),
                                 interp,
                             )
                         };
@@ -682,6 +684,7 @@ pub fn aot_shen_x2e_monotype(interp: &mut Interp, args: &[Value]) -> ShenResult<
                                     rt::apply_direct(interp, "shen.monotype", &[__t104])?
                                 })
                             },
+                            Vec::new(),
                             interp,
                         )
                     };
@@ -769,6 +772,7 @@ pub fn aot_lineread(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                             rt::apply_direct(interp, "shen.return?", &[__t112])?
                         })
                     },
+                    Vec::new(),
                     interp,
                 )
             };
@@ -812,6 +816,7 @@ pub fn aot_read_x2d_from_x2d_string(interp: &mut Interp, args: &[Value]) -> Shen
                                     rt::apply_direct(interp, "shen.<s-exprs>", &[__t115])?
                                 })
                             },
+                            Vec::new(),
                             interp,
                         )
                     };
@@ -868,6 +873,7 @@ pub fn aot_read_x2d_from_x2d_string_x2d_unprocessed(
                                     rt::apply_direct(interp, "shen.<s-exprs>", &[__t120])?
                                 })
                             },
+                            Vec::new(),
                             interp,
                         )
                     };
@@ -1000,6 +1006,7 @@ pub fn aot_read(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                 rt::apply_direct(interp, "shen.whitespace?", &[__t140])?
                             })
                         },
+                        Vec::new(),
                         interp,
                     )
                 };
@@ -1131,6 +1138,7 @@ pub fn aot_shen_x2e_read_x2d_loop(interp: &mut Interp, args: &[Value]) -> ShenRe
                                                     )?
                                                 })
                                             },
+                                            Vec::new(),
                                             interp,
                                         )
                                     };
@@ -1325,6 +1333,7 @@ pub fn aot_shen_x2e_try_x2d_parse(interp: &mut Interp, args: &[Value]) -> ShenRe
                                     rt::apply_direct(interp, "shen.<s-exprs>", &[__t194])?
                                 })
                             },
+                            Vec::new(),
                             interp,
                         )
                     };
@@ -1342,6 +1351,7 @@ pub fn aot_shen_x2e_try_x2d_parse(interp: &mut Interp, args: &[Value]) -> ShenRe
                                 let v_Z2569 = args[0].clone();
                                 Ok(Value::sym(interp.intern("shen.i-failed!")))
                             },
+                            Vec::new(),
                             interp,
                         )
                     };
@@ -1594,6 +1604,7 @@ pub fn aot_shen_x2e_process_x2d_sexprs(interp: &mut Interp, args: &[Value]) -> S
                                         )?
                                     })
                                 },
+                                vec![v_W2578],
                                 interp,
                             )
                         };
@@ -1951,6 +1962,7 @@ pub fn aot_shen_x2e_find_x2d_arities(interp: &mut Interp, args: &[Value]) -> She
                                                     )?
                                                 })
                                             },
+                                            Vec::new(),
                                             interp,
                                         )
                                     };
@@ -11330,6 +11342,7 @@ pub fn aot_shen_x2e_record_x2d_internal(interp: &mut Interp, args: &[Value]) -> 
                                 let v_Z3109 = args[0].clone();
                                 Ok(Value::nil())
                             },
+                            Vec::new(),
                             interp,
                         )
                     };
@@ -11518,6 +11531,7 @@ pub fn aot_shen_x2e_record_x2d_external(interp: &mut Interp, args: &[Value]) -> 
                                 let v_Z3123 = args[0].clone();
                                 Ok(Value::nil())
                             },
+                            Vec::new(),
                             interp,
                         )
                     };
@@ -11593,6 +11607,7 @@ pub fn aot_shen_x2e_package_x2d_symbols(interp: &mut Interp, args: &[Value]) -> 
                                     )?
                                 })
                             },
+                            vec![v_V3128, v_V3129],
                             interp,
                         )
                     };
@@ -12468,6 +12483,7 @@ pub fn aot_shen_x2e_process_x2d_applications(
                                                                 )?
                                                             })
                                                         },
+                                                        vec![v_V3155],
                                                         interp,
                                                     )
                                                 };
@@ -13343,6 +13359,7 @@ pub fn aot_shen_x2e_special_x2d_case(interp: &mut Interp, args: &[Value]) -> She
                                                                             rt::apply_direct(interp, "shen.process-applications", &[__t2231, __t2232])?
                                                                         })
                                                                     },
+                                                                    vec![v_V3166],
                                                                     interp,
                                                                 )
                                                             };
@@ -13651,7 +13668,7 @@ pub fn aot_shen_x2e_special_x2d_case(interp: &mut Interp, args: &[Value]) -> She
                                                                                     let __t2129 = {
                                                                                         let __t2126 = {
                                                                                             let v_V3166 = v_V3166.clone();
-                                                                                            rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z3168 = args[0].clone(); Ok({ let __t2124 = v_Z3168.clone(); let __t2125 = v_V3166.clone(); rt::apply_direct(interp, "shen.process-applications", &[__t2124, __t2125])? }) }, interp)
+                                                                                            rt::make_aot_closure("<lambda>", 1, move |interp, args| { let v_Z3168 = args[0].clone(); Ok({ let __t2124 = v_Z3168.clone(); let __t2125 = v_V3166.clone(); rt::apply_direct(interp, "shen.process-applications", &[__t2124, __t2125])? }) }, vec![v_V3166], interp)
                                                                                         };
                                                                                         let __t2128 = {
                                                                                             let __t2127 = v_V3165.clone();
@@ -13944,6 +13961,7 @@ pub fn aot_shen_x2e_process_x2d_after_x2d_type(
                                         )?
                                     })
                                 },
+                                vec![v_V3177],
                                 interp,
                             )
                         };
@@ -15188,6 +15206,7 @@ pub fn aot_fn(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                                     )?
                                                 })
                                             },
+                                            vec![v_V3205],
                                             interp,
                                         )
                                     };
