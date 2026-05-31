@@ -5,8 +5,7 @@ members = [
     "crates/shengen-rust",
     "crates/klcompile",
     "bin/shen-cedar",
-    "bin/shen-authz-demo",
-    "bin/shen-cedar-demos",
+    "examples/shen-cedar-authz",
 ]
 
 [workspace.package]

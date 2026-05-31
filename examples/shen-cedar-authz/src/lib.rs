@@ -1,20 +1,46 @@
-//! Shared host for the Shen+Cedar integration prototypes.
+//! Shared host + Cedar helpers for the Shen+Cedar authorization examples.
 //!
 //! `ShenHost` boots the Shen engine in served / VM mode (the `--served`
-//! entrypoint shipped for long-running embeddings) and exposes the small
-//! marshalling surface the demos need: evaluate a source line, call a named
-//! Shen function with constructed `Value` arguments, and convert Shen lists
-//! to/from Rust.
+//! embedding) and exposes the marshalling surface the examples need. The free
+//! functions wrap the Cedar schema (loaded from `authz.cedarschema`) and the
+//! strict policy/entity validation the hardened examples run.
 
 use std::rc::Rc;
+use std::str::FromStr;
+
+use cedar_policy::{Entities, PolicySet, Schema, ValidationMode, Validator};
 
 use shen_cedar::error::ShenError;
 use shen_cedar::interp::boot::boot;
 use shen_cedar::interp::eval::Interp;
 use shen_cedar::kl::ast::KlExpr;
-use shen_cedar::kl::parser::parse_one;
+use shen_cedar::kl::parser::{parse_all, parse_one};
+use shen_cedar::symbol::SymId;
 use shen_cedar::value::Value;
 
+/// The Cedar schema, embedded at compile time — the contract both the
+/// hand-written (`verify`) and generated (`generate`) policy sets validate
+/// against.
+pub const SCHEMA_SRC: &str = include_str!("../authz.cedarschema");
+
+/// Parse the embedded Cedar schema.
+pub fn schema() -> Result<Schema, String> {
+    Schema::from_str(SCHEMA_SRC).map_err(|e| format!("schema parse: {e}"))
+}
+
+/// Strict-validate a policy set against the schema. Returns the list of
+/// validation error strings (empty == valid).
+pub fn validate_policies(set: &PolicySet, schema: &Schema) -> Vec<String> {
+    let result = Validator::new(schema.clone()).validate(set, ValidationMode::Strict);
+    result.validation_errors().map(|e| e.to_string()).collect()
+}
+
+/// Parse + schema-validate entities in one step (the JSON must conform).
+pub fn entities(json: &str, schema: &Schema) -> Result<Entities, String> {
+    Entities::from_json_str(json, Some(schema)).map_err(|e| format!("entities: {e}"))
+}
+
+/// The served Shen engine + the marshalling surface the examples use.
 pub struct ShenHost {
     pub interp: Interp,
 }
@@ -32,22 +58,29 @@ impl ShenHost {
     pub fn eval(&mut self, src: &str) -> Result<Value, ShenError> {
         let expr = parse_one(src, &mut self.interp.symbols)
             .map_err(|e| ShenError::new(format!("parse: {e}")))?;
+        self.eval_expr(&expr)
+    }
+
+    /// Load every top-level form in a source blob (e.g. a `.shen` spec file).
+    pub fn load_source(&mut self, src: &str) -> Result<(), String> {
+        let forms =
+            parse_all(src, &mut self.interp.symbols).map_err(|e| format!("parse spec: {e}"))?;
+        for form in &forms {
+            self.eval_expr(form)
+                .map_err(|e| format!("load form: {e}"))?;
+        }
+        Ok(())
+    }
+
+    fn eval_expr(&mut self, expr: &KlExpr) -> Result<Value, ShenError> {
         let eval_sym = self.interp.intern("eval");
         if self.interp.env.get_fn(eval_sym).is_some() {
-            let quoted = klexpr_to_value(&expr);
+            let quoted = klexpr_to_value(expr);
             let f = self.interp.env.get_fn(eval_sym).cloned().unwrap();
             self.interp.apply(f, vec![quoted])
         } else {
-            self.interp.eval(&expr)
+            self.interp.eval(expr)
         }
-    }
-
-    /// Define every form (e.g. a block of `defun`s — the Shen "program").
-    pub fn define_all(&mut self, forms: &[&str]) -> Result<(), String> {
-        for f in forms {
-            self.eval(f).map_err(|e| format!("define {f:?}: {e}"))?;
-        }
-        Ok(())
     }
 
     /// Call a named Shen function with already-built `Value` arguments.
@@ -62,12 +95,25 @@ impl ShenHost {
         self.interp.apply(f, args)
     }
 
-    /// A Shen string `Value` from a Rust `&str`.
+    /// A Shen string `Value`.
     pub fn string(&self, s: &str) -> Value {
         Value::str(Rc::<str>::from(s))
     }
 
-    /// Resolve a symbol/string `Value` to its Rust text (for reading results).
+    /// A Shen symbol `Value` (interns `name`).
+    pub fn symbol(&mut self, name: &str) -> Value {
+        Value::sym(self.interp.intern(name))
+    }
+
+    /// A Shen proper list from an iterator of `Value`s.
+    pub fn list<I: IntoIterator<Item = Value>>(&self, items: I) -> Value
+    where
+        I::IntoIter: DoubleEndedIterator,
+    {
+        Value::list(items)
+    }
+
+    /// Resolve a symbol/string/int `Value` to Rust text.
     pub fn text(&self, v: &Value) -> String {
         if let Some(s) = v.as_str() {
             return s.to_string();
@@ -79,6 +125,10 @@ impl ShenHost {
             return n.to_string();
         }
         "<value>".to_string()
+    }
+
+    pub fn intern(&mut self, name: &str) -> SymId {
+        self.interp.intern(name)
     }
 }
 

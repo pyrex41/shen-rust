@@ -1,0 +1,12 @@
+// Cedar schema for the Shen+Cedar authorization examples.
+// Used to (a) strict-validate hand-written and generated policy sets,
+// (b) validate entities, and (c) build schema-checked requests.
+
+entity Role in [Role];
+entity User in [Role];
+entity ShenCap;
+
+action Eval appliesTo {
+    principal: [User],
+    resource: [ShenCap]
+};

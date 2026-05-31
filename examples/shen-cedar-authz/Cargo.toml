@@ -1,0 +1,23 @@
+[package]
+name = "shen-cedar-authz"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+publish = false
+
+# Worked examples of combining the Shen engine (served / VM mode) with AWS
+# Cedar, natively in one Rust process. Three integration shapes:
+#   gate     — Cedar gates the served Shen VM        (cargo run --example gate)
+#   verify   — Shen reasons ABOUT Cedar policies      (cargo run --example verify)
+#   generate — Cedar generated FROM a Shen spec       (cargo run --example generate)
+# All share the ShenHost embedding lib in src/lib.rs.
+
+[lib]
+name = "shen_cedar_authz"
+path = "src/lib.rs"
+
+[dependencies]
+shen-cedar = { workspace = true }
+cedar-policy = { workspace = true }
