@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Cancel superseded runs on the same ref (e.g. rapid pushes to a PR).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  gates:
+    # The single source of truth: the same eight gates developers run locally
+    # (shengen-codegen, fmt+clippy, build, test, shen-check, tcb-audit,
+    # kernel-aot-audit, kernel-tests = 134/0). Self-contained — no SBCL/shen-cl
+    # needed (the cross-port benchmark is not a gate).
+    name: gates (scripts/gates.sh)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      # Honor rust-toolchain.toml (channel = stable; components rustfmt, clippy,
+      # rust-src). `rustup show` installs the pinned toolchain + its components.
+      - name: Install pinned toolchain
+        run: rustup show
+
+      # Cache ~/.cargo and target/. The generated AOT kernel (~12 MB of Rust)
+      # is the build's long pole; caching makes warm runs minutes, not tens.
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: gates
+
+      - name: Run all gates
+        run: ./scripts/gates.sh
+
+  jit:
+    # The Cranelift JIT is feature-gated and off by default, so `gates.sh` never
+    # compiles it — this job keeps it from bit-rotting. `check`, not `build`,
+    # to keep the heavy cranelift compile cheap.
+    name: jit feature compiles
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned toolchain
+        run: rustup show
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: jit
+      - name: cargo check --features jit
+        run: cargo check -p shen-rust --features jit --all-targets

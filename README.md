@@ -1,5 +1,7 @@
 # shen-rust
 
+[![CI](https://github.com/pyrex41/shen-rust/actions/workflows/ci.yml/badge.svg)](https://github.com/pyrex41/shen-rust/actions/workflows/ci.yml)
+
 A port of the [Shen](https://shenlanguage.org/) programming language to Rust,
 with native [AWS Cedar](https://www.cedarpolicy.com/) authorization integration.
 
