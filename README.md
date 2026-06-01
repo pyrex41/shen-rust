@@ -43,9 +43,27 @@ Every tier is differentially tested against the tree-walker and held at 134/0.
 
 ## Shen + Cedar
 
-Cedar is AWS's authorization-policy language. `examples/shen-cedar-authz` shows
-three ways the `shen-rust` engine (in served / VM mode) and the `cedar-policy`
-crate combine, natively, in one process:
+Cedar is AWS's authorization-policy language. `shen-rust` combines with it on
+two levels:
+
+**1. Cedar as first-class Shen values.** The engine embeds the `cedar-policy`
+crate and exposes ~15 `cedar.*` primitives (`crates/shen-rust/src/cedar/`), so
+Shen *programs* can parse, author, evaluate, and validate Cedar policies
+directly — Cedar handles travel as ordinary Shen values:
+
+```shen
+(set p (cedar.parse-policy "permit(principal, action, resource);"))
+(set ps (cedar.policy-set-add (cedar.empty-policy-set) (value p)))
+(cedar.is-authorized (value ps) (cedar.empty-entities)
+   (cedar.make-request (cedar.make-entity-uid "User" "alice")
+                       (cedar.make-entity-uid "Action" "read")
+                       (cedar.make-entity-uid "Doc" "d1") ()))
+;; => Allow
+```
+
+**2. Worked integration patterns.** `examples/shen-cedar-authz` shows three ways
+the engine (in served / VM mode) and Cedar combine on the Rust side, natively in
+one process:
 
 ```sh
 cargo run -p shen-cedar-authz --example gate      # Cedar gates Shen evaluation
