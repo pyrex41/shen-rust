@@ -1,4 +1,4 @@
-# shen-cedar GC — Step 2: Land the Collector as `src/gc/` — Implementation Handoff
+# shen-rust GC — Step 2: Land the Collector as `src/gc/` — Implementation Handoff
 
 **Date**: 2026-05-29. **Standalone** — execute from this without the
 originating conversation. **Read first**: `design/gc-conversion-handoff.md`
@@ -28,7 +28,7 @@ Step 3 (the big, risky `Value` flip) drops onto a collector that already works.
 
 ## 1. Your blueprint (port from this — don't reinvent)
 
-**`crates/shen-cedar/benches/gc_spike.rs`** (commit `5108f6a`) is the reference
+**`crates/shen-rust/benches/gc_spike.rs`** (commit `5108f6a`) is the reference
 implementation of exactly what Step 2 productionizes. Read it top to bottom
 before writing anything — every design choice in it is deliberate and the
 header comment explains why. Run it: `cargo bench --bench gc_spike`. Its proven
@@ -64,7 +64,7 @@ existence is why Step 2 must build a real membership table (see §3.3).
 
 ## 2. Scope of Step 2 — what to build, what NOT to touch
 
-**Build** a new `crates/shen-cedar/src/gc/` module (register `pub mod gc;` in
+**Build** a new `crates/shen-rust/src/gc/` module (register `pub mod gc;` in
 `lib.rs`), a self-contained collector with:
 1. `Gc<T>` — a `Copy` handle (tagged pointer) to a heap object of type `T`.
 2. A non-moving `Heap`: block/slab allocation + free-list, soft-cap collection
@@ -167,7 +167,7 @@ Don't propose it.
    shipped code with raw pointers, so it must be. Miri may not be installed —
    `rustup component add miri` (on the project's toolchain; add `+nightly` if
    the default channel lacks it), then
-   `cargo +nightly miri test -p shen-cedar gc::`. Expect to fix provenance
+   `cargo +nightly miri test -p shen-rust gc::`. Expect to fix provenance
    issues (use `*mut`→`addr`→`*mut` round-trips carefully; consider
    `std::ptr` strict-provenance APIs). **Do not hand-wave a Miri failure** — a
    provenance error here is a real soundness bug that would corrupt the heap
@@ -209,12 +209,12 @@ Don't propose it.
 
 | Path | Role |
 |---|---|
-| `crates/shen-cedar/benches/gc_spike.rs` | **The blueprint to port.** Collector core, Copy word, shadow-stack roots, 3.34× proven. |
-| `crates/shen-cedar/benches/gc_roots_aot_spike.rs` | Roots blueprint — **Step 4, not now**. Why §3.3's membership table exists. |
-| `crates/shen-cedar/src/gc/` (NEW) | What you build. |
-| `crates/shen-cedar/src/lib.rs` | Add one line: `pub mod gc;`. |
-| `crates/shen-cedar/Cargo.toml` | Add one `[[bench]]` for the module bench (see existing gc_spike entry ~line 29). |
-| `crates/shen-cedar/src/value.rs` | The seam Step 1 built. **Do not touch in Step 2** — reference only, to see the heap variants `Trace` must eventually cover (`Cons`/`Vec`/`Str`/`Closure`/`Stream`/`Error`/`Foreign`). |
+| `crates/shen-rust/benches/gc_spike.rs` | **The blueprint to port.** Collector core, Copy word, shadow-stack roots, 3.34× proven. |
+| `crates/shen-rust/benches/gc_roots_aot_spike.rs` | Roots blueprint — **Step 4, not now**. Why §3.3's membership table exists. |
+| `crates/shen-rust/src/gc/` (NEW) | What you build. |
+| `crates/shen-rust/src/lib.rs` | Add one line: `pub mod gc;`. |
+| `crates/shen-rust/Cargo.toml` | Add one `[[bench]]` for the module bench (see existing gc_spike entry ~line 29). |
+| `crates/shen-rust/src/value.rs` | The seam Step 1 built. **Do not touch in Step 2** — reference only, to see the heap variants `Trace` must eventually cover (`Cons`/`Vec`/`Str`/`Closure`/`Stream`/`Error`/`Foreign`). |
 | `design/gc-conversion-handoff.md` | The full plan; Step 2 is §4 there. |
 | `design/perf-state-and-gc-ladder.md` | §6b constraints, §6c algorithm, §6f/§6g spike results. |
 

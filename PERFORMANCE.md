@@ -1,4 +1,4 @@
-# shen-cedar performance
+# shen-rust performance
 
 > **Current state (2026-05-28):** `--kernel-tests` runs in **~5.7s warm**
 > (134/0 passing, all 8 gates green), down from the 17.5s starting baseline
@@ -37,8 +37,8 @@
 ## Roadmap to sub-2s
 
 **Phase 1 — surgical consolidation** (≈1–2 weeks):
-- 1a. **Free-variable analysis** for `build_lambda`/`build_freeze` — capture only syms the body references, not the entire visible scope. Applies to both the tree-walker (`crates/shen-cedar/src/interp/eval.rs`) and klcompile (`crates/klcompile/src/main.rs`). Shrinks captured envs and the subsequent `lookup_local` scans.
-- 1b. **More shen-cl hot overrides** in `register_hot_overrides` (`crates/shen-cedar/src/primitives.rs`): `shen.str->bytes` / `shen.bytes->string` / `shen.rfas-h` (reader O(N²)→O(N)), `shen.macroexpand-h` (`Rc::ptr_eq` fast path), `shen.analyse-symbol?` / `symbol?` / `variable?` (char-class checks). Priority by re-profile after 1a.
+- 1a. **Free-variable analysis** for `build_lambda`/`build_freeze` — capture only syms the body references, not the entire visible scope. Applies to both the tree-walker (`crates/shen-rust/src/interp/eval.rs`) and klcompile (`crates/klcompile/src/main.rs`). Shrinks captured envs and the subsequent `lookup_local` scans.
+- 1b. **More shen-cl hot overrides** in `register_hot_overrides` (`crates/shen-rust/src/primitives.rs`): `shen.str->bytes` / `shen.bytes->string` / `shen.rfas-h` (reader O(N²)→O(N)), `shen.macroexpand-h` (`Rc::ptr_eq` fast path), `shen.analyse-symbol?` / `symbol?` / `variable?` (char-class checks). Priority by re-profile after 1a.
 - 1c. **Pattern factorization** in klcompile (mirror shen-cl `factorise-defun` from `../shen-cl/src/overwrite.lsp`): group cascading `(cond ((and X …) …))` clauses sharing a leading test into a nested cond.
 - 1d. Delete the dead `Control` enum left in `eval.rs` from an exploratory refactor.
 
@@ -46,12 +46,12 @@
 
 Compile user defuns/lambdas/freezes to bytecode at definition time. This is the only way to escape the tree-walker tax for the dominant type-checker workload. shen-go's design reports 4–8× from the VM alone + 2–3× from numeric fast-paths.
 
-- New module `crates/shen-cedar/src/vm/{opcode, bytecode, compiler, exec}.rs`.
+- New module `crates/shen-rust/src/vm/{opcode, bytecode, compiler, exec}.rs`.
 - ~22 opcodes mirroring shen-go (`../shen-go/kl/vm.go:10-34`): `LoadLocal`, `StoreLocal`, `LoadUpval`, `LoadConst`, `LoadGlobal`, `Jump(i16)`, `JumpFalse(i16)`, `Call(u8)`, `TailCall(u8)`, **`SelfTailCall(u8)`** (in-place loop, no Rust stack growth), `MakeClosure(u16, u8)`, plus fixnum-fast-path numeric ops (`Add`/`Sub`/`Mul`/`Lt`/`Le`/`Gt`/`Ge`/`Eq`/`Not`) and Shen-specific `Cons`/`Hd`/`Tl`/`IsCons`/`Truthy`.
 - Flat per-call frames: `Vec<Value>` locals indexed by integer slot (parameters in `[0..arity)`, lets in `[arity..n_locals)`). Upvalues snapshot by value at closure creation.
 - Compiler (per shen-go's `../shen-go/kl/compiler.go`): per-fn `locals: FxHashMap<SymId, u16>` + `upvals: Vec<UpvalInfo>` + `outer: Option<&Compiler>` chain. `resolve_var(sym)` returns `Local`/`Upval`/`Global`; nested lambdas register upvals upward.
-- New `ClosureKind::Bytecode(Rc<BytecodeFn>, Vec<Value>)` variant in `crates/shen-cedar/src/value.rs`. `rt::call_or_apply` dispatches it.
-- Phased commits (B1 skeleton, B2 special forms, B3 closures, B4 self-tail + numeric, B5 wire into `do_defun`/`build_lambda`/`build_freeze` with `SHEN_CEDAR_NO_VM` fallback, B6 retire the 1 GB stack workaround, B7 AOT/VM split decision).
+- New `ClosureKind::Bytecode(Rc<BytecodeFn>, Vec<Value>)` variant in `crates/shen-rust/src/value.rs`. `rt::call_or_apply` dispatches it.
+- Phased commits (B1 skeleton, B2 special forms, B3 closures, B4 self-tail + numeric, B5 wire into `do_defun`/`build_lambda`/`build_freeze` with `SHEN_RUST_NO_VM` fallback, B6 retire the 1 GB stack workaround, B7 AOT/VM split decision).
 
 **Phase 3 — Value representation overhaul** (after VM lands):
 
@@ -69,7 +69,7 @@ Every commit must hold all 8 gates green (`scripts/gates.sh`) and be re-timed wi
 
 ## Original handoff (preserved for historical reference)
 
-Status at handoff: **all 134 kernel tests pass**, but shen-cedar (release)
+Status at handoff: **all 134 kernel tests pass**, but shen-rust (release)
 runs the kernel test suite in **~17.5 s vs shen-cl's ~1.0 s — ~17× slower**.
 This document is the plan to close that gap. It's grounded in a real
 profile (not guesses) plus an architecture survey of the other ports.
@@ -78,7 +78,7 @@ profile (not guesses) plus an architecture survey of the other ports.
 
 ## 1. The profile says: we're allocation-bound, not logic-bound
 
-Sampled `target/release/shen-cedar --kernel-tests` for 12 s
+Sampled `target/release/shen-rust --kernel-tests` for 12 s
 (`sample <pid> 12 1`). Of 7879 samples on the worker thread, by
 self-time:
 
@@ -98,7 +98,7 @@ on every single step" problem.
 
 ### The single worst offender (quadratic, fixable today)
 
-`crates/shen-cedar/src/interp/eval.rs`:
+`crates/shen-rust/src/interp/eval.rs`:
 
 ```rust
 pub type Locals = Vec<(SymId, Value)>;          // line 33
@@ -127,7 +127,7 @@ clone/drop bucket.
 | **shen-scheme** | Chez | KL → Scheme **source** → `eval`/JIT | Scheme native | direct call |
 | **shen-go** (closest to us) | Go | KL → **bytecode VM** at define-time | pointer-tagged structs; **fixnums are synthesized pointers, never allocated** | `symbol.function` **direct slot**, no map |
 | **Shen.java** (hraberg) | JVM | KL → JVM bytecode via ASM | numeric tag in a `long` | `invokedynamic` + `SwitchPoint` |
-| **shen-cedar** (us) | Rust | **tree-walk** (user code never compiled); kernel AOT'd to Rust but still routes through `apply_named` | `enum Value` with `Rc` everywhere | `HashMap<SymId,Value>` probe + `Rc<Closure>` clone per call |
+| **shen-rust** (us) | Rust | **tree-walk** (user code never compiled); kernel AOT'd to Rust but still routes through `apply_named` | `enum Value` with `Rc` everywhere | `HashMap<SymId,Value>` probe + `Rc<Closure>` clone per call |
 
 Two reusable lessons:
 
@@ -276,8 +276,8 @@ must still show the loop-sum speedup as a regression guard.
 ## 5. Reproducing the profile
 
 ```bash
-cargo build --release --bin shen-cedar
-./target/release/shen-cedar --kernel-tests >/tmp/run.log 2>&1 &
+cargo build --release --bin shen-rust
+./target/release/shen-rust --kernel-tests >/tmp/run.log 2>&1 &
 sample $! 12 1 -file /tmp/sc.txt          # 12s @ 1ms
 # Read the "Sort by top of stack" section of /tmp/sc.txt for self-time.
 ```
@@ -292,14 +292,14 @@ the head-to-head number. shen-cl lives at
 
 | Concern | File |
 |---|---|
-| Tree-walker (Tier 1/3 target) | `crates/shen-cedar/src/interp/eval.rs` |
+| Tree-walker (Tier 1/3 target) | `crates/shen-rust/src/interp/eval.rs` |
 | `Locals`, `eval_in`, `eval_args`, `step`, `tail_apply` | same, lines 33 / 149 / 275 / 196 / ~280 |
-| Env (Tier 2a target: HashMap→Vec) | `crates/shen-cedar/src/env.rs` |
-| Symbol interner (dense SymId) | `crates/shen-cedar/src/symbol.rs` |
-| `Value` (Tier 4 target) + `shen_eq` | `crates/shen-cedar/src/value.rs` |
+| Env (Tier 2a target: HashMap→Vec) | `crates/shen-rust/src/env.rs` |
+| Symbol interner (dense SymId) | `crates/shen-rust/src/symbol.rs` |
+| `Value` (Tier 4 target) + `shen_eq` | `crates/shen-rust/src/value.rs` |
 | AOT codegen (Tier 1d/2b target) | `crates/klcompile/src/main.rs` |
-| AOT runtime (`apply_named`, inline helpers) | `crates/shen-cedar/src/aot/runtime.rs` |
-| Native hot-fn overrides (done, Phase 8A) | `crates/shen-cedar/src/primitives.rs` `register_hot_overrides` |
+| AOT runtime (`apply_named`, inline helpers) | `crates/shen-rust/src/aot/runtime.rs` |
+| Native hot-fn overrides (done, Phase 8A) | `crates/shen-rust/src/primitives.rs` `register_hot_overrides` |
 | Benchmark harness | `scripts/cross-port-bench.sh`, `tests/aot_smoke.rs` |
 | shen-go blueprint (bytecode VM) | `../shen-go/kl/{vm,compiler,types,eval}.go`, `../shen-go/thoughts/` |
 | shen-cl blueprint (KL→native) | `../shen-cl/src/{compiler.shen,primitives.lsp}` |

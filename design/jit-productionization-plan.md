@@ -1,4 +1,4 @@
-# shen-cedar — Cranelift JIT Productionization Plan (GC ladder rung 3 → ship)
+# shen-rust — Cranelift JIT Productionization Plan (GC ladder rung 3 → ship)
 
 **Date**: 2026-05-29. **Status**: plan, post-spike. The spike
 (`benches/jit_spike.rs`, commit `128a906`) **passed** its kill-criterion — see
@@ -146,12 +146,12 @@ passed, and `benches/jit_spike.rs` retained as the microbench regression anchor.
 win is structurally capped. The closure-JIT line is paused.** Stage J2 Slice A
 (general `KlExpr`→Cranelift `BodyTranslator` + `ClosureKind::Jit`, tiered into
 `build_closure` parallel to the VM's `try_compile_closure`, behind
-`--features jit` + `SHEN_CEDAR_JIT`) is **built and correct** — but the economics
+`--features jit` + `SHEN_RUST_JIT`) is **built and correct** — but the economics
 don't work for this workload. It ships as a gated, off-by-default experiment.
 
 ### What was proven
 - **Correctness, end to end.** `tests/jit_closure_differential.rs` (JIT == tree-walk,
-  `shen_eq` + Ok/Err, 26-case corpus) is green, and a full `SHEN_CEDAR_JIT=1`
+  `shen_eq` + Ok/Err, 26-case corpus) is green, and a full `SHEN_RUST_JIT=1`
   kernel boot + kernel-tests is **134/0**. The integration machinery — the
   flag-pointer error ABI, runtime tier-up with a body-addr cache, the six
   `ClosureKind::Jit` dispatch arms, nested-closure *bail* fallback — all work.
@@ -161,7 +161,7 @@ don't work for this workload. It ships as a gated, off-by-default experiment.
 ### The measurement (the kill-gate)
 Paired min-of-3, `scripts/cross-port-bench.sh` shape (cold one-shot kernel-tests):
 **JIT-on ≈ 4.13 s vs JIT-off ≈ 3.60 s — a ~15 % regression.** Diagnostics
-(`SHEN_CEDAR_JIT_STATS=1`, reported by `JitEngine::drop`):
+(`SHEN_RUST_JIT_STATS=1`, reported by `JitEngine::drop`):
 
 | Metric | Value | Reading |
 |---|---|---|
@@ -193,7 +193,7 @@ pay. Worse, a JIT'd closure calling a **tree-walked** callee pays JIT-call setup
 
 ### Decision
 **The closure-value JIT is the wrong lever for the type-checker.** The **VM**
-(`SHEN_CEDAR_VM`, 1.3–4× on closure bodies) already beats it precisely because it
+(`SHEN_RUST_VM`, 1.3–4× on closure bodies) already beats it precisely because it
 stays in-process with no FFI boundary. Slice A is committed off-by-default as a
 proven-correct experiment (the machinery is reusable if the JIT is ever re-aimed
 at a genuinely compute-shaped target — e.g. self-recursive numeric kernel leaves,

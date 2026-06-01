@@ -1,4 +1,4 @@
-# shen-cedar Architecture
+# shen-rust Architecture
 
 Blueprint mirrors `shen-ocaml/ARCHITECTURE.md`; this document tracks
 Rust-specific adaptations and Cedar integration design.
@@ -6,10 +6,10 @@ Rust-specific adaptations and Cedar integration design.
 ## Layering
 
 ```
-bin/shen-cedar           REPL / CLI
+bin/shen-rust           REPL / CLI
         |
         v
-crates/shen-cedar        runtime + KL evaluator + kernel boot + Cedar bridge
+crates/shen-rust        runtime + KL evaluator + kernel boot + Cedar bridge
         |    |
         |    +-- value.rs       Shen runtime value (Rc-shared enum)
         |    +-- symbol.rs      SymId interner
@@ -62,6 +62,6 @@ exposed to Shen:
 ## Backpressure (Phase 4)
 
 `specs/core.shen` holds sequent-calculus types. `shengen-rust` parses
-those and emits `crates/shen-cedar/src/generated/guard_types.rs` with
+those and emits `crates/shen-rust/src/generated/guard_types.rs` with
 private fields + public constructors. The five gates: `cargo fmt`,
 `cargo build`, `cargo test`, `(tc +)` over specs, TCB audit.

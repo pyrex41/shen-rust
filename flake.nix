@@ -1,5 +1,5 @@
 {
-  description = "shen-cedar — Shen language port to Rust with AWS Cedar integration";
+  description = "shen-rust — Shen language port to Rust with AWS Cedar integration";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -22,7 +22,7 @@
           ];
 
           shellHook = ''
-            echo "shen-cedar dev shell"
+            echo "shen-rust dev shell"
             echo "  rustc: $(rustc --version)"
             echo "  cargo: $(cargo --version)"
           '';

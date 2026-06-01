@@ -190,7 +190,7 @@ fn authorized_eval(
     }
 }
 
-fn render(host: &ShenHost, v: &shen_cedar::value::Value) -> String {
+fn render(host: &ShenHost, v: &shen_rust::value::Value) -> String {
     if v.is_nil() {
         return "()".into();
     }

@@ -29,7 +29,7 @@ under-anticipated.
 ## Q1 — Bignum / overflow semantics → 61-bit fixnum + float promotion
 
 ### Ground truth (evidence)
-shen-cedar **does not have bignums today.** Integer arithmetic is implemented
+shen-rust **does not have bignums today.** Integer arithmetic is implemented
 identically in three kept-in-sync sites — `primitives.rs:542-577` (interpreter),
 `aot/runtime.rs:135-195` (AOT inline, hot), `vm/exec.rs:348-351` (VM, dispatches
 to the runtime helpers) — and every one uses:
@@ -119,7 +119,7 @@ tradeoff for a list/int-heavy workload where floats are ~0% of operations.
 
 ## Q3 — Heap layout → resolved by Step 2
 
-Step 2 (`crates/shen-cedar/src/gc/heap.rs`, commit `71f6b9f`) already chose and
+Step 2 (`crates/shen-rust/src/gc/heap.rs`, commit `71f6b9f`) already chose and
 shipped the production layout the §6 question asked for:
 - **Block/slab allocation**: `Vec<*mut [Node]>`, `BLOCK_SIZE = 1024` nodes ×
   24 B = 24 KiB blocks, leaked via `Box::into_raw` (Miri-verified — keeping the

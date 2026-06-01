@@ -1,4 +1,4 @@
-# shen-cedar Performance Handoff — Closing the ~5× Gap vs shen-cl
+# shen-rust Performance Handoff — Closing the ~5× Gap vs shen-cl
 
 **Audience**: an engineer/agent picking up the performance effort cold.
 **Date**: 2026-05-28
@@ -13,31 +13,31 @@ that has already been measured and rejected, so you don't repeat it.
 ## 1. Mission & current state
 
 **Goal**: close the gap on `scripts/kernel-tests.sh` (the upstream Shen kernel
-test suite). shen-cl (SBCL) runs it in **~1.0 s**; shen-cedar runs it in
+test suite). shen-cl (SBCL) runs it in **~1.0 s**; shen-rust runs it in
 **~5.5–6.0 s** warm (the absolute number drifts ±5–12% with machine thermal
 state — see §6). Target: **sub-2 s** (within ~2× of shen-cl).
 
 **What's already done** (committed; do not redo):
 - Tier-0 **AOT compile of the vendored kernel** to Rust (`crates/klcompile` →
-  `crates/shen-cedar/src/aot/kernel/*.rs`), with a direct fn-pointer dispatch
+  `crates/shen-rust/src/aot/kernel/*.rs`), with a direct fn-pointer dispatch
   table (`apply_direct`), inlined arithmetic/cons/predicate primitives, and a
   `SLOW_DEFUNS` skip list. This took the suite from ~17.5 s → ~5.7 s.
-- A heavily-optimized **tree-walking interpreter** (`crates/shen-cedar/src/
+- A heavily-optimized **tree-walking interpreter** (`crates/shen-rust/src/
   interp/eval.rs`): `Scope` copy-on-write, locals-by-reference, `SmallVec` arg
   vectors, FNV + pointer-keyed symbol interning, single-allocation cons.
-- A **bytecode VM** (`crates/shen-cedar/src/vm/*`, commits B1–B4b): opcode set,
+- A **bytecode VM** (`crates/shen-rust/src/vm/*`, commits B1–B4b): opcode set,
   stack-machine compiler with free-variable capture analysis, `SelfTailCall`,
   `MakeClosure`/upvalues, inlined-primitive opcodes. **It works (134/0
   kernel-tests) but is currently *slower* than the tree-walker** and is gated
-  off by default (`SHEN_CEDAR_VM=1`). Fixing this is the core of the plan.
+  off by default (`SHEN_RUST_VM=1`). Fixing this is the core of the plan.
 
 **Uncommitted working-tree changes** (from the investigation; keep or drop as
 noted):
-- `crates/shen-cedar/src/cons.rs` (**new**) — `ConsCell` seam (a newtype over
+- `crates/shen-rust/src/cons.rs` (**new**) — `ConsCell` seam (a newtype over
   `Rc<(Value,Value)>` that `Value::Cons` now holds). **Keep** — it's a harmless
   abstraction boundary. (An earlier recycling-pool version was reverted; see §2.)
-- `crates/shen-cedar/src/value.rs` — `Value::Cons` now holds `ConsCell`; trivial.
-- `crates/shen-cedar/src/interp/eval.rs` + `aot/runtime.rs` — removed
+- `crates/shen-rust/src/value.rs` — `Value::Cons` now holds `ConsCell`; trivial.
+- `crates/shen-rust/src/interp/eval.rs` + `aot/runtime.rs` — removed
   unnecessary per-call `Rc::clone`s on the dispatch fast paths (`call_or_apply`,
   `tail_apply`, `call_strict`). **Keep** — clean, correct (134/0), though
   measured at ~0% (see §2).
@@ -167,11 +167,11 @@ the hot path. Do A1→A2 first and measure before A3.
   frame in place → true cross-function TCO. Calls to `Native`/AOT closures still
   go out to Rust (they're leaves; that's fine and unavoidable).
   *Bonus*: real TCO lets you **retire the 1 GB worker-stack hack** (search
-  `bin/shen-cedar/src/main.rs` for the thread stack size).
-  *Acceptance*: 134/0 kernel-tests with `SHEN_CEDAR_VM=1`; deep mutual recursion
+  `bin/shen-rust/src/main.rs` for the thread stack size).
+  *Acceptance*: 134/0 kernel-tests with `SHEN_RUST_VM=1`; deep mutual recursion
   doesn't grow the Rust stack.
 
-- **GATE (kill-criterion)**: with A1+A2, measure the VM (`SHEN_CEDAR_VM=1`) vs
+- **GATE (kill-criterion)**: with A1+A2, measure the VM (`SHEN_RUST_VM=1`) vs
   the tree-walker on the Stage-D microbench. **If the VM does not beat the
   tree-walker by ≥20%, STOP and re-evaluate** — the execution-model hypothesis
   would itself be in question (hold it to the same bar as the dead hypotheses in
@@ -180,12 +180,12 @@ the hot path. Do A1→A2 first and measure before A3.
 - **A3 — Wire the VM into the hot path.**
   *Defect*: `interp/eval.rs` `build_lambda` (~line 733) and `build_freeze`
   (~line 759) **always** build tree-walked `ClosureKind::Lambda`. `do_defun`
-  (~line 807) uses the VM only under `SHEN_CEDAR_VM=1` (`vm_enabled()`, ~line
+  (~line 807) uses the VM only under `SHEN_RUST_VM=1` (`vm_enabled()`, ~line
   896). The type-checker's hot continuations are exactly `freeze`/`lambda`, so
   today they never touch the VM.
   *Fix*: compile the body to a `BytecodeFn` at closure-creation time in
   `build_lambda`/`build_freeze`/`do_defun`, yielding `ClosureKind::Bytecode`.
-  Once the gate passes, **remove the `SHEN_CEDAR_VM` flag** and make the VM the
+  Once the gate passes, **remove the `SHEN_RUST_VM` flag** and make the VM the
   default for all dynamic code.
   *Acceptance*: 134/0 by default; microbench shows the win on the freeze/lambda
   path; differential gate (A5) green.
@@ -271,7 +271,7 @@ machine thermal/run variance (~5–12%) exceeds most single optimizations.
 - **Use the Stage-D microbench**, not full `--kernel-tests`, to resolve small
   effects.
 - Settle/quiesce the machine before sampling; expect the first run to be cold.
-- Profiling: `./target/release/shen-cedar --kernel-tests & ; /usr/bin/sample
+- Profiling: `./target/release/shen-rust --kernel-tests & ; /usr/bin/sample
   <pid> 7 -file /tmp/prof.txt`. The useful section is "Sort by top of stack"
   (self/leaf weights), **not** the inclusive call graph (which over-weights
   dispatch glue near the root).
@@ -285,16 +285,16 @@ machine thermal/run variance (~5–12%) exceeds most single optimizations.
 
 | Path | Role |
 |---|---|
-| `crates/shen-cedar/src/vm/exec.rs` | **Bytecode dispatch loop** — A1/A2 happen here. Per-call `Vec` frames (47–51), `Call`→`interp.apply` bounce (~107). |
-| `crates/shen-cedar/src/vm/opcode.rs` | `Op` enum (stack machine, inlined prims, `SelfTailCall`, `TailCall`, `MakeClosure`). |
-| `crates/shen-cedar/src/vm/compiler.rs` | KL → bytecode; free-var capture analysis. A4 lives here. |
-| `crates/shen-cedar/src/vm/bytecode.rs` | `BytecodeFn` (code, consts, arity, n_locals). Add max-stack. |
-| `crates/shen-cedar/src/interp/eval.rs` | Tree-walker + dispatch. `build_lambda` (733), `build_freeze` (759), `do_defun` (807), `vm_enabled` (896), `tail_apply` (482), `call_strict` (547), `apply` (567). A3 wires here. |
-| `crates/shen-cedar/src/aot/runtime.rs` | AOT runtime: `call_or_apply` (56), `apply_direct`, `apply_named`, inlined prims (`add`/`sub`/…). |
-| `crates/shen-cedar/src/value.rs` | `Value` enum + `ClosureKind` (Native/Lambda/Bytecode; add `Jit` in B). |
-| `crates/shen-cedar/src/cons.rs` | `ConsCell` seam (keep). |
+| `crates/shen-rust/src/vm/exec.rs` | **Bytecode dispatch loop** — A1/A2 happen here. Per-call `Vec` frames (47–51), `Call`→`interp.apply` bounce (~107). |
+| `crates/shen-rust/src/vm/opcode.rs` | `Op` enum (stack machine, inlined prims, `SelfTailCall`, `TailCall`, `MakeClosure`). |
+| `crates/shen-rust/src/vm/compiler.rs` | KL → bytecode; free-var capture analysis. A4 lives here. |
+| `crates/shen-rust/src/vm/bytecode.rs` | `BytecodeFn` (code, consts, arity, n_locals). Add max-stack. |
+| `crates/shen-rust/src/interp/eval.rs` | Tree-walker + dispatch. `build_lambda` (733), `build_freeze` (759), `do_defun` (807), `vm_enabled` (896), `tail_apply` (482), `call_strict` (547), `apply` (567). A3 wires here. |
+| `crates/shen-rust/src/aot/runtime.rs` | AOT runtime: `call_or_apply` (56), `apply_direct`, `apply_named`, inlined prims (`add`/`sub`/…). |
+| `crates/shen-rust/src/value.rs` | `Value` enum + `ClosureKind` (Native/Lambda/Bytecode; add `Jit` in B). |
+| `crates/shen-rust/src/cons.rs` | `ConsCell` seam (keep). |
 | `crates/klcompile/src/main.rs` | Build-time KL→Rust AOT compiler (Tier 0). Source of the lowering you may want to share with the VM backend. |
-| `bin/shen-cedar/src/main.rs` | Entry; spawns the 1 GB worker stack (retire after A2's TCO). |
+| `bin/shen-rust/src/main.rs` | Entry; spawns the 1 GB worker stack (retire after A2's TCO). |
 | `scripts/kernel-tests.sh` | The benchmark/correctness suite (134 tests). |
 | `scripts/gates.sh` | All 8 CI gates (fmt+clippy, build, test, shen-check, tcb-audit, kernel-aot-audit, kernel-tests). Must stay green. |
 

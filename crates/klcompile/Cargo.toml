@@ -5,11 +5,11 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "Compile KL (.kl) source files to Rust function bodies that the shen-cedar runtime can register as native functions."
+description = "Compile KL (.kl) source files to Rust function bodies that the shen-rust runtime can register as native functions."
 
 [[bin]]
 name = "klcompile"
 path = "src/main.rs"
 
 [dependencies]
-shen-cedar = { workspace = true }
+shen-rust = { workspace = true }

@@ -1,6 +1,6 @@
-# Shen-backpressure configuration for shen-cedar.
+# Shen-backpressure configuration for shen-rust.
 #
-# Generated files: crates/shen-cedar/src/generated/guard_types.rs
+# Generated files: crates/shen-rust/src/generated/guard_types.rs
 # Specs:           specs/core.shen
 # Target language: Rust
 #
@@ -8,7 +8,7 @@
 # them in order and exits non-zero on first failure.
 
 [project]
-name = "shen-cedar"
+name = "shen-rust"
 language = "rust"
 
 [specs]
@@ -16,8 +16,8 @@ path = "specs/core.shen"
 
 [codegen]
 tool = "shengen-rust"
-command = "cargo run --quiet --bin shengen-rust -- specs/core.shen crates/shen-cedar/src/generated/guard_types.rs"
-output = "crates/shen-cedar/src/generated/guard_types.rs"
+command = "cargo run --quiet --bin shengen-rust -- specs/core.shen crates/shen-rust/src/generated/guard_types.rs"
+output = "crates/shen-rust/src/generated/guard_types.rs"
 
 [gates]
 codegen = "scripts/shengen-codegen.sh"
@@ -31,5 +31,5 @@ run_all = "scripts/gates.sh"
 [tcb]
 # Files allowed inside the generated module. Anything else triggers
 # Gate 5 (TCB audit) failure.
-generated_dir = "crates/shen-cedar/src/generated"
+generated_dir = "crates/shen-rust/src/generated"
 allowed = ["guard_types.rs", "mod.rs"]

@@ -12,7 +12,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 SPEC="specs/core.shen"
-COMMITTED="crates/shen-cedar/src/generated/guard_types.rs"
+COMMITTED="crates/shen-rust/src/generated/guard_types.rs"
 SCRATCH="$(mktemp -t shengen-XXXXXX).rs"
 trap "rm -f $SCRATCH" EXIT
 
@@ -27,7 +27,7 @@ if ! diff -u "$COMMITTED" "$SCRATCH"; then
 fi
 
 allowed=("guard_types.rs" "mod.rs")
-for f in crates/shen-cedar/src/generated/*; do
+for f in crates/shen-rust/src/generated/*; do
     base=$(basename "$f")
     ok=false
     for a in "${allowed[@]}"; do

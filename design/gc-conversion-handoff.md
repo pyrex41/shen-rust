@@ -1,4 +1,4 @@
-# shen-cedar GC + Word-Sized `Value` — Implementation Handoff
+# shen-rust GC + Word-Sized `Value` — Implementation Handoff
 
 **Date**: 2026-05-29. **Standalone** — execute from this without the originating
 conversation. **Read first**: `design/perf-state-and-gc-ladder.md` (the
@@ -10,7 +10,7 @@ GC spike — now done, see below).
 
 ## 0. Why you're here (one paragraph)
 
-shen-cedar is **~5× slower** than shen-cl (SBCL) on `scripts/kernel-tests.sh`
+shen-rust is **~5× slower** than shen-cl (SBCL) on `scripts/kernel-tests.sh`
 (~5.0 s vs ~1.0 s). The gap is **distributed execution-model cost** on a
 list-heavy workload (the type-checker). Reclamation/arena/refcount-removal/VM
 levers are all measured dead or non-moving on the north-star (§2 of perf-state).
@@ -82,7 +82,7 @@ surface of the `Value` conversion.
 ## 3. The conversion surface (measured, current)
 
 ```
-11,792  Value:: occurrences across 35 files in crates/shen-cedar/src/
+11,792  Value:: occurrences across 35 files in crates/shen-rust/src/
     22  Value:: sites in crates/klcompile/src/main.rs  → AOT regen REQUIRED
 ```
 Dominated by **immediates** (`Bool` 4360, `Sym` 3726, `Nil` 1719, `Int` 974) and
@@ -224,17 +224,17 @@ sized* `Value` in registers — that's why this conversion is its prerequisite.
 | Path | Role in the conversion |
 |---|---|
 | `design/perf-state-and-gc-ladder.md` | Authoritative state + design (§4 finding, §6 GC design, §6f/§6g spike results). **Read first.** |
-| `crates/shen-cedar/benches/gc_spike.rs` | Collector-core blueprint (mark-sweep, Copy word). |
-| `crates/shen-cedar/benches/gc_roots_aot_spike.rs` | Roots blueprint (conservative scan + aarch64 reg flush). |
-| `crates/shen-cedar/src/value.rs` | `Value` enum (12 variants) + `Closure`/`ClosureKind`/`LambdaBody` + `shen_eq`. **The repr to flip (Step 3).** Add constructors/inspectors here (Step 1). |
-| `crates/shen-cedar/src/cons.rs` | `ConsCell` seam — the **template** for funneling each variant. |
-| `crates/shen-cedar/src/gc/` (new) | The collector module (Step 2). |
-| `crates/shen-cedar/src/vm/exec.rs` | VM value stack (`stack: Vec<Value>`) + frame `upvals` — the **precise root set** (Step 4). |
-| `crates/shen-cedar/src/interp/eval.rs` | Tree-walker + `Interp` (holds `Value`s → precise roots; audit for unrooted-across-alloc). |
-| `crates/shen-cedar/src/aot/runtime.rs` | AOT runtime (`apply_direct`, prims). AOT frames here need conservative scanning. |
-| `crates/shen-cedar/src/aot/kernel/*.rs` | Generated (~7.8 MB); regenerated on the repr flip. |
+| `crates/shen-rust/benches/gc_spike.rs` | Collector-core blueprint (mark-sweep, Copy word). |
+| `crates/shen-rust/benches/gc_roots_aot_spike.rs` | Roots blueprint (conservative scan + aarch64 reg flush). |
+| `crates/shen-rust/src/value.rs` | `Value` enum (12 variants) + `Closure`/`ClosureKind`/`LambdaBody` + `shen_eq`. **The repr to flip (Step 3).** Add constructors/inspectors here (Step 1). |
+| `crates/shen-rust/src/cons.rs` | `ConsCell` seam — the **template** for funneling each variant. |
+| `crates/shen-rust/src/gc/` (new) | The collector module (Step 2). |
+| `crates/shen-rust/src/vm/exec.rs` | VM value stack (`stack: Vec<Value>`) + frame `upvals` — the **precise root set** (Step 4). |
+| `crates/shen-rust/src/interp/eval.rs` | Tree-walker + `Interp` (holds `Value`s → precise roots; audit for unrooted-across-alloc). |
+| `crates/shen-rust/src/aot/runtime.rs` | AOT runtime (`apply_direct`, prims). AOT frames here need conservative scanning. |
+| `crates/shen-rust/src/aot/kernel/*.rs` | Generated (~7.8 MB); regenerated on the repr flip. |
 | `crates/klcompile/src/main.rs` | KL→Rust AOT compiler — emits `Value::` (22 sites); route through constructors (Step 1); add stack-slot clearing (Step 4 if needed). |
-| `crates/shen-cedar/tests/vm_differential.rs` | VM↔tree-walker equivalence oracle — the correctness net throughout. |
+| `crates/shen-rust/tests/vm_differential.rs` | VM↔tree-walker equivalence oracle — the correctness net throughout. |
 | `scripts/kernel-tests.sh`, `scripts/gates.sh`, `scripts/kernel-aot-audit.sh` | Benchmark + CI gates. |
 
 ---

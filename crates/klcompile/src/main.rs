@@ -4,7 +4,7 @@
 //! Output: a Rust module with one `pub fn aot_<name>(...)` per defun,
 //! plus `pub fn install(interp: &mut Interp)` that registers them all.
 //!
-//! The emitted code calls `shen_cedar::aot::runtime::*` helpers for
+//! The emitted code calls `shen_rust::aot::runtime::*` helpers for
 //! anything that crosses a function boundary. Plain named calls now go
 //! through `rt::apply_direct`, which hits a raw fn pointer table for
 //! every AOT-compiled kernel function (populated at install time via
@@ -17,9 +17,9 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use shen_cedar::kl::ast::KlExpr;
-use shen_cedar::kl::parser::parse_all;
-use shen_cedar::symbol::Interner;
+use shen_rust::kl::ast::KlExpr;
+use shen_rust::kl::parser::parse_all;
+use shen_rust::symbol::Interner;
 
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().collect();
@@ -146,8 +146,8 @@ impl<'a> Codegen<'a> {
         self.out
             .push_str("    clippy::approx_constant, clippy::redundant_closure_call,\n");
         self.out.push_str("    non_snake_case)]\n\n");
-        // Paths are relative to the `shen-cedar` crate; the generated
-        // file is expected to live inside `crates/shen-cedar/src/`.
+        // Paths are relative to the `shen-rust` crate; the generated
+        // file is expected to live inside `crates/shen-rust/src/`.
         self.out.push_str("use crate::aot::runtime as rt;\n");
         self.out
             .push_str("use crate::error::{ShenError, ShenResult};\n");

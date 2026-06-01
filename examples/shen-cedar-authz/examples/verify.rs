@@ -23,8 +23,8 @@ use cedar_policy::{
     PrincipalConstraint, Request, ResourceConstraint,
 };
 
-use shen_cedar::value::Value;
 use shen_cedar_authz::{entities, schema, validate_policies, ShenHost};
+use shen_rust::value::Value;
 
 /// The Shen verifier: hierarchy-aware scope reasoning, loaded into the engine.
 /// A scope is encoded `[kind id]` with kind ∈ {kany, kin, keq}; `es` is the

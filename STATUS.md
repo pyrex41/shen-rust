@@ -1,4 +1,4 @@
-# shen-cedar Status
+# shen-rust Status
 
 ## 2026-05-27 — Phase 1 done, Phase 2 starting
 
@@ -9,7 +9,7 @@
 
 ### Phase 1 ✓
 
-- KL runtime in `crates/shen-cedar/src/`:
+- KL runtime in `crates/shen-rust/src/`:
   - `value.rs`: `Value` enum with `Rc`-shared sharing, interned `SymId`
     symbols, `Foreign(Rc<dyn Any>)` for Cedar handles, `shen_eq` with
     Int↔Float coercion.
@@ -59,7 +59,7 @@
 
 - `interp/boot.rs`: loads all 21 kernel `.kl` files in the same order as
   `shen-ocaml`, sets port metadata (`*version*` = "41.1",
-  `*implementation*` = "shen-cedar", `*language*` = "Rust", etc.), wires
+  `*implementation*` = "shen-rust", `*language*` = "Rust", etc.), wires
   `*stinput*`/`*stoutput*`/`*sterror*` to host stdio, sets
   `*home-directory*`, runs `shen.initialise`, then publishes
   `arity` + `shen.lambda-form` for every primitive on the kernel's
@@ -71,7 +71,7 @@
   absvectors, closures…) are self-evaluating per KL semantics.
   Necessary because `shen.fn-print` returns a print-vector that the
   kernel's own `eval` pipeline passes back through `eval-kl`.
-- `bin/shen-cedar/src/main.rs`: REPL that routes each input through
+- `bin/shen-rust/src/main.rs`: REPL that routes each input through
   `(eval EXPR)` — the kernel's full pipeline: macroexpand →
   find-types → process-applications → shen->kl → eval-kl.
   Print-vectors render as `(fn NAME)`; cons cells render as
@@ -83,7 +83,7 @@ All from `shen-ocaml/STATUS.md` plus a couple extras:
 
 - `(+ 1 1)` → `2`
 - `(value *version*)` → `"41.1"`
-- `(value *implementation*)` → `"shen-cedar"`
+- `(value *implementation*)` → `"shen-rust"`
 - `(let X 5 (+ X 1))` → `6`
 - `(hd (cons 1 (cons 2 ())))` → `1`
 - `(defun double (X) (* X 2))` then `(double 21)` → `42`
@@ -171,17 +171,17 @@ All gates green: `cargo build`, `cargo test`, `cargo fmt --check`,
   private fields + fallible `pub fn new(...) -> Result<Self, String>`
   constructors that enforce every `(... : verified)` premise. Output is
   rustfmt-cleaned. ~430 LOC.
-- `crates/shen-cedar/src/generated/guard_types.rs`: generated code with
+- `crates/shen-rust/src/generated/guard_types.rs`: generated code with
   one `pub struct` per datatype. Private fields + factory pattern: the
   forgery boundary is exactly this file.
-- `crates/shen-cedar/src/interp/guard_types_link.rs`: witness module
+- `crates/shen-rust/src/interp/guard_types_link.rs`: witness module
   that exercises every generated constructor + a representative
   accessor, pulled onto the boot path so any shengen-output drift
   breaks **Gate 2 (`cargo build`)** automatically.
 - `scripts/`:
   - `shengen-codegen.sh` — regenerate + rustfmt.
   - `shen-check.sh` — Gate 4 driver. Boots the kernel via the
-    `shen-cedar` binary, runs `(tc +)`, then
+    `shen-rust` binary, runs `(tc +)`, then
     `(load "specs/core.shen")`. Passes when the kernel reports
     `typechecked in N inferences`.
   - `tcb-audit.sh` — Gate 5 driver. Re-runs shengen+rustfmt into a
@@ -199,7 +199,7 @@ All gates green: `cargo build`, `cargo test`, `cargo fmt --check`,
 | 1 | `fmt + clippy`    | `cargo fmt --check` + `cargo clippy --all-targets -D warnings`. |
 | 2 | `build`           | `cargo build --workspace`. The witness module forces this gate to encode the shengen signature contract. |
 | 3 | `test`            | `cargo test --workspace` — 52 tests across 5 suites.         |
-| 4 | `shen-check`      | The shen-cedar binary itself type-checks `specs/core.shen`. 14 datatypes verified in ~168 kernel inferences. |
+| 4 | `shen-check`      | The shen-rust binary itself type-checks `specs/core.shen`. 14 datatypes verified in ~168 kernel inferences. |
 | 5 | `tcb-audit`       | Re-run shengen + rustfmt, `diff` against committed output; reject any non-allowlisted file in `generated/`. |
 
 Run them all with `scripts/gates.sh`.
@@ -219,7 +219,7 @@ redundant with the embedded `cedar-policy` library since Shen programs
 can already author and evaluate policies in-process.
 
 - `crates/klcompile/src/main.rs`: ~620 LOC. Reads a `.kl` file, parses
-  with the shared `shen-cedar` parser, emits a Rust source file with
+  with the shared `shen-rust` parser, emits a Rust source file with
   one `pub fn aot_<NAME>(interp, args) -> ShenResult<Value>` per
   `(defun NAME ...)` plus a single `pub fn install(interp)` entry point
   to register them all on top of the tree-walked defuns.
@@ -235,12 +235,12 @@ can already author and evaluate policies in-process.
   Self-tail-calls reassign the function parameters and `continue`;
   terminal expressions `break Ok(value)`. The function parameters
   carry `#[allow(unused_mut)] let mut`.
-- `crates/shen-cedar/src/aot/runtime.rs`: minimal runtime surface
+- `crates/shen-rust/src/aot/runtime.rs`: minimal runtime surface
   generated code calls into — `apply_named`, `apply_value`, `is_truthy`,
   `make_aot_closure`, `global_value`, `fn_value`.
-- `crates/shen-cedar/src/aot/generated.rs`: the committed output of
+- `crates/shen-rust/src/aot/generated.rs`: the committed output of
   running klcompile on the smoke-test KL inputs. Regenerate with
-  `cargo run -p klcompile -- INPUT.kl crates/shen-cedar/src/aot/generated.rs`.
+  `cargo run -p klcompile -- INPUT.kl crates/shen-rust/src/aot/generated.rs`.
 
 ### Phase 5 verification (4 tests in `tests/aot_smoke.rs`)
 
@@ -290,7 +290,7 @@ to 48.02× in release mode** (5000 iterations of `(loop-sum 50 0)`).
 ### 6B — Full-kernel AOT ✓
 
 Every `.kl` file in `kernel/klambda/` is compiled into a per-file Rust
-module under `crates/shen-cedar/src/aot/kernel/`. 1128 total functions
+module under `crates/shen-rust/src/aot/kernel/`. 1128 total functions
 across 21 modules; only the 4 top-of-file copyright strings are
 skipped. `crate::aot::kernel::install_all(interp)` is wired into
 `interp::boot::boot` after `register_all_metadata`, overriding each
@@ -323,7 +323,7 @@ alone; 16 brings the release build down to a few minutes.
 
 ### 6C — Kernel test runner ✓ (with known failures)
 
-`bin/shen-cedar` learned a `--kernel-tests` subcommand
+`bin/shen-rust` learned a `--kernel-tests` subcommand
 (`scripts/kernel-tests.sh`). Boots the kernel, overrides `y-or-n?` to
 always answer yes, chdirs to `kernel/tests/`, loads `harness.shen`
 first (so `*passed*`/`*failed*` get defined as `test-harness.*passed*`/
@@ -375,7 +375,7 @@ function whose body returns the literal `true`. That hit ~33 of the
 36 failures (n-queens, search, c-minus, montague, l-int, proof,
 quantifier machine, depth-first-search, secd, prolog-interp).
 
-**Fix (`crates/shen-cedar/src/value.rs`)**: extend `shen_eq` with one
+**Fix (`crates/shen-rust/src/value.rs`)**: extend `shen_eq` with one
 extra match arm that cross-equates `Bool(b)` against `Sym(k_true)` /
 `Sym(k_false)` looked up from a `OnceLock<(SymId, SymId)>` populated
 once by `Interp::new`. Single source change in `shen_eq` + a setter
@@ -399,7 +399,7 @@ returns false for closures.
 Bonus fix: whole-number floats were rendered without `.0` (`(* 5000 .8)`
 displayed as `5000` instead of `5000.0`), so spreadsheet's expected
 output `4000.0` looked like an int mismatch. Added `format_float` in
-both `primitives.rs` (for `(str X)`) and `bin/shen-cedar/src/main.rs`
+both `primitives.rs` (for `(str X)`) and `bin/shen-rust/src/main.rs`
 (for REPL display). One liner each.
 
 ### 7C — Parser: brackets + braces + REPL stack
@@ -412,10 +412,10 @@ Side-effect bugs that surfaced during 7A debugging:
   the kernel tests, but the REPL parsed `[Y | Z]` as the three atoms
   `[Y`, `|`, `Z]` and `(define foo {T --> U} …)` mangled the signature
   atoms. Added `parse_bracket_list` + standalone `{`/`}` tokenization
-  in `crates/shen-cedar/src/kl/parser.rs`.
+  in `crates/shen-rust/src/kl/parser.rs`.
 - REPL was on the default 8 MB thread stack, so any `(load …)` that
   hit deep AOT recursion (kernel reader / type-checker) overflowed.
-  Bumped to 64 MB in `bin/shen-cedar/src/main.rs` `main`.
+  Bumped to 64 MB in `bin/shen-rust/src/main.rs` `main`.
 
 ### 7D — Kernel-tests counter read
 
@@ -428,7 +428,7 @@ was never `set!`'d) is now treated as 0 rather than -1.
 ### Final result
 
 `scripts/kernel-tests.sh` exits 0 with **passed: 134, failed: 0** —
-the full upstream Shen kernel test suite passes against shen-cedar.
+the full upstream Shen kernel test suite passes against shen-rust.
 56 unit tests still pass too. Added as Gate 7 in `scripts/gates.sh`.
 
 ## 2026-05-27 — Phase 8: performance (partial)
@@ -457,7 +457,7 @@ sharing. Both common cases now skip the deep walk.
 both ports. Results:
 
 - shen-cl (SBCL interpreted): **~1.0 s**
-- shen-cedar (release): **~17.5 s** — 17× slower
+- shen-rust (release): **~17.5 s** — 17× slower
 
 See `BENCHMARKS.md` for the breakdown. Most of the gap is in the
 tree-walker (user Shen code goes through `eval-kl` → tree-walked); the

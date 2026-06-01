@@ -1,4 +1,4 @@
-# shen-cedar Performance — Handoff (2026-05-29)
+# shen-rust Performance — Handoff (2026-05-29)
 
 > **SUPERSEDED for next action (2026-05-29 later):** both GC gating spikes have
 > since PASSED (throughput 3.34× + AOT-frame roots sound — see
@@ -16,7 +16,7 @@ current-state doc; this is the action-oriented companion.
 ## TL;DR
 
 - Goal: close the ~5× gap vs shen-cl (SBCL) on `scripts/kernel-tests.sh`
-  (SBCL ~1.0 s, shen-cedar ~5.0–5.5 s warm).
+  (SBCL ~1.0 s, shen-rust ~5.0–5.5 s warm).
 - This session shipped **~+8.9%** on kernel-tests (5 commits, all on `main`,
   all gates green) and — more importantly — **measured the actual path to
   SBCL-level**: `tracing GC → word-sized Value → Cranelift JIT`, with the GC
@@ -59,8 +59,8 @@ e09ab60 perf(eval): cache vm_enabled() env lookup (kill getenv on closure-creati
 cargo build --release
 cargo test --workspace                              # 107 tests, must stay green
 cargo fmt --all --check && cargo clippy --workspace --all-targets -- -D warnings
-./target/release/shen-cedar --kernel-tests          # must print "passed: 134, failed: 0"
-SHEN_CEDAR_VM=1 ./target/release/shen-cedar --kernel-tests   # VM mode: also 134/0
+./target/release/shen-rust --kernel-tests          # must print "passed: 134, failed: 0"
+SHEN_RUST_VM=1 ./target/release/shen-rust --kernel-tests   # VM mode: also 134/0
 
 # Microbenches (harness=false, no external deps):
 cargo bench --bench vm_vs_treewalk      # VM vs tree-walker on pure user code
@@ -72,7 +72,7 @@ cargo bench --bench value_repr_spike    # tagged Value vs Rc enum; Option A vs B
   runs, report **min**-of-N. **Rebuild BOTH sides clean** (a stale `/tmp` binary
   once gave a false −2.3%).
 - Profile self-samples ≠ wall-clock (the arena lesson).
-- Profiling: `./target/release/shen-cedar --kernel-tests & ; /usr/bin/sample
+- Profiling: `./target/release/shen-rust --kernel-tests & ; /usr/bin/sample
   <pid> 6 -file /tmp/p.txt`. Use the **"Sort by top of stack"** (leaf) section,
   near the end of the file. **Ignore `__ulock_wait`** — it's the idle main
   thread joining the worker, not work.
@@ -85,13 +85,13 @@ cargo bench --bench value_repr_spike    # tagged Value vs Rc enum; Option A vs B
 
 ## What's shipped (and why VM stays opt-in)
 
-The bytecode VM (`crates/shen-cedar/src/vm/`) was rebuilt this session: A1+A2
+The bytecode VM (`crates/shen-rust/src/vm/`) was rebuilt this session: A1+A2
 gave it a single shared value-stack + in-VM call frames + real cross-function
 `TailCall` (commit `02f5de9`); it now beats the tree-walker **2.7–4× on pure
 user code** (`cargo bench --bench vm_vs_treewalk`). A3 wires `lambda`/`freeze`
 through it; A5 added a differential oracle (`tests/vm_differential.rs`).
 
-**But the VM is gated behind `SHEN_CEDAR_VM=1`** and should stay there until the
+**But the VM is gated behind `SHEN_RUST_VM=1`** and should stay there until the
 GC ladder lands. Reason (measured): `--kernel-tests` is dominated by the
 **tree-walker** running the type-checker over *loaded `.shen` files* — and the
 type-checker's hot continuations are AOT-native closures (`make_aot_closure`,
@@ -147,7 +147,7 @@ established, min-of-N paired:
 ### Step 1 — Enabling refactor (low risk, do first)
 Funnel `Value` construction/inspection through methods to shrink the literal
 surface before any repr change. **8,395 `Value::` occurrences across 35 files**
-in `crates/shen-cedar/src/`, plus 22 in `crates/klcompile/src/main.rs` (so a
+in `crates/shen-rust/src/`, plus 22 in `crates/klcompile/src/main.rs` (so a
 repr change forces **AOT regen** of `aot/kernel/*.rs`). Add/route through
 `Value::int`, `Value::cons` (exists), head/tl/is_* helpers, etc. Expect **zero**
 perf change — it's preparation; measure to confirm no regression. Keep 134/0.
@@ -189,15 +189,15 @@ arithmetic-heavy paths, no GC, incremental. Caps ~3–4× off SBCL.
 |---|---|
 | `design/perf-state-and-gc-ladder.md` | **Authoritative state + GC design.** Read first. |
 | `design/HANDOFF.md` | This file. |
-| `crates/shen-cedar/src/interp/eval.rs` | Tree-walker (dominant engine). `eval_in`, `lookup_local`, `build_closure`/`try_compile_closure` (closure cache + over-capture), `vm_enabled` (cached). |
-| `crates/shen-cedar/src/vm/{exec,compiler,opcode,bytecode}.rs` | Bytecode VM (A1/A2 done; opt-in). |
-| `crates/shen-cedar/src/value.rs` | `Value` (24B), `ClosureKind`. The repr to convert. |
-| `crates/shen-cedar/src/cons.rs` | `ConsCell` seam. |
-| `crates/shen-cedar/src/aot/{runtime,kernel/*}.rs` | AOT runtime + generated kernel (~12 MB; regen on Value change). |
+| `crates/shen-rust/src/interp/eval.rs` | Tree-walker (dominant engine). `eval_in`, `lookup_local`, `build_closure`/`try_compile_closure` (closure cache + over-capture), `vm_enabled` (cached). |
+| `crates/shen-rust/src/vm/{exec,compiler,opcode,bytecode}.rs` | Bytecode VM (A1/A2 done; opt-in). |
+| `crates/shen-rust/src/value.rs` | `Value` (24B), `ClosureKind`. The repr to convert. |
+| `crates/shen-rust/src/cons.rs` | `ConsCell` seam. |
+| `crates/shen-rust/src/aot/{runtime,kernel/*}.rs` | AOT runtime + generated kernel (~12 MB; regen on Value change). |
 | `crates/klcompile/src/main.rs` | Build-time KL→Rust AOT compiler (emits `Value::` literals; `compile_lambda`/`compile_freeze` lower closures to Rust). |
-| `crates/shen-cedar/benches/vm_vs_treewalk.rs` | VM vs tree-walker microbench. |
-| `crates/shen-cedar/benches/value_repr_spike.rs` | Tagged-Value spike (Boxed vs tagged_rc vs tagged_leak). |
-| `crates/shen-cedar/tests/vm_differential.rs` | VM↔tree-walker equivalence oracle. |
+| `crates/shen-rust/benches/vm_vs_treewalk.rs` | VM vs tree-walker microbench. |
+| `crates/shen-rust/benches/value_repr_spike.rs` | Tagged-Value spike (Boxed vs tagged_rc vs tagged_leak). |
+| `crates/shen-rust/tests/vm_differential.rs` | VM↔tree-walker equivalence oracle. |
 | `scripts/kernel-tests.sh`, `scripts/gates.sh` | The benchmark/correctness suite + CI gates. |
 
 ---

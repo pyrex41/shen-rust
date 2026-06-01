@@ -1,0 +1,23 @@
+[package]
+name = "shen-rust-bin"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "REPL and CLI for shen-rust"
+
+[[bin]]
+name = "shen-rust"
+path = "src/main.rs"
+
+[dependencies]
+shen-rust = { workspace = true }
+
+[features]
+# Pass-through to the library's Cranelift JIT (stage J1). The lib enables `jit`
+# by default, so the JIT engine is compiled into the binary out of the box; it
+# stays runtime-gated by `SHEN_RUST_JIT`. Use `--no-default-features` for a
+# Cranelift-free build. This explicit passthrough is kept for clarity / for
+# re-enabling on top of `--no-default-features`.
+jit = ["shen-rust/jit"]

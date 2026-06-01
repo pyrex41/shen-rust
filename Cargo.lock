@@ -743,7 +743,7 @@ dependencies = [
 name = "klcompile"
 version = "0.1.0"
 dependencies = [
- "shen-cedar",
+ "shen-rust",
 ]
 
 [[package]]
@@ -1286,7 +1286,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "shen-cedar"
+name = "shen-cedar-authz"
+version = "0.1.0"
+dependencies = [
+ "cedar-policy",
+ "shen-rust",
+]
+
+[[package]]
+name = "shen-rust"
 version = "0.1.0"
 dependencies = [
  "cedar-policy",
@@ -1299,18 +1307,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "shen-cedar-authz"
+name = "shen-rust-bin"
 version = "0.1.0"
 dependencies = [
- "cedar-policy",
- "shen-cedar",
-]
-
-[[package]]
-name = "shen-cedar-bin"
-version = "0.1.0"
-dependencies = [
- "shen-cedar",
+ "shen-rust",
 ]
 
 [[package]]

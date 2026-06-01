@@ -1,4 +1,4 @@
-# shen-cedar — JIT Stage J1 Implementation Handoff (tier-in + first JIT'd kernel fn)
+# shen-rust — JIT Stage J1 Implementation Handoff (tier-in + first JIT'd kernel fn)
 
 **Date**: 2026-05-29. **Standalone** — a fresh agent can execute this cold.
 **This is Stage J1 of `design/jit-productionization-plan.md`** (read that for the
@@ -44,7 +44,7 @@ the cheap place to learn that.
 
 | Thing | Location | What you do with it |
 |---|---|---|
-| `Value(u64)` tags | `crates/shen-cedar/src/value.rs:185` | fixnum `000` (bits `n<<3`), ptr `001`, sym `010`, nil `011`, bool `100`. `as_int` = `(bits as i64) >> 3`. `#[repr(transparent)]` + `Copy` → `transmute` to/from `i64` is sound (the spike does this: `w2v`/`v2w`). |
+| `Value(u64)` tags | `crates/shen-rust/src/value.rs:185` | fixnum `000` (bits `n<<3`), ptr `001`, sym `010`, nil `011`, bool `100`. `as_int` = `(bits as i64) >> 3`. `#[repr(transparent)]` + `Copy` → `transmute` to/from `i64` is sound (the spike does this: `w2v`/`v2w`). |
 | `Value::to_gc`/`from_gc` | `value.rs:211/217` | `pub(crate)` — fine if your JIT engine lives *in* the crate (it must, see §3). |
 | Direct-call table | `interp/eval.rs:112` `aot_direct: Vec<Option<DirectFn>>` | **Tier-in point for J1.** `DirectFn = fn(&mut Interp,&[Value])->ShenResult<Value>` (`eval.rs:44`). `register_aot_direct(name, f)` (`eval.rs:337`), `get_aot_direct(sym)` (`eval.rs:348`). |
 | `call_or_apply` | `aot/runtime.rs:56` | the hot dispatch; on the direct-table path it already routes named calls to `aot_direct`. **J1 needs no change here** (you register a shim DirectFn). A `ClosureKind::Jit` arm here is **J2** (JIT'ing closure *values*). |
@@ -53,7 +53,7 @@ the cheap place to learn that.
 | GC heap | `gc/{mod,heap,node}.rs` | non-moving, **grow-only in Step 3** (collection OFF). J1 inherits this → **J1 has zero GC-root exposure** if you JIT a *named* fn (no captured `Value`s); the safepoint problem is J3. Keep it that way. |
 | klcompile | `crates/klcompile/src/main.rs` | how `.kl` lowers to Rust today; J2's general codegen mirrors it. Read for the form→`rt::` mapping when you get to J2. |
 | Differential oracle pattern | `tests/vm_differential.rs` | copy its structure for the J1 JIT oracle. |
-| Spike (working Cranelift) | `crates/shen-cedar/benches/jit_spike.rs` | lift the engine scaffolding. |
+| Spike (working Cranelift) | `crates/shen-rust/benches/jit_spike.rs` | lift the engine scaffolding. |
 
 ---
 
@@ -65,11 +65,11 @@ Add a `jit` cargo feature and put `cranelift-codegen/-frontend/-jit/-module` +
 `cranelift-native` under it (optional deps). Gate all JIT code with
 `#[cfg(feature = "jit")]`. Rationale: non-JIT builds stay lean; gates can run
 both with and without the feature; binary-size/build-time stays opt-in. Decide
-whether the default `shen-cedar` binary enables `jit` (probably yes once J1 is
+whether the default `shen-rust` binary enables `jit` (probably yes once J1 is
 green, but land it off-by-default first so gates are bisectable).
 
 ### 3b. A `JitEngine` that owns the module + code cache
-New module `crates/shen-cedar/src/jit/` (feature-gated). It owns:
+New module `crates/shen-rust/src/jit/` (feature-gated). It owns:
 - the long-lived `JITModule` (**must outlive every finalized code pointer** — a
   dropped `JITModule` frees the code → UB; this is why the engine lives in the
   crate / on `Interp`, not in a bench `main`),
@@ -137,8 +137,8 @@ fn jit_shim_<name>(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
 Install it with `interp.register_aot_direct("<name>", jit_shim_<name>)` during
 boot, **after** `aot::kernel::install_all` (so it overrides the AOT version for
 that one name), behind `#[cfg(feature="jit")]` + an env guard
-(e.g. `SHEN_CEDAR_JIT=1`) so it's trivially A/B-toggleable like the VM
-(`SHEN_CEDAR_VM`). This reuses the exact hot path the kernel already takes
+(e.g. `SHEN_RUST_JIT=1`) so it's trivially A/B-toggleable like the VM
+(`SHEN_RUST_VM`). This reuses the exact hot path the kernel already takes
 (`apply_direct` → `get_aot_direct` → indirect call) — that's the whole point of
 tiering in here.
 
@@ -177,6 +177,6 @@ gates.
 ## 6. First move
 Lift `JitEngine` from the spike, feature-gate it, wire the `pending_error` slot +
 `rtj_*` helpers for a **total** numeric/list leaf, JIT that one function, register
-the shim behind `SHEN_CEDAR_JIT=1`, get the differential oracle green, then run
+the shim behind `SHEN_RUST_JIT=1`, get the differential oracle green, then run
 `scripts/cross-port-bench.sh` with the toggle on vs off and confirm no regression.
 Report the diff and the toggle-on/off ratio before expanding to a second function.

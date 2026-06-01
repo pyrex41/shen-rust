@@ -1,4 +1,4 @@
-# shen-cedar Performance: Current State & the GC Ladder to SBCL-Level
+# shen-rust Performance: Current State & the GC Ladder to SBCL-Level
 
 **Status**: Authoritative current-state doc (2026-05-29). Supersedes the
 premise of `execution-engine-roadmap.md` — that doc assumed the bytecode VM
@@ -12,7 +12,7 @@ was the lever for kernel-tests; measurement since has shown otherwise (see §3).
 ## 1. The goal and the honest gap
 
 Close the gap vs **shen-cl (SBCL)** on `scripts/kernel-tests.sh`. SBCL runs it
-in **~1.0 s**; shen-cedar runs it in **~5.0–5.5 s** warm (machine variance
+in **~1.0 s**; shen-rust runs it in **~5.0–5.5 s** warm (machine variance
 ±5–12%; absolute numbers drift with thermal state). So **~5× off**.
 
 This doc records what is *measured*, what is *shipped*, what is *dead*, and the
@@ -36,7 +36,7 @@ engine modes, fmt+clippy+tests green.
 
 **Cumulative kernel-tests improvement this session: ~+8.9%** (session-start
 `02f5de9` 5.51s → 5.01s, 10 alternating pairs). The VM remains **opt-in**
-(`SHEN_CEDAR_VM=1`): on the AOT-dominated kernel-tests, runtime-compiling the
+(`SHEN_RUST_VM=1`): on the AOT-dominated kernel-tests, runtime-compiling the
 minority of dynamic closures doesn't beat the tree-walker; the VM's big win is
 for user-defined Shen code run via `eval`.
 
@@ -138,7 +138,7 @@ This is the hard, TCB-growing subsystem. Decisions, with the constraints the
 codebase imposes:
 
 ### 6a. Conversion surface (measured)
-- **8,395 `Value::` occurrences across 35 files** in `crates/shen-cedar/src/`.
+- **8,395 `Value::` occurrences across 35 files** in `crates/shen-rust/src/`.
 - **22 `Value::` sites in `crates/klcompile/src/main.rs`** → the AOT codegen
   emits `Value::` literals, so **AOT regen is required** and the generated
   `aot/kernel/*.rs` (~12 MB) changes. The `ConsCell` seam (`cons.rs`) was built

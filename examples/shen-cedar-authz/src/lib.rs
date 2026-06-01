@@ -10,13 +10,13 @@ use std::str::FromStr;
 
 use cedar_policy::{Entities, PolicySet, Schema, ValidationMode, Validator};
 
-use shen_cedar::error::ShenError;
-use shen_cedar::interp::boot::boot;
-use shen_cedar::interp::eval::Interp;
-use shen_cedar::kl::ast::KlExpr;
-use shen_cedar::kl::parser::{parse_all, parse_one};
-use shen_cedar::symbol::SymId;
-use shen_cedar::value::Value;
+use shen_rust::error::ShenError;
+use shen_rust::interp::boot::boot;
+use shen_rust::interp::eval::Interp;
+use shen_rust::kl::ast::KlExpr;
+use shen_rust::kl::parser::{parse_all, parse_one};
+use shen_rust::symbol::SymId;
+use shen_rust::value::Value;
 
 /// The Cedar schema, embedded at compile time — the contract both the
 /// hand-written (`verify`) and generated (`generate`) policy sets validate
@@ -48,7 +48,7 @@ pub struct ShenHost {
 impl ShenHost {
     /// Boot the kernel with the bytecode VM enabled (served mode).
     pub fn new() -> Result<Self, String> {
-        shen_cedar::interp::eval::enable_vm();
+        shen_rust::interp::eval::enable_vm();
         let mut interp = Interp::new();
         boot(&mut interp).map_err(|e| format!("shen boot: {e}"))?;
         Ok(Self { interp })

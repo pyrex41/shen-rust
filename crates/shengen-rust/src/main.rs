@@ -311,7 +311,7 @@ fn gen_rust(defs: &[DatatypeDef]) -> String {
     out.push_str("//! Auto-generated guard types from `specs/core.shen`.\n");
     out.push_str("//!\n");
     out.push_str("//! DO NOT EDIT — regenerate with `cargo run -p shengen-rust -- \\\n");
-    out.push_str("//!   specs/core.shen crates/shen-cedar/src/generated/guard_types.rs`.\n");
+    out.push_str("//!   specs/core.shen crates/shen-rust/src/generated/guard_types.rs`.\n");
     out.push_str("//!\n");
     out.push_str("//! Every struct here uses private fields and a fallible public\n");
     out.push_str("//! constructor that enforces the corresponding sequent's `: verified`\n");

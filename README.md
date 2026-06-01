@@ -1,4 +1,4 @@
-# shen-cedar
+# shen-rust
 
 A port of the [Shen](https://shenlanguage.org/) language hosted in Rust,
 with first-class [AWS Cedar](https://www.cedarpolicy.com/) integration.
@@ -17,9 +17,9 @@ evaluate, and (eventually) verify Cedar policies as first-class values.
 ## Layout
 
 ```
-crates/shen-cedar/   The port itself (KL runtime, kernel boot, Cedar bridge)
+crates/shen-rust/   The port itself (KL runtime, kernel boot, Cedar bridge)
 crates/shengen-rust/ Codegen tool: Shen sequent-calc specs -> Rust guards
-bin/shen-cedar/      REPL / CLI binary
+bin/shen-rust/      REPL / CLI binary
 kernel/              Vendored ShenOSKernel-41.1 (klambda + tests)
 specs/               Backpressure specs in Shen sequent-calc syntax
 ```

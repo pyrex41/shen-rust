@@ -9,10 +9,10 @@
 
 ## 1. Context and Motivation
 
-shen-cedar currently has two execution paths for KL:
+shen-rust currently has two execution paths for KL:
 
-1. **AOT to Rust** (`klcompile` + `crates/shen-cedar/src/aot/kernel/`) — applied to the entire vendored kernel at build time. This path is already quite strong (direct calls via `apply_direct`, primitive inlining, `register_aot_direct` table, etc.).
-2. **Tree-walking interpreter** (`Interp::eval` / `eval_in` in `crates/shen-cedar/src/interp/eval.rs`) — used for everything that arrives at runtime via `eval-kl`, `(load ...)`, the REPL, or Shen source loaded after boot (type checker, YACC, sequent calculus, prolog, reader extensions, user code, etc.).
+1. **AOT to Rust** (`klcompile` + `crates/shen-rust/src/aot/kernel/`) — applied to the entire vendored kernel at build time. This path is already quite strong (direct calls via `apply_direct`, primitive inlining, `register_aot_direct` table, etc.).
+2. **Tree-walking interpreter** (`Interp::eval` / `eval_in` in `crates/shen-rust/src/interp/eval.rs`) — used for everything that arrives at runtime via `eval-kl`, `(load ...)`, the REPL, or Shen source loaded after boot (type checker, YACC, sequent calculus, prolog, reader extensions, user code, etc.).
 
 Recent work (Scope borrow/owned, `SmallVec` argument vectors, direct AOT table, hot overrides) has improved the interpreter, but the fundamental model remains a tree walker over `Rc<Value>` with trampolined control flow.
 
@@ -36,7 +36,7 @@ This is the central scoping question.
   These are large bodies of *Shen source* that flow through `eval-kl` even in non-interactive use.
 
 - **Cedar value proposition**:
-  The distinguishing feature of shen-cedar is first-class Cedar policy authoring and evaluation from within Shen. Dynamic generation, transformation, and evaluation of policies is inherently a *runtime* code execution problem. If this path is 5–10× slower than a mature port, the "use Shen to build and reason about Cedar policies" story is materially weakened.
+  The distinguishing feature of shen-rust is first-class Cedar policy authoring and evaluation from within Shen. Dynamic generation, transformation, and evaluation of policies is inherently a *runtime* code execution problem. If this path is 5–10× slower than a mature port, the "use Shen to build and reason about Cedar policies" story is materially weakened.
 
 - **Load-time and library loading**:
   `(load "foo.shen")` and `(eval ...)` go through the full Shen → KL → `eval-kl` pipeline. Any non-trivial Shen program or library pays this cost.
@@ -44,7 +44,7 @@ This is the central scoping question.
 - **Project philosophy (backpressure / shengen)**:
   This project emphasizes robustness, formal methods, and a small trusted computing base. Having a high-performance "first-class" execution path only for statically known kernel code, while everything dynamic is second-class and slow, creates an uncomfortable split. It also means that interesting uses of the language (especially anything involving generated code) cannot easily benefit from the performance characteristics we advertise.
 
-**Conclusion**: Even if raw REPL interactivity is a minor use case, dynamic KL execution speed is material to the Cedar integration story and to the credibility of shen-cedar as a serious host. We do not need to match shen-cl on every micro-benchmark, but we need a credible path to "good" dynamic performance without compromising robustness.
+**Conclusion**: Even if raw REPL interactivity is a minor use case, dynamic KL execution speed is material to the Cedar integration story and to the credibility of shen-rust as a serious host. We do not need to match shen-cl on every micro-benchmark, but we need a credible path to "good" dynamic performance without compromising robustness.
 
 ## 3. Evaluation of the Two Favored Paths
 
@@ -191,7 +191,7 @@ Any new execution engine increases the trusted surface. This project already has
 
 - shen-go `thoughts/shen-go-compiler-design.md` and `kl/{vm,compiler,types}.go`
 - Neil Mitchell's "Writing Fast Interpreters" (closure trees)
-- Current `crates/shen-cedar/src/interp/eval.rs` and `aot/runtime.rs`
+- Current `crates/shen-rust/src/interp/eval.rs` and `aot/runtime.rs`
 - shen-c `src/c/evaluator.c` (tail call lowering via `c.loop` / `c.recur` + `setjmp`)
 - Wasmtime embedding documentation and Cranelift
 

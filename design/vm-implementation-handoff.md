@@ -19,7 +19,7 @@ later session) can pick it up cleanly.
 |---|---|---|
 | Original baseline | ~17.5s | before any work |
 | After Phase 1a (committed) | **~5.5s** | current default (tree-walker) |
-| VM opt-in (`SHEN_CEDAR_VM=1`) | ~5.9s | **slower** — see §4 |
+| VM opt-in (`SHEN_RUST_VM=1`) | ~5.9s | **slower** — see §4 |
 
 shen-cl reference: ~1.0s. Target: sub-2s.
 
@@ -28,7 +28,7 @@ shen-cl reference: ~1.0s. Target: sub-2s.
 > values from those runs. Re-measure on a quiet machine.
 
 All 134 kernel tests pass; all 8 gates green — in BOTH the default
-(tree-walker) and `SHEN_CEDAR_VM=1` (bytecode) configurations.
+(tree-walker) and `SHEN_RUST_VM=1` (bytecode) configurations.
 
 ---
 
@@ -46,16 +46,16 @@ d6ac249 vm(B3b): MakeClosure + LoadUpval
 22f6a4f vm(B1): bytecode VM skeleton
 a3e1206 perf: free-variable analysis for lambda/freeze captures (Phase 1a+1d)
 c6421a5 docs: update PERFORMANCE.md
-e6e861f baseline: shen-cedar at 17.5s → ~5.7s
+e6e861f baseline: shen-rust at 17.5s → ~5.7s
 ```
 
 **The working tree is dirty with TWO intertwined, uncommitted features**
 (`git status`):
-- `crates/shen-cedar/src/interp/eval.rs`
-- `crates/shen-cedar/src/vm/exec.rs`
-- `crates/shen-cedar/src/vm/compiler.rs`
-- `crates/shen-cedar/src/error.rs`
-- `crates/shen-cedar/tests/budget_cancel.rs` (new, untracked)
+- `crates/shen-rust/src/interp/eval.rs`
+- `crates/shen-rust/src/vm/exec.rs`
+- `crates/shen-rust/src/vm/compiler.rs`
+- `crates/shen-rust/src/error.rs`
+- `crates/shen-rust/tests/budget_cancel.rs` (new, untracked)
 - `design/` (this dir, untracked — the strategy doc + this handoff)
 
 These are **not committed** because they mix two separate efforts that
@@ -65,7 +65,7 @@ should land as separate commits:
 - `eval.rs`: `do_defun` now tries `vm::compile_fn` and registers a
   `ClosureKind::Bytecode` on success, falling back to tree-walked
   `ClosureKind::Lambda` on compiler error. Gated by `vm_enabled()`.
-- `vm_enabled()` is **opt-in** (`SHEN_CEDAR_VM=1`), NOT default — because
+- `vm_enabled()` is **opt-in** (`SHEN_RUST_VM=1`), NOT default — because
   the VM is currently slower (see §4).
 - `eval.rs` `tail_apply`/`call_strict` + `aot/runtime.rs` `call_or_apply`
   dispatch the `Bytecode` arm into `vm::exec` (these parts ARE in the
@@ -86,7 +86,7 @@ should land as separate commits:
 **Recommended commit split** (use `git add -p` to separate the two within
 `eval.rs`):
 1. Commit (B) budget/cancellation first (it's orthogonal and self-contained).
-2. Commit (A) as `vm(B5): wire bytecode into do_defun (opt-in via SHEN_CEDAR_VM)`.
+2. Commit (A) as `vm(B5): wire bytecode into do_defun (opt-in via SHEN_RUST_VM)`.
 
 Do NOT `git add -A` — it would fuse both features into one commit.
 
@@ -94,9 +94,9 @@ Do NOT `git add -A` — it would fuse both features into one commit.
 
 ## 3. What the VM can do today (Phase 2: B1–B5)
 
-Module: `crates/shen-cedar/src/vm/` — `opcode.rs`, `bytecode.rs`,
+Module: `crates/shen-rust/src/vm/` — `opcode.rs`, `bytecode.rs`,
 `compiler.rs`, `exec.rs`. **30 unit tests, all passing**
-(`cargo test -p shen-cedar --lib vm::`).
+(`cargo test -p shen-rust --lib vm::`).
 
 Implemented and tested:
 - **All KL special forms**: `if`, `let` (with shadowing), `cond`, `do`,
@@ -162,9 +162,9 @@ to make the VM beat the tree-walker independent of Phase 3.
    only the helpers + ~30-50 hand-written match arms change. Phase it:
    sibling type → switch `rt::` helpers → convert matches file-by-file →
    retire the enum.
-3. **Re-measure VM** with `SHEN_CEDAR_VM=1` after Phase 3. If it now wins,
+3. **Re-measure VM** with `SHEN_RUST_VM=1` after Phase 3. If it now wins,
    flip `vm_enabled()` back to default-on and do B6 (retire the 1 GB
-   worker-thread stack in `bin/shen-cedar/src/main.rs`, since
+   worker-thread stack in `bin/shen-rust/src/main.rs`, since
    `SelfTailCall` + a future cross-tier `TailCall` remove the deep-Rust-
    stack need) and B7 (decide whether klcompile should emit bytecode
    instead of Rust).
@@ -178,16 +178,16 @@ to make the VM beat the tree-walker independent of Phase 3.
 ## 6. How to verify anything
 
 - Full gate suite: `bash scripts/gates.sh` (8 gates; must be ALL GREEN).
-- VM unit tests: `cargo test --release -p shen-cedar --lib vm::`.
-- Timing: `cargo build --release -p shen-cedar-bin` then 3 warm runs of
-  `./target/release/shen-cedar --kernel-tests` (read the final
-  "run time: N secs" line). Compare default vs `SHEN_CEDAR_VM=1`.
+- VM unit tests: `cargo test --release -p shen-rust --lib vm::`.
+- Timing: `cargo build --release -p shen-rust-bin` then 3 warm runs of
+  `./target/release/shen-rust --kernel-tests` (read the final
+  "run time: N secs" line). Compare default vs `SHEN_RUST_VM=1`.
 - Hotspot profile (macOS): background the binary, then
   `/usr/bin/sample <pid> 8 1 -file /tmp/prof.txt -mayDie`; read the
   "Sort by top of stack" section (ignore `__ulock_wait` — that's the
   idle main thread joining the worker).
 - Codegen changes require `scripts/codegen-kernel-aot.sh` to regenerate
-  `crates/shen-cedar/src/aot/kernel/*.rs`; Gate 6 byte-diffs them.
+  `crates/shen-rust/src/aot/kernel/*.rs`; Gate 6 byte-diffs them.
 
 ---
 

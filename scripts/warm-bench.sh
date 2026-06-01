@@ -8,7 +8,7 @@
 # measures neutral there; this harness amortizes it (load once, serve N×) to
 # test whether the VM's per-body execution win shows through at the suite level.
 #
-# The engine is process-global (`SHEN_CEDAR_VM` read once into a OnceCell), so
+# The engine is process-global (`SHEN_RUST_VM` read once into a OnceCell), so
 # we run two processes and INTERLEAVE them (tree, vm, tree, vm, …) across PAIRS
 # rounds so both share thermal state. The bench itself reports a per-process
 # min-of-8 internally; we take the min across rounds on top of that.
@@ -30,7 +30,7 @@ warm_min() { grep -E "warm exec" "$1" | sed -E 's/.*per-batch min ([0-9.]+) ms.*
 best_tree=""; best_vm=""
 for r in $(seq 1 "$PAIRS"); do
     "$BIN"               >/tmp/warm-tree.log 2>/dev/null
-    SHEN_CEDAR_VM=1 "$BIN" >/tmp/warm-vm.log   2>/dev/null
+    SHEN_RUST_VM=1 "$BIN" >/tmp/warm-vm.log   2>/dev/null
     t=$(warm_min /tmp/warm-tree.log); v=$(warm_min /tmp/warm-vm.log)
     printf "round %d:  tree %7.4f ms/batch   vm %7.4f ms/batch   (%.2fx)\n" "$r" "$t" "$v" \
         "$(echo "$t / $v" | bc -l)"

@@ -3,7 +3,7 @@
 **Status**: Plan — for decision
 **Date**: 2026-05
 **Supersedes** the Path-C/Path-D evaluation in `runtime-execution-strategy.md` §3–4 with measured data.
-**Related**: PERFORMANCE.md, value-representation.md, `crates/shen-cedar/src/vm/*`, `crates/klcompile`
+**Related**: PERFORMANCE.md, value-representation.md, `crates/shen-rust/src/vm/*`, `crates/klcompile`
 
 ---
 
@@ -94,14 +94,14 @@ place (true cross-function TCO → **retires the 1 GB stack hack**). Calls to
 those are direct calls, not re-dispatch.
 
 ### A3 — Wire the VM into the hot path
-*Defect:* `do_defun` uses the VM only under `SHEN_CEDAR_VM=1`; `build_lambda`
+*Defect:* `do_defun` uses the VM only under `SHEN_RUST_VM=1`; `build_lambda`
 /`build_freeze` (`eval.rs:733/759`) **always** build tree-walked
 `ClosureKind::Lambda`. The type-checker's hot continuations are exactly
 `freeze`/`lambda` — so today they never touch the VM.
 
 *Fix:* compile the body to a `BytecodeFn` at closure-creation time in
 `build_lambda`/`build_freeze`/`do_defun`, producing `ClosureKind::Bytecode`.
-Once A1+A2 make the VM win, **remove the `SHEN_CEDAR_VM` flag** and make it the
+Once A1+A2 make the VM win, **remove the `SHEN_RUST_VM` flag** and make it the
 default for all dynamic code. Keep `ClosureKind::Lambda` only as the fallback.
 
 ### A4 — Compile-time captures (kill `collect_used_syms`)

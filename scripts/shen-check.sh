@@ -1,5 +1,5 @@
 #!/bin/bash
-# Gate 4: type-check specs through the shen-cedar binary itself.
+# Gate 4: type-check specs through the shen-rust binary itself.
 #
 # Boots ShenOSKernel-41.1, turns on the type checker, loads the spec
 # file. The kernel reports `typechecked in N inferences` on success;
@@ -18,7 +18,7 @@ fi
 echo "shen-check: type-checking $SPEC"
 
 output=$(printf '(tc +)\n(load "%s")\n' "$SPEC" \
-    | cargo run --quiet --bin shen-cedar 2>&1)
+    | cargo run --quiet --bin shen-rust 2>&1)
 echo "$output" | tail -30
 
 if echo "$output" | grep -q "typechecked in"; then

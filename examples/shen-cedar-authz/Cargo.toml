@@ -19,5 +19,5 @@ name = "shen_cedar_authz"
 path = "src/lib.rs"
 
 [dependencies]
-shen-cedar = { workspace = true }
+shen-rust = { workspace = true }
 cedar-policy = { workspace = true }

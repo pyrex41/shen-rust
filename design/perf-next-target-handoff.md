@@ -1,4 +1,4 @@
-# shen-cedar — Perf next-target handoff (post-J2)
+# shen-rust — Perf next-target handoff (post-J2)
 
 **Date**: 2026-05-30. **Standalone.** Read after `design/jit-productionization-plan.md`
 §5 (the J2 closure-JIT falsification) and `design/perf-state-and-gc-ladder.md`
@@ -15,8 +15,8 @@ cross-port scoreboard uses (paired, min-of-3, all 134/0):
 
 | Engine (vs tree-walk baseline ≈ 3.58 s) | kernel-tests | Verdict |
 |---|---|---|
-| **Bytecode VM** (`SHEN_CEDAR_VM=1`, compiles closures **and** defuns) | ≈ 3.87 s | **neutral / slightly slower** |
-| **Closure JIT** (`SHEN_CEDAR_JIT=1`, J2 Slice A) | ≈ 4.13 s | **−15 % regression** |
+| **Bytecode VM** (`SHEN_RUST_VM=1`, compiles closures **and** defuns) | ≈ 3.87 s | **neutral / slightly slower** |
+| **Closure JIT** (`SHEN_RUST_JIT=1`, J2 Slice A) | ≈ 4.13 s | **−15 % regression** |
 
 The VM's "1.3–4× on user code" (memory) is on closure-heavy *micro*-benchmarks;
 on the kernel-tests aggregate it washes out. The JIT loses outright (J2 §5: 0 %
@@ -124,7 +124,7 @@ The engine-swap avenue is exhausted *for the one-shot metric* (VM neutral, JIT
   rethink (**D**) — AOT-native-compiling loaded code is the SBCL-shaped answer the
   arch doc rejected; revisit only with eyes open.
 - **If the goal is a warm/served workload:** **ship the VM** — flip
-  `SHEN_CEDAR_VM` to default-on, gate it behind a fresh warm cross-port harness
+  `SHEN_RUST_VM` to default-on, gate it behind a fresh warm cross-port harness
   (type-check a corpus N× in one process), confirm 134/0 + the 1.3–4× holds at the
   suite level, and retire the JIT-for-closures line for good.
 
@@ -156,8 +156,8 @@ then executed and the thesis **CONFIRMED** (commit `fe1fe57`):
   (2) "warm = reload N×" (above).
 - **How it shipped (user decision):** *not* default-on globally — the bare
   default stays tree-walk so the one-shot cross-port ratio doesn't regress.
-  Instead a **served entrypoint**: `shen-cedar --served` calls
-  `interp::eval::enable_vm()` (programmatic `SHEN_CEDAR_VM=1`), recommended for
+  Instead a **served entrypoint**: `shen-rust --served` calls
+  `interp::eval::enable_vm()` (programmatic `SHEN_RUST_VM=1`), recommended for
   long-running / served sessions. 134/0 under the flag.
 
 **Still open (NOT done — deliberate):** the handoff's "retire the
@@ -169,12 +169,12 @@ roots; ~2–3 % speed but real memory value — the only remaining greenlit rung
 
 ## 4. State / anchors
 - Warm/served harness: `cargo run --release --bench warm_typecheck` (tree) vs
-  `SHEN_CEDAR_VM=1 …` (VM); paired via `scripts/warm-bench.sh`. Served
-  entrypoint: `shen-cedar --served`. VM coverage counters: `vm::stats`.
-- J2 closure-JIT committed off-by-default (`1cf0672`): `SHEN_CEDAR_JIT=1` +
-  `SHEN_CEDAR_JIT_STATS=1` for the diagnostics; `tests/jit_closure_differential.rs`
+  `SHEN_RUST_VM=1 …` (VM); paired via `scripts/warm-bench.sh`. Served
+  entrypoint: `shen-rust --served`. VM coverage counters: `vm::stats`.
+- J2 closure-JIT committed off-by-default (`1cf0672`): `SHEN_RUST_JIT=1` +
+  `SHEN_RUST_JIT_STATS=1` for the diagnostics; `tests/jit_closure_differential.rs`
   is the oracle; `benches/jit_spike.rs` records where the JIT *does* win.
-- VM: `SHEN_CEDAR_VM=1`, `tests/vm_differential.rs` is its oracle.
+- VM: `SHEN_RUST_VM=1`, `tests/vm_differential.rs` is its oracle.
 - Measure with `scripts/cross-port-bench.sh` (the honest SBCL ratio) — but see §2.A
   on whether one-shot is the right shape. Gates: `scripts/gates.sh` (134/0 both
   engine modes + fmt/clippy/kernel-aot-audit).

@@ -1,4 +1,4 @@
-# shen-cedar benchmarks
+# shen-rust benchmarks
 
 Numbers from `aot_perf_smoke` and `aot_kernel_bench`, run on the same
 machine in release mode (`cargo test --release`). Results vary 10-20%
@@ -6,7 +6,7 @@ across runs; what matters is the order of magnitude.
 
 ## Hot-loop synthetic (`aot_perf_smoke`)
 
-Source: `crates/shen-cedar/tests/aot_smoke.rs`. Runs `(loop-sum 50 0)`
+Source: `crates/shen-rust/tests/aot_smoke.rs`. Runs `(loop-sum 50 0)`
 5000 times. `loop-sum` is a 2-arg self-tail-recursive integer loop —
 the simplest thing that exercises arithmetic primitives and tail
 dispatch without touching reader, pattern matcher, or globals.
@@ -33,7 +33,7 @@ the gap is mostly the `#[inline(always)]` annotation doing its job.
 
 ## End-to-end kernel call (`aot_kernel_bench`)
 
-Source: `crates/shen-cedar/tests/aot_kernel_bench.rs`. Marked
+Source: `crates/shen-rust/tests/aot_kernel_bench.rs`. Marked
 `#[ignore]`; run with `cargo test --release --test aot_kernel_bench --
 --ignored --nocapture`.
 
@@ -48,7 +48,7 @@ on user-defined Shen is already captured by `aot_perf_smoke` above.
 ## Kernel test suite (`scripts/kernel-tests.sh`)
 
 The upstream Shen kernel suite (`kernel/tests/kerneltests.shen`) runs
-end-to-end against shen-cedar via `bin/shen-cedar --kernel-tests`.
+end-to-end against shen-rust via `bin/shen-rust --kernel-tests`.
 
 Current result: **98 passed, 36 failed** (~73% pass rate). The
 failures are real bugs in our port, mostly in the
@@ -60,7 +60,7 @@ Wall time: ~80–115 s in dev mode (depends on system load). Release
 mode is faster but rarely run against the kernel suite since dev mode
 is good enough for finding the bugs.
 
-## Cross-port: shen-cl interpreted vs shen-cedar release
+## Cross-port: shen-cl interpreted vs shen-rust release
 
 `scripts/cross-port-bench.sh` runs `kernel/tests/runme.shen` (the
 upstream Shen kernel test suite, 134 tests) through both ports on the
@@ -69,10 +69,10 @@ same machine. Apple M-series, single thread.
 | Port                       | Wall time | Per-test |
 |----------------------------|----------:|---------:|
 | shen-cl (SBCL interpreted) |    ~1.0 s |   ~7 ms |
-| shen-cedar (release)       |   ~17.5 s |  ~130 ms |
-| shen-cedar (dev)           |   ~117 s  |  ~870 ms |
+| shen-rust (release)       |   ~17.5 s |  ~130 ms |
+| shen-rust (dev)           |   ~117 s  |  ~870 ms |
 
-shen-cedar is currently **~17× slower** than shen-cl on the full kernel
+shen-rust is currently **~17× slower** than shen-cl on the full kernel
 test workload. Some context:
 
 - On a single file load (no type-checking), e.g.
@@ -88,7 +88,7 @@ test workload. Some context:
 
 shen-cl benefits from decades of SBCL optimization — static dispatch
 through Common Lisp's package system, native register-based calling
-conventions, no per-call HashMap probes. shen-cedar's tree-walked Shen
+conventions, no per-call HashMap probes. shen-rust's tree-walked Shen
 code (most user code, including the test files) pays:
 
 - A `HashMap<SymId, Value>` probe on every function call.

@@ -2,7 +2,7 @@
 
 **Status**: Draft → in implementation (Phase 1)
 **Date**: 2026-05
-**Related**: PERFORMANCE.md, design/runtime-execution-strategy.md, `crates/shen-cedar/src/value.rs`
+**Related**: PERFORMANCE.md, design/runtime-execution-strategy.md, `crates/shen-rust/src/value.rs`
 
 ---
 
@@ -91,7 +91,7 @@ free list instead of calling `malloc`. Ref-count semantics (shared sub-structure
   tests, and **Miri** on those unit tests.
 - **Bonus available**: an *iterative* spine-drop (flatten the linked-list drop
   instead of recursing) would also let us delete the 1 GB worker-stack hack in
-  `bin/shen-cedar/src/main.rs`. Deferred to a follow-up to keep the first cut
+  `bin/shen-rust/src/main.rs`. Deferred to a follow-up to keep the first cut
   semantically identical to today.
 
 ### Option B — Shrink `Value` 24 B → 16 B *(safe, complementary, later)*

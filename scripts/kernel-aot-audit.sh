@@ -5,13 +5,13 @@
 # drifted from what klcompile would produce now (someone hand-edited a
 # generated file, or klcompile changed without regenerating).
 #
-# Also rejects any file in crates/shen-cedar/src/aot/kernel/ that isn't
+# Also rejects any file in crates/shen-rust/src/aot/kernel/ that isn't
 # either mod.rs or a regenerable `<basename>.rs`.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-KERNEL_AOT_DIR="crates/shen-cedar/src/aot/kernel"
+KERNEL_AOT_DIR="crates/shen-rust/src/aot/kernel"
 SCRATCH=$(mktemp -d -t kernel-aot-XXXXXX)
 trap "rm -rf $SCRATCH" EXIT
 
