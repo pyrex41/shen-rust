@@ -21,11 +21,14 @@ cranelift-module = { version = "0.132", optional = true }
 cranelift-native = { version = "0.132", optional = true }
 
 [features]
-# `jit` is on by default (J1 proven green): the Cranelift engine is compiled in,
-# but the tier-in is still gated at runtime by `SHEN_RUST_JIT`, so the default
-# binary behaves identically until the var is set. Build `--no-default-features`
-# for a lean, Cranelift-free crate.
-default = ["jit"]
+# `jit` is OFF by default. The Cranelift JIT (`src/jit/`) is an experimental,
+# paused tier — proven on aarch64 but falsified for the type-checker's closures
+# (`design/jit-productionization-plan.md` §5), and its codegen is aarch64-only
+# (it panics in Cranelift's x86-64 emitter). Off-by-default keeps the standard
+# build lean, portable, and Cranelift-free, and keeps `cargo test --workspace`
+# cross-platform. Enable with `--features jit`, then gate at runtime with
+# `SHEN_RUST_JIT=1`.
+default = []
 # Compile the Cranelift JIT engine (`src/jit/`) into the crate.
 jit = [
     "dep:cranelift-codegen",
