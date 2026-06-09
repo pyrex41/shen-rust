@@ -110,3 +110,7 @@ name = "jit_winA_spike"
 harness = false
 required-features = ["jit"]
 
+
+[[bench]]
+name = "normal_form_aot"
+harness = false
