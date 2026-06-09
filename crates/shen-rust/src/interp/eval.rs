@@ -418,6 +418,11 @@ impl Interp {
     /// direct call path. Called from generated AOT installers in addition
     /// to the normal register_native so that apply_direct can bypass the
     /// Closure Rc + kind matching entirely.
+    ///
+    /// Install order is load-bearing: callers must `register_native` FIRST
+    /// so the env closure exists when the direct entry goes live (the
+    /// direct table is a mirror of env.functions, never the other way
+    /// around; see `clear_aot_direct`).
     pub fn register_aot_direct(&mut self, name: &str, f: DirectFn) {
         let sym = self.intern(name);
         let idx = sym.0 as usize;
@@ -431,6 +436,23 @@ impl Interp {
     #[inline]
     pub fn get_aot_direct(&self, sym: SymId) -> Option<DirectFn> {
         self.aot_direct.get(sym.0 as usize).copied().flatten()
+    }
+
+    /// Invalidate the direct-dispatch slot for `sym`.
+    ///
+    /// The direct table is a pure fast-path mirror: a slot may be `Some`
+    /// only while `env.functions` holds the closure that was registered
+    /// together with it. Any rebind of a function cell that is not paired
+    /// with a fresh `register_aot_direct` must clear the slot, or AOT
+    /// callers dispatching through `rt::apply_direct` keep the stale
+    /// native forever while interpreted callers see the new definition.
+    /// `do_defun` is the Shen-level rebind seam; overlay installers
+    /// repopulate both tables, so clear-only invalidation round-trips.
+    #[inline]
+    pub fn clear_aot_direct(&mut self, sym: SymId) {
+        if let Some(slot) = self.aot_direct.get_mut(sym.0 as usize) {
+            *slot = None;
+        }
     }
 
     /// Top-level entry. Evaluates a KL expression with no lexical locals.
@@ -1170,6 +1192,10 @@ impl Interp {
             kind,
         };
         self.env.set_fn(name, Value::closure(closure));
+        // Two-table coherence: this rebind invalidates any AOT direct-path
+        // entry for the name (kernel AOT or overlay). Without the clear,
+        // rt::apply_direct callers would keep dispatching the stale native.
+        self.clear_aot_direct(name);
         Ok(Value::sym(name))
     }
 

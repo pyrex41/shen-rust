@@ -845,8 +845,11 @@ pub fn install(interp: &mut Interp, dir: PathBuf, stats_on: bool, kernel_dir: &P
         hits: 0,
         misses: 0,
     }));
-    // Both tables, native first (it clears the direct slot), mirroring the
-    // kernel AOT installers — kernel code reaches these via apply_direct.
+    // Both tables, native first then direct, mirroring the kernel AOT
+    // installers — kernel code reaches these via apply_direct. (Note:
+    // register_native does NOT clear the direct slot today; the immediate
+    // register_aot_direct overwrite is what keeps the pair coherent here.
+    // do_defun clears the slot on Shen-level redefinition.)
     interp.register_native("load", 1, load_wrapper);
     interp.register_aot_direct("load", load_wrapper);
     interp.register_native("shen.typecheck", 2, typecheck_wrapper);
