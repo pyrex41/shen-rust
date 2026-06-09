@@ -27,35 +27,11 @@ use shen_cedar_authz::{entities, schema, validate_policies, ShenHost};
 use shen_rust::value::Value;
 
 /// The Shen verifier: hierarchy-aware scope reasoning, loaded into the engine.
-/// A scope is encoded `[kind id]` with kind ∈ {kany, kin, keq}; `es` is the
-/// membership DAG as `[child parent]` edges.
-const VERIFIER: &[&str] = &[
-    "(defun parents-of (x es) (if (= es []) [] \
-       (if (= (hd (hd es)) x) (cons (hd (tl (hd es))) (parents-of x (tl es))) \
-         (parents-of x (tl es)))))",
-    // a reaches b  ==  a is-in b  (a == b, or some parent of a reaches b)
-    "(defun reaches (a b es) (if (= a b) true (reaches-list (parents-of a es) b es)))",
-    "(defun reaches-list (ps b es) (if (= ps []) false \
-       (if (reaches (hd ps) b es) true (reaches-list (tl ps) b es))))",
-    // forbid-scope f COVERS permit-scope p  (f's entity-set ⊇ p's)
-    "(defun s-covers (f p es) \
-       (let fk (hd f) (let fi (hd (tl f)) (let pk (hd p) (let pi (hd (tl p)) \
-         (if (= fk kany) true \
-           (if (= fk kin) \
-               (if (= pk kin) (reaches pi fi es) (if (= pk keq) (reaches pi fi es) false)) \
-             (if (= pk keq) (= fi pi) false))))))))",
-    // forbid-scope f INTERSECTS permit-scope p
-    "(defun s-inter (f p es) \
-       (let fk (hd f) (let fi (hd (tl f)) (let pk (hd p) (let pi (hd (tl p)) \
-         (if (= fk kany) true \
-           (if (= pk kany) true \
-             (if (= fk kin) \
-                 (if (= pk kin) (or (reaches fi pi es) (reaches pi fi es)) (reaches pi fi es)) \
-               (if (= pk keq) (= fi pi) (reaches fi pi es))))))))))",
-    "(defun classify (fp fr pp pr es) \
-       (if (and (s-covers fp pp es) (s-covers fr pr es)) shadowed \
-         (if (and (s-inter fp pp es) (s-inter fr pr es)) overlap disjoint)))",
-];
+/// Lives in `spec/verify.shen` — the single source of truth shared with the
+/// `authz_served` bench's AOT overlay. A scope is encoded `[kind id]` with
+/// kind ∈ {kany, kin, keq}; `es` is the membership DAG as `[child parent]`
+/// edges.
+const VERIFIER: &str = include_str!("../spec/verify.shen");
 
 const POLICIES: &str = r#"
 // p0: staff are forbidden everything.
@@ -134,7 +110,7 @@ fn run() -> i32 {
             return 1;
         }
     };
-    if let Err(e) = host.load_source(&VERIFIER.join("\n")) {
+    if let Err(e) = host.load_source(VERIFIER) {
         eprintln!("load verifier: {e}");
         return 1;
     }

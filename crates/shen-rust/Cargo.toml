@@ -114,3 +114,7 @@ required-features = ["jit"]
 [[bench]]
 name = "normal_form_aot"
 harness = false
+
+[[bench]]
+name = "authz_served"
+harness = false
