@@ -126,6 +126,9 @@ pub struct Interp {
     /// Free-running step counter used only to throttle the `deadline`
     /// check (so we don't call `Instant::now()` on every reduction).
     deadline_counter: u64,
+    /// L1 load-time typecheck memoization state (`None` unless
+    /// `SHEN_RUST_TC_CACHE` is set). See `interp::tc_cache`.
+    pub(crate) tc_cache: Option<Box<crate::interp::tc_cache::TcCacheState>>,
     /// Cache of compiled `lambda`/`freeze` bodies, keyed by the body
     /// `KlExpr` node address. A single kernel-tests run evaluates ~655
     /// distinct closure bodies but creates the closures ~1.2M times; the
@@ -248,6 +251,7 @@ impl Interp {
             remaining_steps: None,
             deadline: None,
             deadline_counter: 0,
+            tc_cache: None,
             closure_cache: std::collections::HashMap::new(),
             #[cfg(feature = "jit")]
             pending_error: None,

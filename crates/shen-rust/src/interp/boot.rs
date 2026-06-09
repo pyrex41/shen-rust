@@ -172,6 +172,11 @@ pub fn boot_with_kernel(interp: &mut Interp, kernel_dir: &Path) -> ShenResult<()
     #[cfg(feature = "jit")]
     crate::jit::install_jit(interp);
 
+    // L1 load-time typecheck memoization, off unless `SHEN_RUST_TC_CACHE`
+    // is set. Installed last so its `load` / `shen.typecheck` wrappers
+    // land over the AOT registrations above. See `interp::tc_cache`.
+    crate::interp::tc_cache::install_from_env(interp);
+
     Ok(())
 }
 
