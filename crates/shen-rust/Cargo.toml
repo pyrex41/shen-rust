@@ -92,3 +92,14 @@ harness = false
 # it, keeping default gates Cranelift-free.
 required-features = ["jit"]
 
+# Win A spike: do native bodies with DIRECT native call edges (mutual
+# return_call / call to the peer's code pointer) beat the FFI-dispatch-per-call
+# model (the J2 / shen-go shape) on cross-function, call-dominated work? Two
+# shapes (even?/odd? mutual tail, ping/pong non-tail CPS), four engines. `cargo
+# run --release --features jit --bench jit_winA_spike`. See
+# `arch_unboxed_native_codegen.md` + `design/jit-spike-handoff.md`.
+[[bench]]
+name = "jit_winA_spike"
+harness = false
+required-features = ["jit"]
+

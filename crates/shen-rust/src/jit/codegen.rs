@@ -25,6 +25,7 @@ use cranelift_codegen::ir::{
     types, AbiParam, Block, BlockArg, InstBuilder, MemFlags, StackSlotData, StackSlotKind,
     UserFuncName, Value as IrValue,
 };
+use cranelift_codegen::isa::CallConv;
 use cranelift_frontend::{FunctionBuilder, FunctionBuilderContext};
 use cranelift_jit::JITModule;
 use cranelift_module::{FuncId, Linkage, Module};
@@ -88,6 +89,156 @@ pub(crate) fn compile_closure_body(
     Ok(id)
 }
 
+/// (W1) Compile a NAMED top-level defun that may self-call in tail position into
+/// a native `return_call` loop, returning the DEFAULT-callconv ENTRY `FuncId`.
+///
+/// Mirrors `mod.rs`'s `define_length_h_tail` (a `CallConv::Tail` self-recursive
+/// loop whose self-call is a `return_call` to its own `FuncId`) + the
+/// `define_length_h_entry` default-callconv host trampoline, but lowers an
+/// arbitrary Slice-A body via [`Trans`] + [`Trans::lower_tail`]. Returns `Err`
+/// (caller does NOT register the shim, the tree-walked defun serves it) for any
+/// form outside the Slice-A subset.
+///
+/// FuncId/finalize discipline (caller finalizes ONCE then `get_finalized_function`
+/// on the returned entry): declare `tail_id` → build+define tail (referencing
+/// `tail_id` via `declare_func_in_func`) → declare `entry_id` → build+define
+/// entry → caller `finalize_definitions()`. Never finalize between the two
+/// defines. On a lowering bail this returns `Err` BEFORE declaring/defining the
+/// entry trampoline.
+pub(crate) fn compile_named_self_tail(
+    module: &mut JITModule,
+    interp: &Interp,
+    name: &str,
+    self_sym: SymId,
+    params: &[SymId],
+    body: &KlExpr,
+) -> Result<FuncId, String> {
+    if params.len() > u8::MAX as usize {
+        return Err("jit: too many params".into());
+    }
+
+    // ---- (a) Tail body: CallConv::Tail, SCALAR-param ABI ----
+    // `(interp, errflag, captures, p0..p_{N-1})` — recursion state rides in
+    // registers (like `mod.rs` `define_length_h_tail` + the spike), NOT a
+    // pointer into the frame, so the self `return_call` is sound under the Tail
+    // ABI. The default-callconv entry trampoline below unpacks `args_ptr` once.
+    let mut tsig = module.make_signature();
+    tsig.call_conv = CallConv::Tail;
+    for _ in 0..3 + params.len() {
+        tsig.params.push(AbiParam::new(types::I64)); // interp, errflag, captures, p0..
+    }
+    tsig.returns.push(AbiParam::new(types::I64));
+    // DECLARE FIRST so `self_id` exists before lowering (inverse of
+    // `compile_closure_body`'s declare-after-build; required for
+    // `declare_func_in_func(self)` in `lower_tail`).
+    let tail_id = module
+        .declare_function(&format!("{name}_tail"), Linkage::Local, &tsig)
+        .map_err(|e| e.to_string())?;
+    let mut ctx = module.make_context();
+    ctx.func.signature = tsig.clone();
+    ctx.func.name = UserFuncName::user(0, tail_id.as_u32());
+    let mut fbc = FunctionBuilderContext::new();
+    {
+        let mut b = FunctionBuilder::new(&mut ctx.func, &mut fbc);
+        // Params arrive as SCALAR register args (interp/errflag/captures =
+        // params 0/1/2, then p0..p_{N-1}); no load from a frame slot.
+        let entry = b.create_block();
+        b.append_block_params_for_function_params(entry);
+        b.switch_to_block(entry);
+        let interp_v = b.block_params(entry)[0];
+        let errflag_v = b.block_params(entry)[1];
+        let captures_v = b.block_params(entry)[2];
+
+        let mut locals: Vec<(SymId, IrValue)> = Vec::with_capacity(params.len());
+        for (i, &p) in params.iter().enumerate() {
+            locals.push((p, b.block_params(entry)[3 + i]));
+        }
+
+        let err_block = b.create_block();
+
+        let mut t = Trans {
+            b: &mut b,
+            module,
+            interp,
+            imports: HashMap::new(),
+            locals,
+            upvals: &[], // top-level defun has no upvals
+            interp_v,
+            errflag_v,
+            captures_v,
+            err_block,
+            self_sym: Some(self_sym),
+            self_id: Some(tail_id),
+            self_arity: params.len(),
+        };
+        // `lower_tail` emits the terminators (incl. the self `return_call`).
+        let r = t.lower_tail(body);
+
+        // Fill the error block exactly as `build_entry` (nil return).
+        t.b.switch_to_block(err_block);
+        let nil = t.b.ins().iconst(types::I64, Value::nil().to_word() as i64);
+        t.b.ins().return_(&[nil]);
+
+        t.b.seal_all_blocks();
+        // On Err propagate (bail before declaring/defining the entry
+        // trampoline). `finalize` must run on the owned `b`.
+        match r {
+            Ok(()) => b.finalize(),
+            Err(e) => return Err(e),
+        }
+    }
+    module
+        .define_function(tail_id, &mut ctx)
+        .map_err(|e| e.to_string())?;
+    module.clear_context(&mut ctx);
+
+    // ---- (b) default-callconv entry trampoline (plain call into tail body) ----
+    let mut esig = module.make_signature();
+    for _ in 0..5 {
+        esig.params.push(AbiParam::new(types::I64));
+    }
+    esig.returns.push(AbiParam::new(types::I64));
+    let entry_id = module
+        .declare_function(&format!("{name}_entry"), Linkage::Local, &esig)
+        .map_err(|e| e.to_string())?;
+    let mut ectx = module.make_context();
+    ectx.func.signature = esig;
+    ectx.func.name = UserFuncName::user(0, entry_id.as_u32());
+    let mut efbc = FunctionBuilderContext::new();
+    {
+        let mut b = FunctionBuilder::new(&mut ectx.func, &mut efbc);
+        let blk = b.create_block();
+        b.append_block_params_for_function_params(blk);
+        b.switch_to_block(blk);
+        // Unpack `args_ptr` (param 3) ONCE into scalar params, then PLAIN-call
+        // the scalar Tail body. Thereafter recursion passes scalars, so this
+        // pointer never crosses a `return_call` into a torn-down frame.
+        let interp_v = b.block_params(blk)[0];
+        let errflag_v = b.block_params(blk)[1];
+        let captures_v = b.block_params(blk)[2];
+        let args_v = b.block_params(blk)[3];
+        let mut call_args = vec![interp_v, errflag_v, captures_v];
+        for i in 0..params.len() {
+            let v = b
+                .ins()
+                .load(types::I64, MemFlags::trusted(), args_v, (i * 8) as i32);
+            call_args.push(v);
+        }
+        // PLAIN call (NOT return_call) into the scalar Tail body.
+        let callee = module.declare_func_in_func(tail_id, b.func);
+        let call = b.ins().call(callee, &call_args);
+        let r = b.inst_results(call)[0];
+        b.ins().return_(&[r]);
+        b.seal_all_blocks();
+        b.finalize();
+    }
+    module
+        .define_function(entry_id, &mut ectx)
+        .map_err(|e| e.to_string())?;
+    module.clear_context(&mut ectx);
+    Ok(entry_id) // caller finalizes ONCE then `get_finalized_function(entry_id)`
+}
+
 /// Set up the entry block (load params from `args_ptr`, stash the ABI words),
 /// lower the body, and fill the shared error-return block. On a lowering bail the
 /// half-built function is discarded by the caller (never defined).
@@ -132,6 +283,10 @@ fn build_entry(
         errflag_v,
         captures_v,
         err_block,
+        // Anonymous closure path: no self-name → the self-tail guard never fires.
+        self_sym: None,
+        self_id: None,
+        self_arity: 0,
     };
     let result = t.lower(body)?;
     t.b.ins().return_(&[result]);
@@ -170,6 +325,14 @@ struct Trans<'a, 'b> {
     errflag_v: IrValue,
     captures_v: IrValue,
     err_block: Block,
+    /// (W1) Defun name to recognise a self-call head; `None` on the anonymous
+    /// closure path (so the self-tail guard can never fire there).
+    self_sym: Option<SymId>,
+    /// (W1) This body's OWN (`CallConv::Tail`) `FuncId`, declared BEFORE
+    /// lowering so `lower_tail` can `declare_func_in_func(self)`.
+    self_id: Option<FuncId>,
+    /// (W1) `== params.len()`; `0` on the anonymous path.
+    self_arity: usize,
 }
 
 impl Trans<'_, '_> {
@@ -510,6 +673,137 @@ impl Trans<'_, '_> {
         self.b.ins().jump(join, &[BlockArg::Value(nil)]);
         self.b.switch_to_block(join);
         Ok(self.b.block_params(join)[0])
+    }
+
+    // =======================================================================
+    // (W1) Tail-position lowering — the ONLY new emission path. Each method
+    // EMITS a terminator (`return_` or `return_call`) and returns `()`; it is
+    // called only where the body result is consumed. Tail-transparent special
+    // forms recurse via the `*_tail` helpers; everything else lowers as a VALUE
+    // via the EXISTING `self.lower()` and then `return_`s it. Arg/test/value
+    // positions stay NON-TAIL via the existing `lower()`.
+    // =======================================================================
+
+    fn lower_tail(&mut self, expr: &KlExpr) -> Result<(), String> {
+        if let KlExpr::App(items) = expr {
+            if !items.is_empty() {
+                if let KlExpr::Sym(s) = &items[0] {
+                    let s = *s;
+                    let args = &items[1..];
+                    let wk = &self.interp.well_known;
+                    if s == wk.k_if {
+                        return self.lower_if_tail(args);
+                    }
+                    if s == wk.k_cond {
+                        return self.lower_cond_tail(args);
+                    }
+                    if s == wk.k_let {
+                        return self.lower_let_tail(args);
+                    }
+                    if s == wk.k_do {
+                        return self.lower_do_tail(args);
+                    }
+                    // `and`/`or`: the eval-arm is tail but the short arm is a
+                    // const; lowering as a value then `return_` (fall through
+                    // below) is the simplest correct treatment.
+                    //
+                    // SELF-TAIL CALL: free head == self_sym, exact arity.
+                    if Some(s) == self.self_sym
+                        && args.len() == self.self_arity
+                        && matches!(self.resolve(s), Var::Free)
+                    {
+                        // Args are NON-TAIL → existing value `lower()`.
+                        let mut argv = Vec::with_capacity(args.len());
+                        for a in args {
+                            argv.push(self.lower(a)?);
+                        }
+                        let selfref = self
+                            .module
+                            .declare_func_in_func(self.self_id.unwrap(), self.b.func);
+                        // SCALAR self `return_call` (matches `mod.rs`
+                        // `define_length_h_tail`): recursion args ride in
+                        // registers, never a pointer into the dying frame.
+                        let mut call_args = vec![self.interp_v, self.errflag_v, self.captures_v];
+                        call_args.extend_from_slice(&argv);
+                        self.b.ins().return_call(selfref, &call_args);
+                        // `return_call` terminates the block: NO result, NO
+                        // errflag brif.
+                        return Ok(());
+                    }
+                }
+            }
+        }
+        // Non-self / non-tail-form tail position: lower as a value, then
+        // `return_` it.
+        let v = self.lower(expr)?;
+        self.b.ins().return_(&[v]);
+        Ok(())
+    }
+
+    fn lower_if_tail(&mut self, args: &[KlExpr]) -> Result<(), String> {
+        if args.len() != 3 {
+            return Err("if: expected 3 args".into());
+        }
+        let c = self.lower(&args[0])?; // condition NON-TAIL
+        let t = self.truthy(c);
+        let then_b = self.b.create_block();
+        let else_b = self.b.create_block();
+        self.b.ins().brif(t, then_b, &[], else_b, &[]);
+
+        self.b.switch_to_block(then_b);
+        self.lower_tail(&args[1])?; // then arm tail
+        self.b.switch_to_block(else_b);
+        self.lower_tail(&args[2])?; // else arm tail
+        Ok(())
+    }
+
+    fn lower_cond_tail(&mut self, args: &[KlExpr]) -> Result<(), String> {
+        for clause in args {
+            let pair = match clause {
+                KlExpr::App(items) if items.len() == 2 => items,
+                _ => return Err("cond: clauses must be 2-element lists".into()),
+            };
+            let c = self.lower(&pair[0])?; // test NON-TAIL
+            let t = self.truthy(c);
+            let body_b = self.b.create_block();
+            let next_b = self.b.create_block();
+            self.b.ins().brif(t, body_b, &[], next_b, &[]);
+            self.b.switch_to_block(body_b);
+            self.lower_tail(&pair[1])?; // body tail
+            self.b.switch_to_block(next_b);
+        }
+        // Fall-through: nil.
+        let nil = self.iconst_word(Value::nil().to_word());
+        self.b.ins().return_(&[nil]);
+        Ok(())
+    }
+
+    fn lower_let_tail(&mut self, args: &[KlExpr]) -> Result<(), String> {
+        if args.len() != 3 {
+            return Err("let: expected 3 args".into());
+        }
+        let var = match &args[0] {
+            KlExpr::Sym(s) => *s,
+            _ => return Err("let: var must be a symbol".into()),
+        };
+        let val = self.lower(&args[1])?; // value NON-TAIL
+        self.locals.push((var, val));
+        let r = self.lower_tail(&args[2]); // body tail
+        self.locals.pop();
+        r
+    }
+
+    fn lower_do_tail(&mut self, args: &[KlExpr]) -> Result<(), String> {
+        if args.is_empty() {
+            let nil = self.iconst_word(Value::nil().to_word());
+            self.b.ins().return_(&[nil]);
+            return Ok(());
+        }
+        let last = args.len() - 1;
+        for e in &args[..last] {
+            self.lower(e)?; // NON-TAIL (effect)
+        }
+        self.lower_tail(&args[last]) // last is tail
     }
 }
 

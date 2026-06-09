@@ -292,6 +292,32 @@ impl Interp {
         self.jit.as_ref().map(|e| e.stats())
     }
 
+    /// (W1) Whether the named top-level defun was compiled to a native
+    /// self-tail loop (vs silently bailing). Positive ran-signal for the W1
+    /// oracle: `jit_stats().compiled` counts only the anonymous body cache.
+    #[cfg(feature = "jit")]
+    pub fn jit_named_compiled(&mut self, name: &str) -> bool {
+        let s = self.intern(name);
+        self.jit
+            .as_ref()
+            .map(|e| e.named_compiled(s))
+            .unwrap_or(false)
+    }
+
+    /// (W1) `(JIT_CALL_TO_JIT, JIT_CALL_TO_OTHER)` process-global tallies, or
+    /// `None` if no engine is installed. A successful self-tail `return_call`
+    /// edge bypasses `rtj_apply_named`/`tally_callee`, so a pure deep self-run
+    /// adds `(0, 0)`.
+    #[cfg(feature = "jit")]
+    pub fn jit_call_tallies(&self) -> Option<(u64, u64)> {
+        self.jit.as_ref().map(|_| {
+            (
+                crate::jit::JIT_CALL_TO_JIT.load(std::sync::atomic::Ordering::Relaxed),
+                crate::jit::JIT_CALL_TO_OTHER.load(std::sync::atomic::Ordering::Relaxed),
+            )
+        })
+    }
+
     pub fn intern(&mut self, name: &str) -> SymId {
         self.symbols.intern(name)
     }

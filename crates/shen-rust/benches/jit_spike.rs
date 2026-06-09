@@ -62,6 +62,7 @@ use cranelift_module::{default_libcall_names, FuncId, Linkage, Module};
 
 use shen_rust::error::ShenResult;
 use shen_rust::interp::eval::Interp;
+use shen_rust::jit;
 use shen_rust::kl::ast::KlExpr;
 use shen_rust::kl::parser::parse_one;
 use shen_rust::symbol::SymId;
@@ -674,6 +675,91 @@ fn run() {
 
     // Keep the JIT module alive until every call above has returned.
     drop(jit);
+
+    // ===================================================================
+    // (W1) PRODUCTION path: the self-tail `return_call` body emitted by the
+    // real codegen (`jit::install_jit` → `compile_named_self_tail`), tiered in
+    // through the AOT direct table and reached via `rt::apply_direct` — the
+    // in-band production dispatch, not hand-built spike IR. Compared against the
+    // tree-walked `Interp::apply` baseline. ACCEPTANCE: jit_winA min < tree min.
+    // ===================================================================
+    {
+        // SAFETY: single-threaded bench setup before the JIT interp is built.
+        std::env::set_var("SHEN_RUST_JIT", "1");
+
+        let arg: i64 = 200_000;
+        let iters: u32 = 60;
+        let expect = Value::int(20_000_100_000);
+
+        // tree: a tree-walked interp (ClosureKind::Lambda via install_lambda).
+        let mut interp_tree = Interp::new();
+        install_lambda(
+            &mut interp_tree,
+            "(defun shen-w1-sumto (N ACC) (if (= N 0) ACC (shen-w1-sumto (- N 1) (+ ACC N))))",
+        );
+        let w1_tree = fn_value(&mut interp_tree, "shen-w1-sumto");
+
+        // jit_winA: a SEPARATE interp; install_jit compiles+registers the
+        // native return_call body for shen-w1-sumto.
+        let mut interp_jit = Interp::new();
+        jit::install_jit(&mut interp_jit);
+        assert!(interp_jit.jit_active(), "w1: jit engine installed");
+        assert!(
+            interp_jit.jit_named_compiled("shen-w1-sumto"),
+            "w1: fn compiled to native (not bailed)"
+        );
+
+        // Correctness: both engines agree with the expected closed form.
+        let t = interp_tree
+            .apply(w1_tree, vec![Value::int(arg), Value::int(0)])
+            .unwrap();
+        let j = apply_direct(
+            &mut interp_jit,
+            "shen-w1-sumto",
+            &[Value::int(arg), Value::int(0)],
+        )
+        .unwrap();
+        assert!(shen_eq(&t, &expect), "w1 tree = {t:?}");
+        assert!(shen_eq(&j, &expect), "w1 jit  = {j:?}");
+
+        let (mut tr, mut ji) = (vec![], vec![]);
+        for _ in 0..PAIRS {
+            let s = Instant::now();
+            for _ in 0..iters {
+                black_box(
+                    interp_tree
+                        .apply(w1_tree, vec![Value::int(black_box(arg)), Value::int(0)])
+                        .unwrap(),
+                );
+            }
+            tr.push(s.elapsed());
+
+            let s = Instant::now();
+            for _ in 0..iters {
+                black_box(
+                    apply_direct(
+                        &mut interp_jit,
+                        "shen-w1-sumto",
+                        &[Value::int(black_box(arg)), Value::int(0)],
+                    )
+                    .unwrap(),
+                );
+            }
+            ji.push(s.elapsed());
+        }
+
+        let (tm, jm) = (min_of(&tr), min_of(&ji));
+        println!(
+            "W1 PRODUCTION — shen-w1-sumto(200000): native self-tail return_call vs tree-walk"
+        );
+        println!("  tree    : {:>9.4} ms/call", ms_per_iter(tm, iters));
+        println!("  jit_winA: {:>9.4} ms/call", ms_per_iter(jm, iters));
+        println!("  W1 speedup: {:>5.2}x vs tree-walk\n", ratio(tm, jm));
+        assert!(
+            jm < tm,
+            "W1 ACCEPTANCE: jit_winA min ({jm:?}) must be < tree min ({tm:?})"
+        );
+    }
 
     println!("KILL-CRITERION: JIT must beat AOT-direct dispatch on fib by >=2x to be 'material'.");
     println!("  (>=2x: lever is real -> productionize.  <1.5x: setup/FFI dominates -> re-scope.)");

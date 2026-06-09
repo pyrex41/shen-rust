@@ -243,6 +243,10 @@ pub struct JitEngine {
     /// cold-start tax of runtime tier-up). Reported by `Drop` under
     /// `SHEN_RUST_JIT_STATS`.
     compile_nanos: u128,
+    /// (W1) Named top-level defuns compiled to a native self-tail `return_call`
+    /// loop, keyed by their defun `SymId`. Each entry is the finalized
+    /// default-callconv host trampoline (the `JitEntry` ABI).
+    named_self_tail: HashMap<SymId, JitEntry>,
 }
 
 impl Drop for JitEngine {
@@ -326,7 +330,48 @@ impl JitEngine {
             cache: HashMap::new(),
             counter: 0,
             compile_nanos: 0,
+            named_self_tail: HashMap::new(),
         }
+    }
+
+    /// (W1) Compile a named top-level defun into a native self-tail
+    /// `return_call` loop, finalize it, cache the entry by `name`, and return
+    /// the finalized [`JitEntry`]. Returns `Err` (caller does NOT register the
+    /// shim) for a body outside Slice-A.
+    pub(crate) fn compile_named(
+        &mut self,
+        interp: &Interp,
+        name_str: &str,
+        name: SymId,
+        params: &[SymId],
+        body: &KlExpr,
+    ) -> Result<JitEntry, String> {
+        let entry_id = codegen::compile_named_self_tail(
+            &mut self.module,
+            interp,
+            name_str,
+            name,
+            params,
+            body,
+        )?;
+        // ONCE, covering both the tail body and the entry trampoline.
+        self.module
+            .finalize_definitions()
+            .map_err(|e| e.to_string())?;
+        let p = self.module.get_finalized_function(entry_id);
+        // SAFETY: `entry_id` was just defined+finalized with the 5-word
+        // `JitEntry` C-ABI signature; the module is owned by `self` (on
+        // `Interp`) and outlives the pointer.
+        let entry: JitEntry = unsafe { transmute::<*const u8, JitEntry>(p) };
+        self.named_self_tail.insert(name, entry);
+        Ok(entry)
+    }
+
+    /// (W1) Whether a named defun was compiled to native code (positive
+    /// ran-signal for the oracle; `jit_stats().compiled` counts only the
+    /// anonymous body cache and would be a false 0 here).
+    pub(crate) fn named_compiled(&self, s: SymId) -> bool {
+        self.named_self_tail.contains_key(&s)
     }
 
     /// `(compiled bodies, bailed bodies)` — for tests/diagnostics, to confirm the
@@ -603,6 +648,81 @@ fn jit_shim_length_h(interp: &mut Interp, args: &[Value]) -> crate::error::ShenR
     Ok(Value::from_word(w))
 }
 
+/// (W1) `DirectFn` shim for the W1 test fn `shen-w1-sumto` (2-ary): resolve the
+/// finalized native entry through `named_self_tail`, call it via the 5-word
+/// `JitEntry` ABI (null captures — a top-level defun has no upvals), and surface
+/// a `pending_error` as `Err`. The body's else-arm self-call is the native
+/// `return_call` (no `rtj_apply_named` FFI hop).
+fn jit_shim_w1_sumto(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
+    if args.len() != 2 {
+        return Err(ShenError::new(format!(
+            "shen-w1-sumto: expected 2 args, got {}",
+            args.len()
+        )));
+    }
+    let sym = interp.intern("shen-w1-sumto");
+    // Copy the `Copy` fn pointer out, ending the immutable borrow before
+    // handing `interp` to the JIT call as `*mut`.
+    let entry = interp
+        .jit
+        .as_ref()
+        .expect("jit present")
+        .named_self_tail
+        .get(&sym)
+        .copied()
+        .expect("w1 fn compiled");
+    let mut errflag: u64 = 0;
+    let argw = [args[0].to_word(), args[1].to_word()];
+    // 5-word JitEntry: (interp, errflag, captures_ptr=null, args_ptr, nargs).
+    let w = entry(
+        interp as *mut Interp,
+        &mut errflag,
+        std::ptr::null(),
+        argw.as_ptr(),
+        2,
+    );
+    if errflag != 0 {
+        return Err(interp
+            .take_pending_error()
+            .unwrap_or_else(|| ShenError::new("jit: errflag set without pending error")));
+    }
+    Ok(Value::from_word(w))
+}
+
+/// (W1) Define the `shen-w1-sumto` defun into the env (so the reference / non-JIT
+/// dispatch / partial-application fallback exist), compile its body to a native
+/// self-tail loop, and — only on a successful compile — override the direct-call
+/// slot with [`jit_shim_w1_sumto`]. On a bail the tree-walked defun serves it.
+fn install_w1_sumto(interp: &mut Interp) {
+    // (a) Define the defun in env (reference + non-JIT + partial fallback).
+    let src = "(defun shen-w1-sumto (N ACC) (if (= N 0) ACC (shen-w1-sumto (- N 1) (+ ACC N))))";
+    let e = crate::kl::parser::parse_one(src, &mut interp.symbols).expect("w1 defun parses");
+    interp.eval(&e).expect("w1 defun installs");
+
+    // (b) Recover (params, body) for the JIT compile by re-parsing the body —
+    // the body `KlExpr` is independent of env.
+    let params = [interp.intern("N"), interp.intern("ACC")];
+    let body = crate::kl::parser::parse_one(
+        "(if (= N 0) ACC (shen-w1-sumto (- N 1) (+ ACC N)))",
+        &mut interp.symbols,
+    )
+    .expect("w1 body parses");
+
+    // (c) self_sym = the defun name.
+    let self_sym = interp.intern("shen-w1-sumto");
+
+    // (d) Take the engine out to avoid the `&mut self` + `&Interp` borrow clash.
+    let mut engine = interp.jit.take().expect("engine present");
+    let res = engine.compile_named(interp, "shen_w1_sumto", self_sym, &params, &body);
+    interp.jit = Some(engine);
+
+    // (e) Only on Ok: override the direct slot. On Err (a form outside Slice-A)
+    // the tree-walked defun from (a) serves it correctly (silent-bail).
+    if res.is_ok() {
+        interp.register_aot_direct("shen-w1-sumto", jit_shim_w1_sumto);
+    }
+}
+
 /// Build the JIT engine and tier `shen.length-h` into the direct-call table,
 /// overriding the AOT version — but only when `SHEN_RUST_JIT` is set. Call
 /// during boot, **after** `aot::kernel::install_all` (so the override sticks).
@@ -612,4 +732,51 @@ pub fn install_jit(interp: &mut Interp) {
     }
     interp.jit = Some(Box::new(JitEngine::new()));
     interp.register_aot_direct("shen.length-h", jit_shim_length_h);
+    install_w1_sumto(interp);
+}
+
+#[cfg(test)]
+mod w1_self_edge {
+    //! Strong W1 ran-signal: the self-tail `return_call` edge does NOT hit
+    //! `rtj_apply_named`/`tally_callee` (ffi.rs:25). The `JIT_CALL_TO_*`
+    //! counters are process-global, so this lives in-crate (can read the
+    //! `pub(crate)` atomics). A single pure deep run of `shen-w1-sumto` must
+    //! add `(0, 0)` to the FFI-edge tallies.
+
+    use super::*;
+    use crate::aot::runtime as rt;
+    use std::sync::atomic::Ordering::Relaxed;
+
+    #[test]
+    fn self_tail_edge_bypasses_ffi() {
+        // SAFETY: single-threaded test setup.
+        std::env::set_var("SHEN_RUST_JIT", "1");
+        let mut interp = Interp::new();
+        install_jit(&mut interp);
+        assert!(interp.jit_active());
+        assert!(interp.jit_named_compiled("shen-w1-sumto"));
+
+        let before = (
+            JIT_CALL_TO_JIT.load(Relaxed),
+            JIT_CALL_TO_OTHER.load(Relaxed),
+        );
+        // A pure deep self-recursive run: every self-call is the native
+        // return_call, so neither FFI-edge counter should move.
+        let r = rt::apply_direct(
+            &mut interp,
+            "shen-w1-sumto",
+            &[Value::int(100_000), Value::int(0)],
+        )
+        .unwrap();
+        assert_eq!(r.as_int(), Some(5_000_050_000));
+        let after = (
+            JIT_CALL_TO_JIT.load(Relaxed),
+            JIT_CALL_TO_OTHER.load(Relaxed),
+        );
+        assert_eq!(
+            (after.0 - before.0, after.1 - before.1),
+            (0, 0),
+            "self-tail return_call must bypass rtj_apply_named/tally_callee"
+        );
+    }
 }
