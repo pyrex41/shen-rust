@@ -32,73 +32,23 @@ pub fn register_all(interp: &mut Interp) {
 /// `cond`/`absvector?` chain. Call **after** kernel boot so these
 /// override the AOT-compiled defuns.
 pub fn register_hot_overrides(interp: &mut Interp) {
-    let k_pvar = interp.well_known.k_shen_pvar;
-    let k_null = interp.well_known.k_shen_null;
-    let k_fail = interp.well_known.k_shen_fail;
+    // The six overrides below shadow AOT-compiled kernel defuns that have
+    // entries in the direct-dispatch table. They are plain `fn`s (not
+    // capturing closures) so they can be dual-registered — register_native
+    // for the closure world + register_aot_direct for the raw-pointer fast
+    // path — otherwise the kernel's own AOT callers (prolog, typechecker,
+    // the reader's load path) would dispatch past them via rt::apply_direct.
+    interp.register_native("element?", 2, hot_element_p);
+    interp.register_aot_direct("element?", hot_element_p);
 
-    // element? — linear scan of a proper list with shen_eq.
-    interp.register_native("element?", 2, |_, args| {
-        let target = &args[0];
-        let mut cur: Value = args[1];
-        loop {
-            if cur.is_nil() {
-                return Ok(Value::bool(false));
-            }
-            let (h, t) = match (cur.head(), cur.tail()) {
-                (Some(h), Some(t)) => (*h, *t),
-                _ => return Err(ShenError::new(format!("element?: not a list: {cur:?}"))),
-            };
-            if shen_eq(target, &h) {
-                return Ok(Value::bool(true));
-            }
-            cur = t;
-        }
-    });
+    interp.register_native("shen.pvar?", 1, hot_pvar_p);
+    interp.register_aot_direct("shen.pvar?", hot_pvar_p);
 
-    // shen.pvar? — Shen Prolog logic variable check. The kernel
-    // representation is an absvector whose slot 0 is the symbol
-    // `shen.pvar`.
-    interp.register_native("shen.pvar?", 1, move |_, args| {
-        Ok(Value::bool(
-            args[0].vec_get_opt(0).and_then(|c| c.as_sym()) == Some(k_pvar),
-        ))
-    });
+    interp.register_native("shen.lazyderef", 2, hot_lazyderef);
+    interp.register_aot_direct("shen.lazyderef", hot_lazyderef);
 
-    // shen.lazyderef — chase Prolog-variable bindings through the
-    // *prolog-vector*. The kernel implementation recurses through
-    // `shen.lazyderef` itself; we tightloop in Rust.
-    interp.register_native("shen.lazyderef", 2, move |_, args| {
-        let vec = args[1];
-        if !vec.is_vec() {
-            return Err(ShenError::new(format!(
-                "shen.lazyderef: arg 2 not a vector: {:?}",
-                args[1]
-            )));
-        }
-        let mut cur = args[0];
-        loop {
-            // Is `cur` a pvar (slot 0 == shen.pvar)?
-            let is_pvar = cur.vec_get_opt(0).and_then(|c| c.as_sym()) == Some(k_pvar);
-            if !is_pvar {
-                return Ok(cur);
-            }
-            let idx: i64 = match cur.vec_get_opt(1).and_then(|c| c.as_int()) {
-                Some(i) => i,
-                None => return Ok(cur),
-            };
-            // Look up its binding in *prolog-vector*.
-            let next = vec.vec_get_opt(idx as usize).unwrap_or(Value::nil());
-            // Unbound → return the pvar itself.
-            if next.as_sym() == Some(k_null) {
-                return Ok(cur);
-            }
-            cur = next;
-        }
-    });
-
-    // fail — return the magic shen.fail! symbol. Kernel-level
-    // `fail` is just `(defun fail () shen.fail!)`.
-    interp.register_native("fail", 0, move |_, _args| Ok(Value::sym(k_fail)));
+    interp.register_native("fail", 0, hot_fail);
+    interp.register_aot_direct("fail", hot_fail);
 
     // value/or — read a global, calling a frozen default on miss
     // instead of erroring. Native because the kernel's version routes
@@ -135,36 +85,113 @@ pub fn register_hot_overrides(interp: &mut Interp) {
     // instead of byte-by-byte through `read-byte`. The kernel's
     // implementation is a recursive cons-builder; on a large source
     // file this dominates load time.
-    interp.register_native("read-file-as-bytelist", 1, |_, args| {
-        let path = match args[0].as_str() {
-            Some(s) => s.to_string(),
-            None => {
-                return Err(ShenError::new(format!(
-                    "read-file-as-bytelist: not a string: {:?}",
-                    args[0]
-                )))
-            }
+    interp.register_native("read-file-as-bytelist", 1, hot_read_file_as_bytelist);
+    interp.register_aot_direct("read-file-as-bytelist", hot_read_file_as_bytelist);
+
+    interp.register_native("read-file-as-string", 1, hot_read_file_as_string);
+    interp.register_aot_direct("read-file-as-string", hot_read_file_as_string);
+}
+
+// --- hot-override bodies (DirectFn-compatible plain fns) ---
+
+/// element? — linear scan of a proper list with shen_eq.
+fn hot_element_p(_: &mut Interp, args: &[Value]) -> ShenResult<Value> {
+    let target = &args[0];
+    let mut cur: Value = args[1];
+    loop {
+        if cur.is_nil() {
+            return Ok(Value::bool(false));
+        }
+        let (h, t) = match (cur.head(), cur.tail()) {
+            (Some(h), Some(t)) => (*h, *t),
+            _ => return Err(ShenError::new(format!("element?: not a list: {cur:?}"))),
         };
-        let bytes = std::fs::read(&path)
-            .map_err(|e| ShenError::new(format!("read-file-as-bytelist: {path}: {e}")))?;
-        Ok(bytes_to_list(&bytes))
-    });
-    interp.register_native("read-file-as-string", 1, |_, args| {
-        let path = match args[0].as_str() {
-            Some(s) => s.to_string(),
-            None => {
-                return Err(ShenError::new(format!(
-                    "read-file-as-string: not a string: {:?}",
-                    args[0]
-                )))
-            }
+        if shen_eq(target, &h) {
+            return Ok(Value::bool(true));
+        }
+        cur = t;
+    }
+}
+
+/// shen.pvar? — Shen Prolog logic variable check. The kernel
+/// representation is an absvector whose slot 0 is the symbol `shen.pvar`.
+fn hot_pvar_p(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
+    let k_pvar = interp.well_known.k_shen_pvar;
+    Ok(Value::bool(
+        args[0].vec_get_opt(0).and_then(|c| c.as_sym()) == Some(k_pvar),
+    ))
+}
+
+/// shen.lazyderef — chase Prolog-variable bindings through the
+/// *prolog-vector*. The kernel implementation recurses through
+/// `shen.lazyderef` itself; we tightloop in Rust.
+fn hot_lazyderef(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
+    let k_pvar = interp.well_known.k_shen_pvar;
+    let k_null = interp.well_known.k_shen_null;
+    let vec = args[1];
+    if !vec.is_vec() {
+        return Err(ShenError::new(format!(
+            "shen.lazyderef: arg 2 not a vector: {:?}",
+            args[1]
+        )));
+    }
+    let mut cur = args[0];
+    loop {
+        // Is `cur` a pvar (slot 0 == shen.pvar)?
+        let is_pvar = cur.vec_get_opt(0).and_then(|c| c.as_sym()) == Some(k_pvar);
+        if !is_pvar {
+            return Ok(cur);
+        }
+        let idx: i64 = match cur.vec_get_opt(1).and_then(|c| c.as_int()) {
+            Some(i) => i,
+            None => return Ok(cur),
         };
-        let bytes = std::fs::read(&path)
-            .map_err(|e| ShenError::new(format!("read-file-as-string: {path}: {e}")))?;
-        // Kernel semantics: bytes interpreted as a string verbatim.
-        let s = String::from_utf8_lossy(&bytes).into_owned();
-        Ok(Value::str(Rc::from(s.as_str())))
-    });
+        // Look up its binding in *prolog-vector*.
+        let next = vec.vec_get_opt(idx as usize).unwrap_or(Value::nil());
+        // Unbound → return the pvar itself.
+        if next.as_sym() == Some(k_null) {
+            return Ok(cur);
+        }
+        cur = next;
+    }
+}
+
+/// fail — return the magic shen.fail! symbol. Kernel-level `fail` is just
+/// `(defun fail () shen.fail!)`.
+fn hot_fail(interp: &mut Interp, _args: &[Value]) -> ShenResult<Value> {
+    Ok(Value::sym(interp.well_known.k_shen_fail))
+}
+
+fn hot_read_file_as_bytelist(_: &mut Interp, args: &[Value]) -> ShenResult<Value> {
+    let path = match args[0].as_str() {
+        Some(s) => s.to_string(),
+        None => {
+            return Err(ShenError::new(format!(
+                "read-file-as-bytelist: not a string: {:?}",
+                args[0]
+            )))
+        }
+    };
+    let bytes = std::fs::read(&path)
+        .map_err(|e| ShenError::new(format!("read-file-as-bytelist: {path}: {e}")))?;
+    Ok(bytes_to_list(&bytes))
+}
+
+fn hot_read_file_as_string(_: &mut Interp, args: &[Value]) -> ShenResult<Value> {
+    let path = match args[0].as_str() {
+        Some(s) => s.to_string(),
+        None => {
+            return Err(ShenError::new(format!(
+                "read-file-as-string: not a string: {:?}",
+                args[0]
+            )))
+        }
+    };
+    let bytes = std::fs::read(&path)
+        .map_err(|e| ShenError::new(format!("read-file-as-string: {path}: {e}")))?;
+    // Kernel semantics: bytes interpreted as a string verbatim.
+    let s = String::from_utf8_lossy(&bytes).into_owned();
+    Ok(Value::str(Rc::from(s.as_str())))
 }
 
 /// Build a Shen cons-list `(b0 b1 … bN)` of bytes from a slice. Used by

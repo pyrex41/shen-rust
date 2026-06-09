@@ -123,6 +123,28 @@ fn clear_then_reinstall_roundtrips() {
     );
 }
 
+/// Test E: the host-API seam. A bare `register_native` (no paired
+/// `register_aot_direct`) over an AOT-installed name must also win through
+/// apply_direct — the rebind invalidates the direct slot, and the fast path
+/// falls back to the env closure.
+#[test]
+fn register_native_override_wins_through_apply_direct() {
+    let mut interp = fresh_with_defuns();
+    generated::install(&mut interp);
+    assert_eq!(run(&mut interp, "(double 21)").as_int(), Some(42));
+
+    interp.register_native("double", 1, |_, args| {
+        Ok(Value::int(args[0].as_int().unwrap() + 7))
+    });
+
+    let via_direct = rt::apply_direct(&mut interp, "double", &[Value::int(10)]).unwrap();
+    assert_eq!(
+        via_direct.as_int(),
+        Some(17),
+        "register_native must clear the stale direct slot"
+    );
+}
+
 /// Test D: the split-brain is live TODAY for kernel AOT names. After a full
 /// kernel boot (install_all populates ~1123 direct slots), a user
 /// redefinition of a kernel fn must win through apply_direct — the path the

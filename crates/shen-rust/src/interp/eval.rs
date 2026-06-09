@@ -406,12 +406,15 @@ impl Interp {
             kind: ClosureKind::Native(Rc::new(f) as Rc<NativeFn>, Vec::new()),
         };
         self.env.set_fn(sym, Value::closure(closure));
-        // Grow direct table in lockstep (slot left empty for closure-based
-        // natives; real fn pointers are installed via register_aot_direct).
+        // Grow direct table in lockstep and CLEAR any pre-existing direct
+        // entry: this rebind invalidates it (two-table coherence — the
+        // direct table mirrors env.functions). Installers that want the
+        // fast path re-register via register_aot_direct immediately after.
         let idx = sym.0 as usize;
         if idx >= self.aot_direct.len() {
             self.aot_direct.resize(idx + 1, None);
         }
+        self.aot_direct[idx] = None;
     }
 
     /// Register a raw fn pointer for the ultra-fast AOT (and hot native)
