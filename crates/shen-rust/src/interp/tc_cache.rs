@@ -664,23 +664,33 @@ pub fn typecheck_wrapper(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
 
 /// Install the cache if `SHEN_RUST_TC_CACHE=<dir>` is set. Called at the
 /// end of boot so the wrappers land over the kernel AOT registrations.
-pub fn install_from_env(interp: &mut Interp) {
+pub fn install_from_env(interp: &mut Interp, kernel_dir: &Path) {
     let Some(dir) = std::env::var_os("SHEN_RUST_TC_CACHE") else {
         return;
     };
     if dir.is_empty() {
         return;
     }
-    let dir = PathBuf::from(dir);
+    install(
+        interp,
+        PathBuf::from(dir),
+        std::env::var_os("SHEN_RUST_TC_CACHE_STATS").is_some(),
+        kernel_dir,
+    );
+}
+
+/// Install the cache unconditionally (the testable entry point —
+/// `install_from_env` is the env-gated wrapper boot uses).
+pub fn install(interp: &mut Interp, dir: PathBuf, stats_on: bool, kernel_dir: &Path) {
     if let Err(e) = fs::create_dir_all(&dir) {
         eprintln!("tc-cache: create {}: {e} — disabled", dir.display());
         return;
     }
     interp.tc_cache = Some(Box::new(TcCacheState {
         dir,
-        chain: 0,
+        chain: kernel_seed(kernel_dir),
         ctx: None,
-        stats_on: std::env::var_os("SHEN_RUST_TC_CACHE_STATS").is_some(),
+        stats_on,
         hits: 0,
         misses: 0,
     }));
@@ -690,6 +700,36 @@ pub fn install_from_env(interp: &mut Interp) {
     interp.register_aot_direct("load", load_wrapper);
     interp.register_native("shen.typecheck", 2, typecheck_wrapper);
     interp.register_aot_direct("shen.typecheck", typecheck_wrapper);
+}
+
+/// Seed the load chain with the kernel sources, so a kernel change (which
+/// can change type-checker behaviour) invalidates every cached verdict.
+/// Hashes every `.kl` file in the kernel dir, sorted by name. One-time
+/// ~MBs of IO at install; only paid when the cache is enabled.
+fn kernel_seed(kernel_dir: &Path) -> u64 {
+    let mut h = Fnv::new();
+    h.write(FORMAT.as_bytes());
+    let mut files: Vec<PathBuf> = fs::read_dir(kernel_dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.extension().is_some_and(|x| x == "kl"))
+        .collect();
+    files.sort();
+    for f in &files {
+        if let Some(name) = f.file_name().and_then(|n| n.to_str()) {
+            h.write(name.as_bytes());
+        }
+        h.u64(fs::read(f).map(|b| fnv_bytes(&b)).unwrap_or(0));
+    }
+    h.finish()
+}
+
+/// `(hits, misses)` so far — positive evidence for tests/diagnostics that
+/// replay actually engaged rather than silently re-recording.
+pub fn stats(interp: &Interp) -> Option<(u64, u64)> {
+    interp.tc_cache.as_ref().map(|st| (st.hits, st.misses))
 }
 
 #[cfg(test)]
