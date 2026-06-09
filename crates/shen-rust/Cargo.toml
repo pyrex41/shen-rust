@@ -45,6 +45,13 @@ jit = [
 name = "vm_vs_treewalk"
 harness = false
 
+# DECISIVE 3-way: tree-walk vs bytecode VM vs AOT-native (klcompile output)
+# on the same fib/sumto/count-down-list workloads. `cargo run --release
+# --bench aot_vs_vm_vs_treewalk`.
+[[bench]]
+name = "aot_vs_vm_vs_treewalk"
+harness = false
+
 # Warm/served measurement: does the VM beat the tree-walker on a *repeated*
 # type-check of the heavy kernel corpus (the warm thesis the one-shot metric
 # can't test)? `cargo run --release --bench warm_typecheck` (tree-walk) vs
