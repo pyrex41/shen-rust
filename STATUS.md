@@ -35,10 +35,13 @@ What's in the tree today:
 - **shengen** (`crates/shengen-rust/`) — Shen sequent-calc specs → Rust guard
   types; `specs/core.shen`.
 
-Performance vs the reference `shen-cl` (SBCL) on `--kernel-tests`: **~3.55×**
-(down from ~17× at first conformance). The remaining gap is structural — the
-boxed-`Value` + interpreted-dispatch model, not a single hot spot. Full story in
-`PERFORMANCE.md`, `BENCHMARKS.md`, and `design/perf-*.md`.
+Performance vs the reference `shen-cl` (SBCL) on one-shot `--kernel-tests`:
+**~3.3× bare** (≈4.3 s vs ≈1.3 s, paired 2026-06-09; down from ~17× at first
+conformance), **ahead of shen-cl with warm tc-cache** (≈1.28 s, off by
+default). The remaining bare gap is structural — the boxed-`Value` +
+interpreted-dispatch model, not a single hot spot. On served workloads the
+story inverts: VM ~2.3× warm, AOT overlay ~3.1× over that on spec code. Full
+story in `PERFORMANCE.md`, `BENCHMARKS.md`, and `design/perf-*.md`.
 
 ## Milestones
 

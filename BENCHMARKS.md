@@ -12,12 +12,16 @@ tests) through both ports on the same machine, interleaved.
 
 | Port | `--kernel-tests` | vs shen-cl |
 |---|---:|---:|
-| shen-cl (SBCL interpreted) | ≈ 2 s | 1× |
-| **shen-rust (release)** | ≈ 7 s | **~3.55×** |
+| shen-cl (SBCL interpreted) | ≈ 1.3 s | 1× |
+| **shen-rust (release, bare)** | ≈ 4.3 s | **~3.3×** |
+| shen-rust + warm tc-cache (`SHEN_RUST_TC_CACHE`) | ≈ 1.28 s | **~1× (ahead)** |
 
-Down from ~17× at first conformance (see `PERFORMANCE.md` for the path). The
-remaining gap is the boxed-`Value` + interpreted-dispatch model, not a single
-hot spot — every local lever returned ≤ ~5%.
+(Paired interleaved, 2026-06-09. Earlier snapshots read ≈7 s vs ≈2 s = ~3.55×;
+both ports got faster on this box and the dispatch-table fixes bought ~5% —
+the *ratio* is the stable claim.) Down from ~17× at first conformance (see
+`PERFORMANCE.md` for the path). The remaining bare gap is the boxed-`Value` +
+interpreted-dispatch model, not a single hot spot — every local lever returned
+≤ ~5%. The tc-cache row is verdict memoization (off by default), not raw speed.
 
 ## Warm / served: VM vs tree-walker
 

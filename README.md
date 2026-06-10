@@ -109,12 +109,33 @@ scripts/                    gates.sh (CI), benches, cross-port + warm benchmarks
 
 ## Performance
 
-The reference target is the upstream `shen-cl` (SBCL) port. On the one-shot
-`--kernel-tests` metric `shen-rust` is ~3.55× off SBCL — a structural gap from
-the boxed-`Value` + interpreted-dispatch model, not a single hot spot (every
-local lever has returned ≤ ~5 %). The bytecode VM wins ~2.3× on warm / served
-workloads, which is why it's exposed via `--served`. Full history and the
-GC / value-representation / JIT ladder live in `PERFORMANCE.md`, `BENCHMARKS.md`,
+The reference target is the upstream `shen-cl` (SBCL) port. Two metrics, two
+answers (paired interleaved runs, 2026-06-09, Apple M-series):
+
+**One-shot** (`--kernel-tests`, boot + load + run + exit):
+
+| Config | Wall | vs shen-cl |
+|---|---:|---:|
+| shen-cl (SBCL) | ≈ 1.3 s | 1× |
+| shen-rust, bare | ≈ 4.3 s | **~3.3× off** |
+| shen-rust + tc-cache (`SHEN_RUST_TC_CACHE=<dir>`, warm) | ≈ 1.28 s | **ahead** |
+
+The bare gap is structural — the boxed-`Value` + interpreted-dispatch model,
+not a single hot spot (every local lever has returned ≤ ~5 %). The tc-cache
+win is typecheck-verdict memoization, not raw speed; it's off by default.
+
+**Served** (long-lived process: load once, serve many evaluations) — the
+funded direction, where the tiers stack:
+
+| Tier | vs tree-walk loaded | vs VM loaded |
+|---|---:|---:|
+| bytecode VM (`--served`) | ~2.3× | 1× |
+| **AOT overlay** (committed `.shen` → native) | ~5.3–11.7× | **~1.9–3.2×** |
+
+On served spec code the overlay leaves the interpreter entirely (the
+SBCL-shaped answer for that niche): `benches/authz_served.rs` measures
+~3.1× over the VM-loaded arm. Full history and the GC /
+value-representation / JIT ladder live in `PERFORMANCE.md`, `BENCHMARKS.md`,
 and `design/perf-*.md`.
 
 ## Development
