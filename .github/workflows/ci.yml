@@ -17,10 +17,11 @@ env:
 
 jobs:
   gates:
-    # The single source of truth: the same eight gates developers run locally
+    # The single source of truth: the same nine gates developers run locally
     # (shengen-codegen, fmt+clippy, build, test, shen-check, tcb-audit,
-    # kernel-aot-audit, kernel-tests = 134/0). Self-contained — no SBCL/shen-cl
-    # needed (the cross-port benchmark is not a gate).
+    # kernel-aot-audit, kernel-tests = 134/0, kernel-tests-debug = the same
+    # suite with the heap-reentrancy sentinel live). Self-contained — no
+    # SBCL/shen-cl needed (the cross-port benchmark is not a gate).
     name: gates (scripts/gates.sh)
     runs-on: ubuntu-latest
     timeout-minutes: 60

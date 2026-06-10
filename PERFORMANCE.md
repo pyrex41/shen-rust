@@ -3,10 +3,12 @@
 ## Current state
 
 On the full `--kernel-tests` suite, against the reference `shen-cl` (SBCL)
-interpreter, `shen-rust` is **~3.55× slower** (≈7s vs ≈2s loaded) — down from
-**~17×** at first conformance. Measure head-to-head with
-`scripts/cross-port-bench.sh` (interleaved; the machine has ~5–12% thermal
-variance, so trust min-of-N, not single runs).
+interpreter, `shen-rust` is **~3.0× slower** (≈3.0s vs ≈1.0s wall, paired
+interleaved min-of-5, 2026-06-10) — down from **~17×** at first conformance.
+With a warm tc-cache (verdict memoization, off by default) it runs **at
+parity**. Measure head-to-head with `scripts/cross-port-bench.sh`
+(interleaved; the machine has ~5–12% thermal variance, so trust min-of-N,
+not single runs).
 
 The bytecode VM is **~2.3× faster than the tree-walker on warm / served
 workloads** (`scripts/warm-bench.sh`), which is why it ships behind `--served`
@@ -20,7 +22,7 @@ The living, detailed record is in `design/`:
 - `design/jit-productionization-plan.md` — the Cranelift JIT, and its §5
   falsification for type-checker closures.
 
-## How the gap was closed (17× → ~3.55×)
+## How the gap was closed (17× → ~3.0×)
 
 1. **Tree-walker / dispatch surgery** (17.5s → ~5.7s): locals-by-reference +
    scope stack (killed the quadratic per-arg `locals.clone()`), Vec-indexed
@@ -33,8 +35,20 @@ The living, detailed record is in `design/`:
 3. **Value representation**: `enum Value` (24 B, `Rc` everywhere) → word-sized
    `struct Value(u64)` tagged, with a tracing GC heap behind it (collection
    built + validated, currently grow-only).
+4. **Runtime-overhead strip, 2026-06-10** (~18% cumulative, 3.3× → 3.0×):
+   release profile to `opt-level=3` + thin LTO + one codegen unit (~5%); the
+   **split-TLS heap** — the thread-local `RefCell<Heap>` was a *destructor
+   key* paying a dtor-state check plus borrow flags on every `Value` heap op,
+   replaced by a no-`Drop` `Cell<*mut Heap>` fast path that compiles to a
+   bare TLS load (~8%, the whole profiled TLS tax; adversarially reviewed,
+   miri-clean, debug-sentinel tripwire = Gate 8); and a **direct-mapped
+   intern cache** for AOT call-target resolution, replacing a per-call FNV
+   HashMap probe (~5.5%). One falsified candidate from the same profile:
+   filtered closure-capture caching measured −3.5% — the whole-scope memcpy
+   in `capture_used` beats per-creation lookups even with the free-var walk
+   amortized.
 
-## Why ~3.55× is structural
+## Why the remaining ~3.0× is structural
 
 Two execution-engine bets — the bytecode VM and the Cranelift closure-JIT —
 were both built, validated 134/0, and measured A/B on the one-shot
@@ -43,9 +57,13 @@ slower; JIT −15%). The reason is the cost is the **distributed boxed-`Value` +
 interpreted-dispatch model itself**, not the per-body dispatch mechanism:
 re-encoding how one body runs doesn't change the millions of boxed-value ops,
 and a one-shot metric never amortizes runtime compilation (SBCL pre-compiles
-ahead of time and pays neither). Every local lever that left the model in place
-returned ≤ ~5%. (cons recycling, GC reclamation, `Rc::clone` removal, faster
-`lookup_local`, cons-churn elimination — all measured dead.)
+ahead of time and pays neither). With the runtime's own overheads now stripped
+(item 4 above), the 2026-06-10 profile shows the remaining time is the model
+itself: ~21% interpreter dispatch (`eval_in`), ~17% call plumbing, ~14%
+allocator churn from arg/closure temporaries — no single hot spot, each
+remaining local lever ≤ ~8%. (cons recycling, GC reclamation, `Rc::clone`
+removal, faster `lookup_local`, cons-churn elimination, filtered capture
+caching — all measured dead.)
 
 ## The warm/served decision
 

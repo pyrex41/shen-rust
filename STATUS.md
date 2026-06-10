@@ -7,7 +7,8 @@ A working port of the Shen language to Rust. It boots the upstream
 kernel tests (`scripts/kernel-tests.sh`) — in every execution mode. All gates
 green (`scripts/gates.sh`): shengen-codegen, fmt+clippy, build, test
 (unit + 10 integration suites), shen-check, tcb-audit, kernel-aot-audit,
-kernel-tests.
+kernel-tests, kernel-tests-debug (the debug-build run carries the heap
+reentrancy sentinel — see the split-TLS note in `value.rs`).
 
 What's in the tree today:
 
@@ -36,12 +37,12 @@ What's in the tree today:
   types; `specs/core.shen`.
 
 Performance vs the reference `shen-cl` (SBCL) on one-shot `--kernel-tests`:
-**~3.3× bare** (≈4.3 s vs ≈1.3 s, paired 2026-06-09; down from ~17× at first
-conformance), **ahead of shen-cl with warm tc-cache** (≈1.28 s, off by
-default). The remaining bare gap is structural — the boxed-`Value` +
-interpreted-dispatch model, not a single hot spot. On served workloads the
-story inverts: VM ~2.3× warm, AOT overlay ~3.1× over that on spec code. Full
-story in `PERFORMANCE.md`, `BENCHMARKS.md`, and `design/perf-*.md`.
+**~3.0× bare** (≈3.0 s vs ≈1.0 s, paired 2026-06-10; down from ~17× at first
+conformance), **at parity with warm tc-cache** (≈1.0 s, off by default). The
+remaining bare gap is structural — the boxed-`Value` + interpreted-dispatch
+model, not a single hot spot. On served workloads the story inverts: VM
+~2.3× warm, AOT overlay ~3.1× over that on spec code. Full story in
+`PERFORMANCE.md`, `BENCHMARKS.md`, and `design/perf-*.md`.
 
 ## Milestones
 
@@ -74,6 +75,13 @@ story in `PERFORMANCE.md`, `BENCHMARKS.md`, and `design/perf-*.md`.
   VM-loaded arm; verify/generate examples serve it opt-in. JIT-W2-for-served
   parked on a measured 0.0% (the JIT cannot see loaded named defuns; zero JIT
   executions on the authz workload).
+- **Runtime-overhead strip** (2026-06-10) — a profiling round took one-shot
+  `--kernel-tests` from ~3.3× to ~3.0× off shen-cl (~18% cumulative):
+  thin-LTO release profile, the **split-TLS heap** (the thread-local
+  `RefCell<Heap>` was a destructor key; now a no-`Drop` raw-pointer fast path
+  — adversarially reviewed, miri-clean, with a new debug-sentinel gate), and
+  a direct-mapped intern cache for AOT call-target resolution. One falsified
+  candidate recorded (filtered closure-capture caching, −3.5%).
 - **Rename** — the engine port `shen-cedar` → **`shen-rust`** (the name
   `shen-cedar` now denotes the Shen+Cedar examples). History before that commit
   says "shen-cedar".

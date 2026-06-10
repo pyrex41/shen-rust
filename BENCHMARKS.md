@@ -12,16 +12,19 @@ tests) through both ports on the same machine, interleaved.
 
 | Port | `--kernel-tests` | vs shen-cl |
 |---|---:|---:|
-| shen-cl (SBCL interpreted) | ≈ 1.3 s | 1× |
-| **shen-rust (release, bare)** | ≈ 4.3 s | **~3.3×** |
-| shen-rust + warm tc-cache (`SHEN_RUST_TC_CACHE`) | ≈ 1.28 s | **~1× (ahead)** |
+| shen-cl (SBCL interpreted) | ≈ 1.0 s | 1× |
+| **shen-rust (release, bare)** | ≈ 3.0 s | **~3.0×** |
+| shen-rust + warm tc-cache (`SHEN_RUST_TC_CACHE`) | ≈ 1.0 s | **~1× (parity / ahead)** |
 
-(Paired interleaved, 2026-06-09. Earlier snapshots read ≈7 s vs ≈2 s = ~3.55×;
-both ports got faster on this box and the dispatch-table fixes bought ~5% —
-the *ratio* is the stable claim.) Down from ~17× at first conformance (see
-`PERFORMANCE.md` for the path). The remaining bare gap is the boxed-`Value` +
-interpreted-dispatch model, not a single hot spot — every local lever returned
-≤ ~5%. The tc-cache row is verdict memoization (off by default), not raw speed.
+(Paired interleaved min-of-5, 2026-06-10. The 2026-06-09 snapshot read
+≈4.3 s vs ≈1.3 s = ~3.3×; the 2026-06-10 profiling round — thin-LTO build
+flags, the split-TLS heap, the direct-mapped intern cache — bought ~18%
+cumulative, and shen-cl also ran faster on this box that day. The *ratio* is
+the stable claim.) Down from ~17× at first conformance (see `PERFORMANCE.md`
+for the path). The remaining bare gap is the boxed-`Value` +
+interpreted-dispatch model, not a single hot spot — each remaining local
+lever measures ≤ ~8%. The tc-cache row is verdict memoization (off by
+default), not raw speed.
 
 ## Warm / served: VM vs tree-walker
 
@@ -91,7 +94,9 @@ JIT-W2-for-served.
 
 The upstream suite runs end-to-end via `bin/shen-rust --kernel-tests`:
 **passed: 134, failed: 0** — in every engine mode (tree-walk, `SHEN_RUST_VM=1`,
-`--served`). This is Gate 7 in `scripts/gates.sh`.
+`--served`). This is Gate 7 in `scripts/gates.sh`; Gate 8 repeats it in a
+debug build, where the heap-reentrancy sentinel (`value.rs` split-TLS note)
+is live.
 
 ## Methodology
 

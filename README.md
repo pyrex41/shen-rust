@@ -110,19 +110,22 @@ scripts/                    gates.sh (CI), benches, cross-port + warm benchmarks
 ## Performance
 
 The reference target is the upstream `shen-cl` (SBCL) port. Two metrics, two
-answers (paired interleaved runs, 2026-06-09, Apple M-series):
+answers (paired interleaved runs, 2026-06-10, Apple M-series):
 
 **One-shot** (`--kernel-tests`, boot + load + run + exit):
 
 | Config | Wall | vs shen-cl |
 |---|---:|---:|
-| shen-cl (SBCL) | ≈ 1.3 s | 1× |
-| shen-rust, bare | ≈ 4.3 s | **~3.3× off** |
-| shen-rust + tc-cache (`SHEN_RUST_TC_CACHE=<dir>`, warm) | ≈ 1.28 s | **ahead** |
+| shen-cl (SBCL) | ≈ 1.0 s | 1× |
+| shen-rust, bare | ≈ 3.0 s | **~3.0× off** |
+| shen-rust + tc-cache (`SHEN_RUST_TC_CACHE=<dir>`, warm) | ≈ 1.0 s | **at parity / ahead** |
 
 The bare gap is structural — the boxed-`Value` + interpreted-dispatch model,
-not a single hot spot (every local lever has returned ≤ ~5 %). The tc-cache
-win is typecheck-verdict memoization, not raw speed; it's off by default.
+not a single hot spot. A 2026-06-10 profiling round stripped the runtime's
+own overheads (split-TLS heap access, direct-mapped call-target interning,
+thin-LTO build) for ~18 % cumulative; what remains is the model, where each
+local lever measures ≤ ~8 %. The tc-cache win is typecheck-verdict
+memoization, not raw speed; it's off by default.
 
 **Served** (long-lived process: load once, serve many evaluations) — the
 funded direction, where the tiers stack:
