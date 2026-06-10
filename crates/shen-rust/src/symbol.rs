@@ -10,6 +10,7 @@
 
 use std::collections::HashMap;
 use std::hash::{BuildHasherDefault, Hasher};
+use std::rc::Rc;
 
 /// Stable integer handle for a symbol. Two `SymId`s are equal iff the
 /// underlying symbol names are equal (modulo interning).
@@ -54,8 +55,11 @@ type BuildFnv = BuildHasherDefault<FnvHasher>;
 /// String <-> id interner. Single-threaded; one per `Interp`.
 #[derive(Debug, Default)]
 pub struct Interner {
-    names: Vec<String>,
-    by_name: HashMap<String, SymId, BuildFnv>,
+    /// `Rc<str>` so `names` and `by_name` share one allocation per symbol.
+    /// Gensyms — minted en masse by the kernel type-checker — always take
+    /// the miss path, which previously paid two `String` allocations.
+    names: Vec<Rc<str>>,
+    by_name: HashMap<Rc<str>, SymId, BuildFnv>,
     /// Pointer-keyed cache for `&'static str` call targets emitted by the
     /// AOT compiler. Every AOT call site re-resolves its callee name; since
     /// those are string literals with stable addresses, caching by pointer
@@ -77,8 +81,9 @@ impl Interner {
             return id;
         }
         let id = SymId(self.names.len() as u32);
-        self.names.push(name.to_owned());
-        self.by_name.insert(name.to_owned(), id);
+        let name: Rc<str> = Rc::from(name);
+        self.names.push(Rc::clone(&name));
+        self.by_name.insert(name, id);
         id
     }
 
