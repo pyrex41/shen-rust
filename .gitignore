@@ -6,3 +6,4 @@ result
 result-*
 .envrc.local
 .claude/
+.cursor/

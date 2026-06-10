@@ -21,7 +21,8 @@ crates/shen-rust             engine: runtime + evaluator + kernel boot + Cedar
         |   vm/              bytecode VM (opcode / compiler / exec / stats)
         |   jit/             experimental Cranelift JIT (feature = "jit")
         |   aot/             generated kernel modules + AOT runtime helpers
-        |   gc/              heap + collector (grow-only today)
+        |   gc/              non-moving mark-sweep heap + collector
+        |                    (collection opt-in via SHEN_RUST_GC)
         |   cedar/           cedar-policy bridge → first-class cedar.* values
         v
 cedar-policy crate           (also used directly from examples/shen-cedar-authz)
@@ -36,11 +37,15 @@ crates/shengen-rust          Shen sequent-calc specs → Rust guard types
 `Rc`-shared enum. Immediates (Int, Float, Sym, Bool, Nil) live inline with no
 allocation; compound values (cons, string, vector, closure, stream, and
 `Foreign` host handles) carry a heap reference behind the tag, managed by the
-`gc/` heap. This is the GC ladder's "Step 3": flipping the old 24-byte
-`Rc`-enum to a `Copy` word cut per-op memory traffic and unblocked native
-codegen. Collection itself is built and validated but runs grow-only for now
-(Step 4 turns it on). Hand-written `match` sites and the AOT `rt::` helpers are
-the only code that knows the bit layout; everything else goes through accessors.
+`gc/` heap — a non-moving mark-sweep collector with `Copy` handles. Flipping
+the old 24-byte `Rc`-enum to a `Copy` word (GC Step 3) cut per-op memory
+traffic and unblocked native codegen; collection (Step 4) is **opt-in** via
+`SHEN_RUST_GC`: allocation never collects — the interpreter collects at its
+depth-0 safepoints with hybrid roots (precise interpreter tables + a
+conservative native-stack scan), bounding the heap for long-running served
+embeddings, while the grow-only default protects one-shot latency. Hand-written
+`match` sites and the AOT `rt::` helpers are the only code that knows the bit
+layout; everything else goes through accessors.
 
 ## Execution tiers
 
@@ -64,8 +69,10 @@ against the tree-walker, all 134/0):
 
 ## Error handling
 
-`eval` returns `Result<Value, ShenError>` where `ShenError` carries a `Value`
-payload; `trap-error` is `match eval(body) { Ok(v) => v, Err(e) => call(handler, e) }`.
+`eval` returns `Result<Value, ShenError>`; `ShenError` carries the message
+string (plus a cancelled-vs-normal kind for evaluation budgets/deadlines), and
+`trap-error` re-presents it to the user handler as a `Value` error object:
+`match eval(body) { Ok(v) => v, Err(e) => call(handler, error_value(e)) }`.
 Deep non-tail recursion in the AOT reader / type-checker runs on a large-stack
 worker thread (1 GB for `--kernel-tests`, 64 MB for the REPL).
 

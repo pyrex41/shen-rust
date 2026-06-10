@@ -30,6 +30,19 @@ cargo run --release --bin shen-rust -- --served
 cargo run --release --bin shen-rust -- --kernel-tests
 ```
 
+Rustup users get the pinned toolchain from `rust-toolchain.toml`
+automatically; a Nix flake (`nix develop`) provides a dev shell.
+
+## Documentation
+
+| Doc | Contents |
+|---|---|
+| [STATUS.md](STATUS.md) | current state, milestones, known limitations |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | layering, value representation, execution tiers, Cedar bridge |
+| [PERFORMANCE.md](PERFORMANCE.md) | how the gap to `shen-cl` was closed (17× → ~3×), and what remains |
+| [BENCHMARKS.md](BENCHMARKS.md) | the numbers, with methodology — all reproducible from `scripts/` and `benches/` |
+| `design/` | internal working notes: decision records, handoffs, falsified experiments |
+
 ## Execution engine
 
 The same Shen semantics run on tiers chosen for the workload:
@@ -99,8 +112,8 @@ See the crate's [README](examples/shen-cedar-authz/README.md) for details.
 
 `crates/shengen-rust` compiles Shen sequent-calculus specs (`specs/`) into Rust
 **guard types**, so a spec change becomes a compile error rather than silent
-drift. This is the "Shen as a formal-spec language for other code" line; see
-`sb.toml` and the `sb:*` skills.
+drift — Shen as a formal-spec language for other code. The specs are also
+re-type-checked by the engine itself on every CI run (`scripts/shen-check.sh`).
 
 ## Layout
 

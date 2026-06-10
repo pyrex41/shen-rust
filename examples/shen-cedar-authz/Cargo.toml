@@ -5,6 +5,7 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
+description = "Worked examples combining the shen-rust engine with AWS Cedar (gate / verify / generate)"
 publish = false
 
 # Worked examples of combining the Shen engine (served / VM mode) with AWS
