@@ -26,6 +26,28 @@ use cedar_policy::{
 use shen_cedar_authz::{entities, schema, validate_policies, ShenHost};
 use shen_rust::value::Value;
 
+// AOT overlay for the verifier (generated:
+// scripts/codegen-shen-aot.sh examples/shen-cedar-authz/examples/gen/verify_aot.rs
+//   examples/shen-cedar-authz/spec/verify.shen).
+#[allow(
+    unused_variables,
+    unused_braces,
+    unused_imports,
+    clippy::let_and_return,
+    clippy::needless_question_mark,
+    clippy::redundant_clone,
+    clippy::clone_on_copy,
+    clippy::needless_late_init,
+    clippy::len_zero,
+    clippy::needless_borrow,
+    clippy::approx_constant,
+    clippy::redundant_closure_call,
+    non_snake_case
+)]
+mod gen {
+    include!("gen/verify_aot.rs");
+}
+
 /// The Shen verifier: hierarchy-aware scope reasoning, loaded into the engine.
 /// Lives in `spec/verify.shen` — the single source of truth shared with the
 /// `authz_served` bench's AOT overlay. A scope is encoded `[kind id]` with
@@ -114,7 +136,11 @@ fn run() -> i32 {
         eprintln!("load verifier: {e}");
         return 1;
     }
-    eprintln!("ready.\n");
+    // Opt-in AOT overlay: serve the verifier as compiled native code when
+    // the committed artifact matches the live spec + kernel; on any
+    // mismatch the loaded VM keeps serving (pure speed swap).
+    let aot = host.install_aot_overlay(&gen::overlay(), VERIFIER);
+    eprintln!("ready{}.\n", if aot { " (AOT overlay)" } else { "" });
 
     // Build the membership DAG as Shen data once.
     let edges: Vec<Value> = HIERARCHY

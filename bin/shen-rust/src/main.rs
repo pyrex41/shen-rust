@@ -190,6 +190,11 @@ fn run_aot_gen(rest: &[String]) -> ExitCode {
             return ExitCode::from(1);
         }
     };
+    if let Some(parent) = out_path.parent() {
+        if !parent.as_os_str().is_empty() {
+            std::fs::create_dir_all(parent).ok();
+        }
+    }
     if let Err(e) = std::fs::write(&out_path, module) {
         eprintln!("aot-gen: write {out_path:?}: {e}");
         return ExitCode::from(1);

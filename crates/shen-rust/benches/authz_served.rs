@@ -44,6 +44,15 @@
 //! KILL-GATE: the AOT arm must be >= 1.5x over the VM-loaded arm
 //! (min-of-10 ms/batch, paired in-process, same-session interleaved
 //! runs) with identity green before any default-on consideration.
+//!
+//! A `--features jit SHEN_RUST_JIT=1 SHEN_RUST_JIT_STATS=1` run is a
+//! COVERAGE/RESIDUAL PROBE ONLY, not a Win-A W2 performance forecast:
+//! it exercises the falsified J2 anonymous-closure tier while every
+//! named defun stays tree-walk/VM regardless (do_defun has no JIT
+//! tier). Probe result 2026-06-09: 5 compiled / 13 bailed bodies,
+//! **0 JIT executions** on this workload (it is all named defuns) and
+//! 0.0% JIT->JIT calls on normal_form_aot — the W2-for-served revival
+//! criterion (cross-edges >~40%) is unmet at zero.
 
 // Generated code: keep the lint posture of klcompile output.
 #![allow(

@@ -25,6 +25,28 @@ use shen_cedar_authz::{entities, read_list, schema, validate_policies, ShenHost}
 /// The committed Shen spec — the single source of truth.
 const SPEC_SRC: &str = include_str!("../spec/authz.shen");
 
+// AOT overlay for the spec (generated:
+// scripts/codegen-shen-aot.sh examples/shen-cedar-authz/examples/gen/authz_aot.rs
+//   examples/shen-cedar-authz/spec/authz.shen).
+#[allow(
+    unused_variables,
+    unused_braces,
+    unused_imports,
+    clippy::let_and_return,
+    clippy::needless_question_mark,
+    clippy::redundant_clone,
+    clippy::clone_on_copy,
+    clippy::needless_late_init,
+    clippy::len_zero,
+    clippy::needless_borrow,
+    clippy::approx_constant,
+    clippy::redundant_closure_call,
+    non_snake_case
+)]
+mod gen {
+    include!("gen/authz_aot.rs");
+}
+
 const ENTITIES_JSON: &str = r#"[
     { "uid": {"type":"User","id":"dana"}, "attrs": {}, "parents": [{"type":"Role","id":"Admin"}] },
     { "uid": {"type":"User","id":"erin"}, "attrs": {}, "parents": [{"type":"Role","id":"Lead"}] },
@@ -40,6 +62,31 @@ fn main() {
         .spawn(run)
         .expect("spawn");
     std::process::exit(handle.join().unwrap_or(2));
+}
+
+/// Run the Shen closure and render the deduplicated Cedar permits.
+fn render_cedar(host: &mut ShenHost) -> Result<String, shen_rust::error::ShenError> {
+    let grants_v = host.call("expand-all", vec![])?;
+    let mut cedar = String::new();
+    let mut seen: Vec<String> = Vec::new();
+    for triple in read_list(&grants_v) {
+        let parts = read_list(&triple);
+        if parts.len() != 3 {
+            continue;
+        }
+        let policy = format!(
+            "permit(principal in Role::{:?}, action == Action::{:?}, resource == ShenCap::{:?});",
+            host.text(&parts[0]),
+            host.text(&parts[1]),
+            host.text(&parts[2]),
+        );
+        if !seen.contains(&policy) {
+            seen.push(policy.clone());
+            cedar.push_str(&policy);
+            cedar.push('\n');
+        }
+    }
+    Ok(cedar)
 }
 
 fn run() -> i32 {
@@ -63,35 +110,32 @@ fn run() -> i32 {
         eprintln!("load spec: {e}");
         return 1;
     }
-    eprintln!("ready (spec: spec/authz.shen).\n");
-
-    // Shen computes the transitive grant closure.
-    let grants_v = match host.call("expand-all", vec![]) {
-        Ok(v) => v,
+    // Reference closure on the loaded engine, then the opt-in AOT
+    // overlay; the generated artifact must be byte-identical either way
+    // (the overlay is a pure speed swap — this is the untimed
+    // cross-check).
+    let cedar_loaded = match render_cedar(&mut host) {
+        Ok(c) => c,
         Err(e) => {
             eprintln!("expand-all: {e}");
             return 1;
         }
     };
-
-    let mut cedar = String::new();
-    let mut seen: Vec<String> = Vec::new();
-    for triple in read_list(&grants_v) {
-        let parts = read_list(&triple);
-        if parts.len() != 3 {
-            continue;
+    let aot = host.install_aot_overlay(&gen::overlay(), SPEC_SRC);
+    eprintln!(
+        "ready (spec: spec/authz.shen{}).\n",
+        if aot { ", AOT overlay" } else { "" }
+    );
+    let cedar = match render_cedar(&mut host) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("expand-all (overlay): {e}");
+            return 1;
         }
-        let policy = format!(
-            "permit(principal in Role::{:?}, action == Action::{:?}, resource == ShenCap::{:?});",
-            host.text(&parts[0]),
-            host.text(&parts[1]),
-            host.text(&parts[2]),
-        );
-        if !seen.contains(&policy) {
-            seen.push(policy.clone());
-            cedar.push_str(&policy);
-            cedar.push('\n');
-        }
+    };
+    if cedar != cedar_loaded {
+        eprintln!("AOT overlay changed the generated Cedar — refusing to continue.");
+        return 1;
     }
 
     println!("=== Cedar generated from spec/authz.shen ===\n{cedar}");
@@ -114,7 +158,7 @@ fn run() -> i32 {
     }
     println!(
         "Generated {} permits — Cedar-parsed + strict-validated ✓",
-        seen.len()
+        cedar.lines().count()
     );
 
     // Write the build artifact.

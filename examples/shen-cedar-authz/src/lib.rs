@@ -130,6 +130,23 @@ impl ShenHost {
     pub fn intern(&mut self, name: &str) -> SymId {
         self.interp.intern(name)
     }
+
+    /// Opt-in AOT overlay: swap loaded defuns for a klcompile-emitted
+    /// native module iff its manifest matches the live sources and the
+    /// booted kernel (see `shen_rust::aot::overlay`). `live_src` must be
+    /// the exact source text this host loaded, concatenated in load
+    /// order. Returns whether the overlay installed; on any mismatch the
+    /// loaded engine keeps serving — pure speed swap, never an error.
+    pub fn install_aot_overlay(
+        &mut self,
+        module: &shen_rust::aot::overlay::OverlayModule,
+        live_src: &str,
+    ) -> bool {
+        match shen_rust::interp::boot::find_kernel_dir() {
+            Ok(dir) => self.interp.install_overlay_if_match(module, live_src, &dir),
+            Err(_) => false,
+        }
+    }
 }
 
 /// Walk a Shen proper list into a `Vec<Value>` (`Value` is `Copy`).
