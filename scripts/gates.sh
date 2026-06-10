@@ -27,6 +27,7 @@ run "Gate 4: shen-check"     scripts/shen-check.sh
 run "Gate 5: tcb-audit"      scripts/tcb-audit.sh
 run "Gate 6: kernel-aot-audit" scripts/kernel-aot-audit.sh
 run "Gate 7: kernel-tests"   scripts/kernel-tests.sh
+run "Gate 8: kernel-tests-debug" scripts/kernel-tests.sh --debug
 
 echo
 if [ ${#fail[@]} -eq 0 ]; then

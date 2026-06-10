@@ -23,7 +23,8 @@
 //!
 //! ## Where the heap lives
 //!
-//! A **thread-local grow-only [`gc::Heap`]** ([`HEAP`]) backs construction, so
+//! A **thread-local grow-only [`gc::Heap`]** (`HEAP_OWNER`/`HEAP_PTR`, see the
+//! split-TLS note below) backs construction, so
 //! the Step-1 constructor/inspector seam keeps its signatures (`Value::cons(a,
 //! b)` gains no `Heap` parameter) and the thousands of call sites don't churn.
 //! Collection stays **off** in Step 3 (the precise root set is Step 4); the heap
@@ -32,7 +33,7 @@
 //! is non-moving (stable addresses) and grow-only (nodes never freed).
 
 use std::any::Any;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell, UnsafeCell};
 use std::fmt;
 use std::rc::Rc;
 
@@ -40,24 +41,160 @@ use crate::gc::{Gc, GcObject, Heap, HeapKind};
 use crate::kl::ast::KlExpr;
 use crate::symbol::SymId;
 
+// ## The split-TLS heap (perf: the per-access TLS+RefCell tax)
+//
+// The heap used to live in a single `thread_local! { RefCell<Heap> }`. That
+// shape paid three costs on EVERY `Value` heap access (~8.7% of kernel-tests
+// wall, 2026-06-10 profile): the TLS address lookup, a destructor-state check
+// (`Heap` implements `Drop`, which makes the key a destructor key even with
+// const-init), and the `RefCell` borrow-flag read-modify-writes. The RefCell
+// guarded nothing in practice: no closure passed to the funnels below
+// re-enters heap access (allocation never collects on a grow-only heap, and
+// `gc_edges`/opaque `Drop` impls are pure bit-pushes), and every
+// reference-returning inspector (`head`/`tail`/`as_str`/`as_closure`) already
+// extracts a raw pointer inside the borrow and derefs it after — their
+// soundness rests on the non-moving, never-freed heap, not the borrow.
+//
+// So the heap is split across two keys:
+//
+// * `HEAP_PTR` — a **no-`Drop`, const-init** `Cell<*mut Heap>`, the fast
+//   path. This is the one `thread_local!` shape that compiles to a bare TLS
+//   address load: no destructor-state check, no lazy-init branch. Null until
+//   the first access; nulled again at thread exit (see `HeapOwner::drop`).
+// * `HEAP_OWNER` — the owning slot, lazily initialized on the first heap
+//   access. Runs `Heap::drop` at thread exit exactly like the old slot (no
+//   leak). The `Box` pins the heap's address independent of TLS storage; the
+//   `UnsafeCell` lets the fast path derive `&mut Heap` from a pointer that
+//   was obtained through a shared reference.
+//
+// INVARIANT (debug-checked by `HEAP_BORROWS`, silent in release): code
+// reachable from a `with_heap`/`with_heap_mut` closure must never call back
+// into these funnels. Today that holds because the closures only call `Heap`
+// methods, `Value::from_gc`/`to_gc` bit-casts, the global allocator, and
+// `Rc`/`Any` operations. GC Step 4 note: `Heap::collect`'s mark phase calls
+// `GcObject::gc_edges` and its sweep drops opaque payloads — those impls must
+// stay free of `Value` heap accessors (they are today; keep it that way).
 thread_local! {
+    /// Fast-path raw pointer to this thread's heap. See the module note above
+    /// for why this is a separate key from the owner.
+    static HEAP_PTR: Cell<*mut Heap> = const { Cell::new(std::ptr::null_mut()) };
+
     /// The per-thread GC heap that backs every heap-allocated `Value`. Grow-only
     /// in Step 3 (see the module docs). Lazily initialized on first use, so
     /// `value.rs` unit tests and the differential oracle — which build `Value`s
     /// with no `Interp` — work with no explicit setup.
-    static HEAP: RefCell<Heap> = const { RefCell::new(Heap::grow_only()) };
+    static HEAP_OWNER: HeapOwner = HeapOwner(Box::new(UnsafeCell::new(Heap::grow_only())));
+
+    /// Debug-only reentrancy sentinel standing in for `RefCell`'s dynamic
+    /// borrow check: 0 = free, >0 = shared borrows, -1 = mutable borrow.
+    /// Catches both directions (mutable-during-shared and anything-during-
+    /// mutable) under `cargo test` and miri; compiled out of release builds.
+    #[cfg(debug_assertions)]
+    static HEAP_BORROWS: Cell<i32> = const { Cell::new(0) };
+}
+
+/// Owns the thread's heap. On thread exit, nulls `HEAP_PTR` **before**
+/// `Heap::drop` runs, so a heap access from another TLS destructor takes the
+/// cold path and panics deterministically on the destroyed `HEAP_OWNER` key
+/// (matching the old `RefCell` slot's panic) instead of dereferencing a
+/// dangling pointer.
+struct HeapOwner(Box<UnsafeCell<Heap>>);
+
+impl Drop for HeapOwner {
+    fn drop(&mut self) {
+        // `HEAP_PTR` has no destructor, so it is accessible during TLS
+        // teardown in any key order.
+        HEAP_PTR.set(std::ptr::null_mut());
+    }
+}
+
+/// The thread's heap pointer; initializes the owner on first use.
+#[inline]
+fn heap_ptr() -> *mut Heap {
+    let p = HEAP_PTR.get();
+    if p.is_null() {
+        heap_ptr_cold()
+    } else {
+        p
+    }
+}
+
+/// First access on this thread (or access after teardown, which panics on
+/// the destroyed `HEAP_OWNER` key — deliberately).
+#[cold]
+fn heap_ptr_cold() -> *mut Heap {
+    HEAP_OWNER.with(|o| {
+        let p = o.0.get();
+        HEAP_PTR.set(p);
+        p
+    })
+}
+
+/// Debug-only borrow-sentinel guard (see `HEAP_BORROWS`). Unwind-safe: the
+/// `Drop` impl restores the previous state even if the funnel closure panics.
+#[cfg(debug_assertions)]
+struct BorrowGuard {
+    restore: i32,
+}
+
+#[cfg(debug_assertions)]
+impl BorrowGuard {
+    #[inline]
+    fn shared() -> Self {
+        let v = HEAP_BORROWS.get();
+        assert!(
+            v >= 0,
+            "heap re-entered: shared access during mutable borrow"
+        );
+        HEAP_BORROWS.set(v + 1);
+        BorrowGuard { restore: v }
+    }
+
+    #[inline]
+    fn exclusive() -> Self {
+        let v = HEAP_BORROWS.get();
+        assert!(
+            v == 0,
+            "heap re-entered: mutable access during active borrow"
+        );
+        HEAP_BORROWS.set(-1);
+        BorrowGuard { restore: v }
+    }
+}
+
+#[cfg(debug_assertions)]
+impl Drop for BorrowGuard {
+    #[inline]
+    fn drop(&mut self) {
+        HEAP_BORROWS.set(self.restore);
+    }
 }
 
 /// Run `f` with shared access to the thread-local heap.
 #[inline]
 fn with_heap<R>(f: impl FnOnce(&Heap) -> R) -> R {
-    HEAP.with(|h| f(&h.borrow()))
+    let p = heap_ptr();
+    #[cfg(debug_assertions)]
+    let _guard = BorrowGuard::shared();
+    // SAFETY: `p` is non-null (heap_ptr initializes it) and points to this
+    // thread's boxed heap, whose address is pinned for the thread's lifetime
+    // and which is nulled before `Heap::drop`. Single-threaded by
+    // construction (per-thread key); no `&mut` alias can be live here by the
+    // non-reentrancy invariant documented above (debug-checked).
+    f(unsafe { &*p })
 }
 
 /// Run `f` with mutable access to the thread-local heap (allocation).
 #[inline]
 fn with_heap_mut<R>(f: impl FnOnce(&mut Heap) -> R) -> R {
-    HEAP.with(|h| f(&mut h.borrow_mut()))
+    let p = heap_ptr();
+    #[cfg(debug_assertions)]
+    let _guard = BorrowGuard::exclusive();
+    // SAFETY: as in `with_heap`, plus exclusivity: the pointer was derived
+    // through `UnsafeCell::get`, and the non-reentrancy invariant
+    // (debug-checked) guarantees no other `&Heap`/`&mut Heap` derived from it
+    // is live during `f`.
+    f(unsafe { &mut *p })
 }
 
 /// Mutable absvector backing type (legacy alias — absvectors now live as
@@ -706,6 +843,30 @@ fn boolean_sym_ids() -> (SymId, SymId) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Locks the debug-only reentrancy sentinel itself: heap access from
+    /// inside a `with_heap_mut` closure must panic in debug builds (in
+    /// release it would be UB — this test is the tripwire that keeps the
+    /// non-reentrancy invariant honest; see the split-TLS module note).
+    #[test]
+    #[should_panic(expected = "heap re-entered")]
+    #[cfg(debug_assertions)]
+    fn heap_reentry_panics_in_debug() {
+        with_heap_mut(|_| {
+            // Any Value heap accessor re-enters the funnels.
+            let _ = Value::cons(Value::int(1), Value::nil());
+        });
+    }
+
+    /// The sentinel restores state between sequential accesses: a mix of
+    /// shared (eq/inspectors) and mutable (alloc) funnel calls keeps working.
+    #[test]
+    fn heap_sentinel_recovers_between_accesses() {
+        let v = Value::cons(Value::int(1), Value::nil());
+        assert!(shen_eq(&v, &v));
+        let w = Value::cons(Value::int(2), v);
+        assert!(w.is_cons());
+    }
 
     #[test]
     fn word_sized_and_copy() {

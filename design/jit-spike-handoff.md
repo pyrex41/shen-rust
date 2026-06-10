@@ -172,9 +172,11 @@ lessons in memory: aligned caps / no-assert runs gave false 7×s).
    register JIT code regions with the conservative scanner. This is the #1 thing
    to get right and the reason a moving GC was rejected (§6).
 2. **Where the JIT gets the heap.** `Value::cons` etc. use the **thread-local**
-   `HEAP` (`value.rs`). JIT'd code calls a runtime `rt_cons` that does the same —
-   no new heap plumbing needed. (If `HEAP.with` shows up hot, the same
-   "pass the heap via `Interp`" revisit applies to both Rust and JIT paths.)
+   heap (`value.rs`, split `HEAP_PTR`/`HEAP_OWNER` keys since 2026-06-10 — a
+   bare TLS pointer load on the hot path). JIT'd code calls a runtime `rt_cons`
+   that does the same — no new heap plumbing needed. (The old "pass the heap
+   via `Interp`" revisit was judged and rejected in favor of the split-TLS
+   scheme; see the module note in `value.rs`.)
 3. **Tier-up trigger + code cache.** Decide what to JIT and when: simplest is
    compile-on-install for a chosen set of hot kernel functions (offline-ish, like
    AOT), or a call-count threshold for runtime tier-up. Cache finalized code;
