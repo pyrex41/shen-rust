@@ -52,22 +52,42 @@ impl Hasher for FnvHasher {
 
 type BuildFnv = BuildHasherDefault<FnvHasher>;
 
+/// Slot count of the direct-mapped `&'static str`-pointer cache. Power of
+/// two; 8192 × 16 B = 128 KB per `Interner`. The kernel has a few thousand
+/// distinct AOT callee names, so collisions (two literals mapping to one
+/// slot) are rare and only cost a re-intern through `by_name`.
+const PTR_CACHE_SLOTS: usize = 8192;
+
 /// String <-> id interner. Single-threaded; one per `Interp`.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Interner {
     /// `Rc<str>` so `names` and `by_name` share one allocation per symbol.
     /// Gensyms — minted en masse by the kernel type-checker — always take
     /// the miss path, which previously paid two `String` allocations.
     names: Vec<Rc<str>>,
     by_name: HashMap<Rc<str>, SymId, BuildFnv>,
-    /// Pointer-keyed cache for `&'static str` call targets emitted by the
-    /// AOT compiler. Every AOT call site re-resolves its callee name; since
-    /// those are string literals with stable addresses, caching by pointer
-    /// turns a multi-byte string hash + `memcmp` into a single-word hash +
-    /// integer compare. Per-`Interner` (never process-global), so it stays
+    /// Direct-mapped pointer cache for `&'static str` call targets emitted
+    /// by the AOT compiler. Every AOT call site re-resolves its callee name
+    /// (`rt::apply_direct(interp, "shen.foo", ..)`), which made even an
+    /// FNV-hashed `HashMap<usize, SymId>` probe ~8.8% of kernel-tests wall
+    /// (2026-06-10 profile, post-LTO). A direct-mapped slot probe is one
+    /// indexed load + compare, no hashing. Slot key 0 = empty (a literal's
+    /// address is never null); a collision evicts (last-use wins) and the
+    /// loser re-interns through `by_name` — correct because `intern` is
+    /// idempotent. Per-`Interner` (never process-global), so it stays
     /// correct even when several interpreters with different id assignments
     /// coexist.
-    by_ptr: HashMap<usize, SymId, BuildFnv>,
+    by_ptr: Box<[(usize, SymId)]>,
+}
+
+impl Default for Interner {
+    fn default() -> Self {
+        Interner {
+            names: Vec::new(),
+            by_name: HashMap::default(),
+            by_ptr: vec![(0, SymId(0)); PTR_CACHE_SLOTS].into_boxed_slice(),
+        }
+    }
 }
 
 impl Interner {
@@ -89,15 +109,21 @@ impl Interner {
 
     /// Intern a `&'static str` (an AOT call-target literal), caching the
     /// result by the string's address. The first call per literal pays the
-    /// normal string intern; every subsequent call is a single-word lookup.
+    /// normal string intern; every subsequent call is a single direct-mapped
+    /// slot probe (see `by_ptr`).
     #[inline]
     pub fn intern_static(&mut self, name: &'static str) -> SymId {
         let key = name.as_ptr() as usize;
-        if let Some(&id) = self.by_ptr.get(&key) {
+        // Literals are ≥1-byte aligned with addresses spread across rodata;
+        // fold a high-bit window in so neighbours in one object file don't
+        // contend for adjacent-slot runs.
+        let idx = ((key >> 3) ^ (key >> 16)) & (PTR_CACHE_SLOTS - 1);
+        let (k, id) = self.by_ptr[idx];
+        if k == key {
             return id;
         }
         let id = self.intern(name);
-        self.by_ptr.insert(key, id);
+        self.by_ptr[idx] = (key, id);
         id
     }
 
