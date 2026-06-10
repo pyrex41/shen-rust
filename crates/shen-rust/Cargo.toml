@@ -78,6 +78,13 @@ harness = false
 name = "gc_roots_aot_spike"
 harness = false
 
+# GC Step 4 boundedness demo: a served loop's heap footprint plateaus with
+# request-mode collection on, and grows monotonically without it. Machine-
+# checked. `cargo run --release --bench gc_boundedness`.
+[[bench]]
+name = "gc_boundedness"
+harness = false
+
 # Step 2: the real `src/gc/` collector run through the SAME list workload as
 # gc_spike, to confirm a material fraction of the 3.34x survives the production
 # block-allocated heap. `cargo bench --bench gc_module_bench`.

@@ -56,6 +56,15 @@ impl Env {
         table[idx] = Some(value);
     }
 
+    /// Push every `Value` this environment roots into `out` (GC Step 4
+    /// precise-root enumeration): all defined functions, all globals, all
+    /// property values. Plain field walks — no heap access.
+    pub fn push_gc_roots(&self, out: &mut Vec<Value>) {
+        out.extend(self.functions.iter().flatten());
+        out.extend(self.globals.iter().flatten());
+        out.extend(self.properties.values());
+    }
+
     pub fn get_property(&self, target: SymId, key: SymId) -> Option<&Value> {
         self.properties.get(&(target, key))
     }

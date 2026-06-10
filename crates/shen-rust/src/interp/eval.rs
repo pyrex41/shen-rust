@@ -101,6 +101,46 @@ impl Scope<'_> {
     }
 }
 
+thread_local! {
+    /// Interpreter activation depth for the GC Step-4 safepoint protocol.
+    /// Incremented by [`DepthGuard`] on entry to the public funnels
+    /// ([`Interp::eval`] / [`Interp::apply`]); a deferred collection may run
+    /// only when this is back at 0 — i.e. when no evaluator activation (and
+    /// therefore no transient `Value` in an owned scope, VM stack, or spilled
+    /// arg buffer) exists on this thread. A TLS `Cell` rather than an
+    /// `Interp` field so the guard's `Drop` needs no aliasing access to the
+    /// interpreter.
+    static GC_DEPTH: std::cell::Cell<u32> = const { std::cell::Cell::new(0) };
+
+    /// Live `Interp`s on this thread. The TLS heap is shared by every
+    /// `Interp` on the thread, but [`Interp::gc_safepoint`] enumerates only
+    /// *its own* containers as precise roots — so collection REFUSES to run
+    /// (warn-once) when more than one `Interp` is alive (e.g. the
+    /// differential oracles, which run two engines side by side).
+    static LIVE_INTERPS: std::cell::Cell<u32> = const { std::cell::Cell::new(0) };
+}
+
+/// RAII activation-depth guard (see [`GC_DEPTH`]). Decrement-only on drop —
+/// the depth-0 collection check runs in the funnel body *after* the guard is
+/// dropped, so the result `Value` can be rooted precisely and no `Drop` needs
+/// `&mut Interp`.
+struct DepthGuard;
+
+impl DepthGuard {
+    #[inline]
+    fn enter() -> DepthGuard {
+        GC_DEPTH.set(GC_DEPTH.get() + 1);
+        DepthGuard
+    }
+}
+
+impl Drop for DepthGuard {
+    #[inline]
+    fn drop(&mut self) {
+        GC_DEPTH.set(GC_DEPTH.get() - 1);
+    }
+}
+
 pub struct Interp {
     pub symbols: Interner,
     pub env: Env,
@@ -143,6 +183,13 @@ pub struct Interp {
     /// capture path, which deliberately avoids an address memo precisely
     /// because it holds no such guard.)
     closure_cache: std::collections::HashMap<usize, CompiledClosure>,
+    /// Host pinning list (GC Step 4). A host that stores `Value`s in its
+    /// **own heap containers** (a `Vec<Value>` cache, a map, …) across calls
+    /// into the interpreter must push them here — the conservative scan only
+    /// covers host *stack* slots, and `Interp::gc_roots` only covers the
+    /// interpreter's own tables. Push to pin, truncate/clear to release.
+    /// Values merely held in host stack locals across a call need no pin.
+    pub gc_pins: Vec<Value>,
     /// Error ABI for JIT'd code (stage J1, `design/jit-j1-handoff.md` §3c).
     /// A fallible `rtj_*` helper that fails records the `ShenError` here and
     /// returns a sentinel word; JIT'd code keeps running on the sentinel, and
@@ -232,6 +279,13 @@ impl Default for Interp {
     }
 }
 
+impl Drop for Interp {
+    fn drop(&mut self) {
+        // See `LIVE_INTERPS`: collection refuses while siblings are alive.
+        LIVE_INTERPS.set(LIVE_INTERPS.get().saturating_sub(1));
+    }
+}
+
 impl Interp {
     pub fn new() -> Self {
         let mut symbols = Interner::new();
@@ -253,13 +307,57 @@ impl Interp {
             deadline_counter: 0,
             tc_cache: None,
             closure_cache: std::collections::HashMap::new(),
+            gc_pins: Vec::new(),
             #[cfg(feature = "jit")]
             pending_error: None,
             #[cfg(feature = "jit")]
             jit: None,
         };
+        LIVE_INTERPS.set(LIVE_INTERPS.get() + 1);
+        Self::maybe_enable_gc();
         crate::primitives::register_all(&mut interp);
         interp
+    }
+
+    /// GC Step 4 opt-in: `SHEN_RUST_GC` switches this thread's heap to
+    /// request mode (deferred collection at depth-0 safepoints). `=1` (or
+    /// any other non-numeric truthy value) selects the default trigger
+    /// floor (2^20 nodes ≈ 24 MB); a numeric value above 1 is used as the
+    /// floor in nodes (small floors force frequent collections — the
+    /// `--debug-gc` gate leg). Refused (grow-only, with a warning) when the
+    /// conservative stack scan is unsupported on this target or the JIT is
+    /// requested (Cranelift frame spill discipline is unverified — JIT'd
+    /// frames could hold the only reference to a node the scan can't see).
+    fn maybe_enable_gc() {
+        let Ok(raw) = std::env::var("SHEN_RUST_GC") else {
+            return;
+        };
+        if raw.is_empty() || raw == "0" {
+            return;
+        }
+        if crate::value::gc_request_enabled() {
+            return; // a previous Interp on this thread already enabled it
+        }
+        if std::env::var("SHEN_RUST_JIT").is_ok_and(|v| v == "1") {
+            eprintln!(
+                "shen-rust: SHEN_RUST_GC ignored: SHEN_RUST_JIT is set and JIT \
+                 frame roots are unverified; heap stays grow-only"
+            );
+            return;
+        }
+        if !crate::value::gc_scan_supported() {
+            eprintln!(
+                "shen-rust: SHEN_RUST_GC ignored: the conservative stack scan \
+                 supports aarch64 macOS/Linux only; heap stays grow-only"
+            );
+            return;
+        }
+        let floor = raw
+            .parse::<usize>()
+            .ok()
+            .filter(|&n| n > 1)
+            .unwrap_or(1 << 20);
+        crate::value::gc_enable_request_mode(floor);
     }
 
     /// Record a pending JIT error (keeping the first one). See the
@@ -459,8 +557,20 @@ impl Interp {
     }
 
     /// Top-level entry. Evaluates a KL expression with no lexical locals.
+    ///
+    /// This is a GC safepoint funnel: a deferred collection requested while
+    /// the expression ran fires after it completes (see [`GC_DEPTH`]).
     pub fn eval(&mut self, expr: &KlExpr) -> ShenResult<Value> {
-        self.eval_in(expr, &[])
+        // One TLS load + predicted branch when the GC is off (the default):
+        // the depth-guard protocol exists only for request-mode collection.
+        if !crate::value::gc_request_active() {
+            return self.eval_in(expr, &[]);
+        }
+        let guard = DepthGuard::enter();
+        let r = self.eval_in(expr, &[]);
+        drop(guard);
+        self.gc_safepoint(&r);
+        r
     }
 
     /// Evaluate under an explicit lexical environment.
@@ -468,7 +578,17 @@ impl Interp {
     /// `locals` is borrowed: non-`App` forms return immediately without
     /// touching it, and only `let`/lambda/tail-call promote the scope to
     /// an owned buffer (see [`Scope`]).
-    pub fn eval_in(&mut self, expr: &KlExpr, locals: &[(SymId, Value)]) -> ShenResult<Value> {
+    ///
+    /// `pub(crate)` deliberately (GC Step 4): this trampoline runs *between*
+    /// safepoint guards — an external caller entering here would make
+    /// internal `eval`/`apply` activations look outermost and let a
+    /// collection fire mid-trampoline with live owned scopes. External
+    /// callers use [`Interp::eval`] / [`Interp::apply`].
+    pub(crate) fn eval_in(
+        &mut self,
+        expr: &KlExpr,
+        locals: &[(SymId, Value)],
+    ) -> ShenResult<Value> {
         // Non-`App` forms never trampoline and never need an owned scope.
         match expr {
             KlExpr::Nil => return Ok(Value::nil()),
@@ -711,7 +831,23 @@ impl Interp {
 
     /// Public apply — used by primitives like `apply` and by higher-order
     /// callers. Non-tail-position (always returns a final value).
+    ///
+    /// This is a GC safepoint funnel (see [`Interp::eval`]). The collection
+    /// runs after the body completes — `args` are consumed, transients are
+    /// dead, and the result is rooted precisely.
     pub fn apply(&mut self, f: Value, args: Vec<Value>) -> ShenResult<Value> {
+        // See `eval`: bare fast path while the GC is off.
+        if !crate::value::gc_request_active() {
+            return self.apply_inner(f, args);
+        }
+        let guard = DepthGuard::enter();
+        let r = self.apply_inner(f, args);
+        drop(guard);
+        self.gc_safepoint(&r);
+        r
+    }
+
+    fn apply_inner(&mut self, f: Value, args: Vec<Value>) -> ShenResult<Value> {
         let closure = match f.as_closure() {
             Some(c) => c,
             None => return Err(ShenError::new(format!("not callable: {f:?}"))),
@@ -740,7 +876,83 @@ impl Interp {
 
         let extra: Vec<_> = total.drain(closure.arity..).collect();
         let first = self.call_strict(closure, total)?;
-        self.apply(first, extra)
+        self.apply_inner(first, extra)
+    }
+
+    // --- GC Step 4: depth-0 safepoint collection ---
+
+    /// Run a deferred collection if one is pending and this is an outermost
+    /// (depth-0) funnel exit. `result` — the value the exiting funnel is
+    /// about to return — is rooted precisely; everything else live at depth
+    /// 0 is either in [`Interp::gc_roots`]'s containers or in host stack
+    /// frames the conservative scan covers.
+    fn gc_safepoint(&mut self, result: &ShenResult<Value>) {
+        if GC_DEPTH.get() != 0 || !crate::value::gc_request_pending() {
+            return;
+        }
+        if LIVE_INTERPS.get() > 1 {
+            // Another live Interp shares this thread's heap; tracing only our
+            // own containers would sweep its roots. Refuse, warn once.
+            use std::sync::atomic::{AtomicBool, Ordering};
+            static WARNED: AtomicBool = AtomicBool::new(false);
+            if !WARNED.swap(true, Ordering::Relaxed) {
+                eprintln!(
+                    "shen-rust: GC collection skipped: multiple live Interps \
+                     share this thread's heap (only one's roots are \
+                     enumerable); heap grows until the siblings drop"
+                );
+            }
+            return;
+        }
+        let t0 = std::time::Instant::now();
+        let mut roots = self.gc_roots();
+        if let Ok(v) = result {
+            roots.push(*v);
+        }
+        let (n, live, nodes) = crate::value::gc_collect_at_safepoint(&roots);
+        if std::env::var("SHEN_RUST_GC_STATS").is_ok() {
+            eprintln!(
+                "shen-rust gc: collection #{n}: live {live} / {nodes} nodes, \
+                 {} precise roots, {:.2?}",
+                roots.len(),
+                t0.elapsed()
+            );
+        }
+    }
+
+    /// `(collections, last_live, node_count)` of this thread's heap — for
+    /// the GC stress/boundedness harnesses and embedders watching footprint.
+    pub fn gc_stats(&self) -> (u64, usize, usize) {
+        crate::value::gc_heap_stats()
+    }
+
+    /// Every `Value` the interpreter holds in heap containers the
+    /// conservative stack scan cannot see (GC Step 4 precise roots): the
+    /// environment tables, the compiled-closure cache's constant pools, the
+    /// tc-cache's in-flight entries, and the host pin list. Plain field
+    /// walks — must stay free of `Value` heap accessors (it runs immediately
+    /// before the collector takes the heap exclusively).
+    fn gc_roots(&self) -> Vec<Value> {
+        let mut out = Vec::with_capacity(8192);
+        self.env.push_gc_roots(&mut out);
+        for cc in self.closure_cache.values() {
+            Self::push_bytecode_roots(&cc.bf, &mut out);
+        }
+        if let Some(tc) = &self.tc_cache {
+            tc.push_gc_roots(&mut out);
+        }
+        out.extend_from_slice(&self.gc_pins);
+        out
+    }
+
+    /// Push a `BytecodeFn`'s constant pool (recursing into nested compiled
+    /// functions) — a cached `BytecodeFn` can outlive every closure sharing
+    /// it, so the closure-node edges alone don't keep these alive.
+    fn push_bytecode_roots(bf: &crate::vm::bytecode::BytecodeFn, out: &mut Vec<Value>) {
+        out.extend_from_slice(&bf.consts);
+        for nested in &bf.fn_consts {
+            Self::push_bytecode_roots(nested, out);
+        }
     }
 
     // --- Special-form helpers ---

@@ -73,10 +73,10 @@
 //! load content can replay stale verdicts. Load-driven flows (CLI,
 //! served, kernel tests) are unaffected.
 //!
-//! GC NOTE: replayed/recorded `Value`s live in `Interp::tc_cache`, which
-//! the collector does not scan. That is safe while collection is
-//! grow-only (GC Step 3); when Step 4 turns collection on, these entries
-//! must be registered as roots.
+//! GC NOTE: replayed/recorded `Value`s live in `Interp::tc_cache`, a heap
+//! container the conservative stack scan cannot see. GC Step 4 therefore
+//! enumerates them as precise roots via [`TcCacheState::push_gc_roots`]
+//! (wired into `Interp::gc_roots`).
 //!
 //! Off by default. Enable with `SHEN_RUST_TC_CACHE=<dir>`; add
 //! `SHEN_RUST_TC_CACHE_STATS=1` for per-load diagnostics on stderr.
@@ -101,6 +101,16 @@ pub struct TcCacheState {
     stats_on: bool,
     hits: u64,
     misses: u64,
+}
+
+impl TcCacheState {
+    /// Push every `Value` held by in-flight load contexts into `out` (GC
+    /// Step 4 precise-root enumeration). Plain field walks — no heap access.
+    pub fn push_gc_roots(&self, out: &mut Vec<Value>) {
+        for ctx in &self.stack {
+            out.extend(ctx.tc.entries.iter().filter_map(|e| e.val));
+        }
+    }
 }
 
 struct LoadCtx {

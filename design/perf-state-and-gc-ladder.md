@@ -3,6 +3,13 @@
 **Status**: Authoritative current-state doc (2026-05-29). Supersedes the
 premise of `execution-engine-roadmap.md` — that doc assumed the bytecode VM
 was the lever for kernel-tests; measurement since has shown otherwise (see §3).
+**2026-06-10 update: the ladder is COMPLETE.** Steps 1–3 shipped earlier
+(word `Copy` Value over the Step-2 collector, grow-only); **Step 4 (collection
+ON) shipped 2026-06-10** as opt-in request-mode collection at interpreter
+depth-0 safepoints with the §6g hybrid roots — see `PERFORMANCE.md` ("GC
+Step 4") and `benches/gc_boundedness.rs` (482 MB → 26 MB flat, wall-neutral).
+The JIT rung was built and falsified for the type-checker shape (J2) and
+parked; the served niche is covered by the AOT overlay instead.
 **Audience**: anyone continuing the perf effort.
 **Companion**: the running measured log lives in auto-memory
 (`project_stage_d_finding.md`); this doc is the durable, repo-side synthesis.

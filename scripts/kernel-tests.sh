@@ -8,12 +8,26 @@
 # by gates.sh as the heap-reentrancy tripwire — the debug build carries the
 # HEAP_BORROWS sentinel (value.rs split-TLS note), so a future funnel-reentry
 # bug panics deterministically here instead of being silent UB in release.
+#
+# Pass --debug-gc to run the debug suite with GC Step-4 collection forced
+# aggressive (SHEN_RUST_GC with a small trigger floor): full mark/sweep
+# cycles run under the live sentinel AND the debug poison-on-sweep (freed
+# node words become 0xDEAD…), so a missed root or a heap-touching sweep Drop
+# fails deterministically here instead of being silent release UB. On targets
+# without the conservative scan the env var is refused (warning on stderr)
+# and this degrades to a plain --debug run — still a valid suite run.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-if [ "${1:-}" = "--debug" ]; then
+case "${1:-}" in
+--debug)
     cargo run --quiet --bin shen-rust -- --kernel-tests
-else
+    ;;
+--debug-gc)
+    SHEN_RUST_GC=100000 cargo run --quiet --bin shen-rust -- --kernel-tests
+    ;;
+*)
     cargo run --quiet --release --bin shen-rust -- --kernel-tests
-fi
+    ;;
+esac

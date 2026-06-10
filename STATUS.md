@@ -6,15 +6,23 @@ A working port of the Shen language to Rust. It boots the upstream
 **ShenOSKernel-41.1** and passes the full conformance suite — **134 / 134**
 kernel tests (`scripts/kernel-tests.sh`) — in every execution mode. All gates
 green (`scripts/gates.sh`): shengen-codegen, fmt+clippy, build, test
-(unit + 10 integration suites), shen-check, tcb-audit, kernel-aot-audit,
+(unit + 11 integration suites), shen-check, tcb-audit, kernel-aot-audit,
 kernel-tests, kernel-tests-debug (the debug-build run carries the heap
-reentrancy sentinel — see the split-TLS note in `value.rs`).
+reentrancy sentinel — see the split-TLS note in `value.rs`), and
+kernel-tests-debug-gc (the same debug suite with GC collection forced
+aggressive, under the sentinel plus poison-on-sweep).
 
 What's in the tree today:
 
 - **Engine** (`crates/shen-rust/`) — KL runtime, tree-walking evaluator with
   trampolined TCO, full kernel boot. `Value` is a word-sized `struct Value(u64)`
-  (tagged; immediates unboxed, cons/string/foreign heap-boxed).
+  (tagged; immediates unboxed, cons/string/foreign heap-boxed) over a
+  non-moving mark-sweep GC heap. **Collection is opt-in** (`SHEN_RUST_GC`,
+  GC Step 4): deferred to interpreter depth-0 safepoints, hybrid roots
+  (precise interpreter tables + conservative native-stack scan + aarch64
+  register flush); default stays grow-only. Bounded heap for served
+  embeddings — 482 MB → 26 MB flat on the 20k-request demo
+  (`benches/gc_boundedness.rs`), wall-neutral.
 - **AOT kernel** — every kernel `.kl` compiled to Rust at build time by
   `crates/klcompile/`, installed over the tree-walked defuns.
 - **AOT overlay for loaded code** (opt-in) — known `.shen` files compiled
@@ -82,6 +90,17 @@ model, not a single hot spot. On served workloads the story inverts: VM
   — adversarially reviewed, miri-clean, with a new debug-sentinel gate), and
   a direct-mapped intern cache for AOT call-target resolution. One falsified
   candidate recorded (filtered closure-capture caching, −3.5%).
+- **GC Step 4: collection ON (opt-in)** (2026-06-10) — the last greenlit
+  ladder rung. Request-mode collection: allocation never collects (`grow`
+  raises a pending flag at heap-doubling pressure); the interpreter collects
+  at activation-depth-0 safepoints where the transient-root problem vanishes
+  by construction. Hybrid roots per the §6g spike: precise container
+  enumeration (env tables, closure-cache constant pools, tc-cache, host
+  pins) + conservative native-stack scan with aarch64 callee-saved register
+  flush (pthread stack bounds; hard refusal on unsupported targets). Off by
+  default; JIT mutually excluded; multi-`Interp` threads refuse collection.
+  134/0 across release/debug × GC off/on/aggressive × tree-walk/VM; miri
+  clean; one-shot wall unchanged (GC off identical binary path, GC on ≈ +1%).
 - **Rename** — the engine port `shen-cedar` → **`shen-rust`** (the name
   `shen-cedar` now denotes the Shen+Cedar examples). History before that commit
   says "shen-cedar".
@@ -90,6 +109,10 @@ model, not a single hot spot. On served workloads the story inverts: VM
 
 - Boot loads + AOT-installs 21 kernel files every startup (~sub-second release);
   shen-cl uses pre-compiled FASLs.
-- Heap is grow-only (GC collection not yet enabled — Step 4 is the remaining
-  greenlit ladder rung; reclamation is a memory win, ~2–3% speed).
-- The JIT is experimental and off by default.
+- GC collection is opt-in (`SHEN_RUST_GC=1`) and requires aarch64
+  macOS/Linux (the conservative stack scan is unimplemented elsewhere —
+  refused with a warning, heap stays grow-only). Hosts embedding the engine
+  under GC must follow the pin/borrow rules in `value.rs` ("Collection"
+  note) and `Interp::gc_pins`.
+- The JIT is experimental, off by default, and mutually exclusive with the GC
+  (Cranelift frame roots unverified).

@@ -76,6 +76,31 @@ pub struct Heap {
     /// runs; explicit [`Heap::collect`] still works (the new-`Kind` unit tests
     /// drive it directly). See `design/gc-step3-value-flip-handoff.md` §2.
     collection_enabled: bool,
+    /// **GC Step 4 request mode**: when `true`, allocation never collects
+    /// (unlike the `collection_enabled` cap path) — instead [`Heap::grow`]
+    /// raises [`Heap::gc_pending`] once footprint outgrows the last live set
+    /// by [`Heap::next_trigger`], and the interpreter runs
+    /// [`Heap::collect_at_safepoint`] at its next quiescent point (activation
+    /// depth 0), where the hybrid root set (precise containers + conservative
+    /// native-stack scan) is sound. See `design/` GC Step 4 notes.
+    request_mode: bool,
+    /// Deferred-collection request, set in [`Heap::grow`], consumed (cleared)
+    /// by [`Heap::collect_at_safepoint`].
+    gc_pending: bool,
+    /// Live-node count measured by the most recent sweep.
+    last_live: usize,
+    /// `last_live` snapshot at the end of the previous safepoint collection;
+    /// the trigger measures footprint growth relative to this.
+    live_at_last_collect: usize,
+    /// Raise `gc_pending` when `all.len() - live_at_last_collect` reaches
+    /// this. Recomputed after each safepoint collection to
+    /// `max(last_live, min_trigger)` — i.e. collect roughly when the heap has
+    /// doubled past the live set, so collection count grows logarithmically
+    /// with peak demand and one-shot runs stay essentially collection-free.
+    next_trigger: usize,
+    /// Floor for `next_trigger` (avoids thrashing tiny heaps). Set by
+    /// [`Heap::enable_request_gc`]; overridable via `SHEN_RUST_GC=<nodes>`.
+    min_trigger: usize,
     /// Reused mark-phase work stack (avoids a per-collection allocation).
     mark_stack: Vec<*mut Node>,
     collections: u64,
@@ -93,16 +118,25 @@ impl Heap {
             pages: BTreeMap::new(),
             cap,
             collection_enabled: true,
+            request_mode: false,
+            gc_pending: false,
+            last_live: 0,
+            live_at_last_collect: 0,
+            next_trigger: usize::MAX,
+            min_trigger: 0,
             mark_stack: Vec::new(),
             collections: 0,
             peak_live: 0,
         }
     }
 
-    /// A new **grow-only** heap that never auto-collects (GC Step 3). Allocation
-    /// only ever grows the heap; nothing is reclaimed except explicit
-    /// [`Heap::collect`] calls and the final [`Heap::drop`]. See the
-    /// `collection_enabled` field and `design/gc-step3-value-flip-handoff.md` §2.
+    /// A new **grow-only** heap that never auto-collects. Allocation only
+    /// ever grows the heap; nothing is reclaimed except explicit
+    /// [`Heap::collect`] / [`Heap::collect_at_safepoint`] calls and the final
+    /// [`Heap::drop`]. This is the live TLS heap's starting mode (and its
+    /// permanent mode unless [`Heap::enable_request_gc`] — GC Step 4 — is
+    /// invoked). See the `collection_enabled` field and
+    /// `design/gc-step3-value-flip-handoff.md` §2.
     ///
     /// `const fn` so the value-layer thread-local can `const`-init it — that
     /// removes the per-access lazy-initialization branch the `thread_local!`
@@ -119,10 +153,56 @@ impl Heap {
             // flips the flag without setting a cap.
             cap: usize::MAX,
             collection_enabled: false,
+            request_mode: false,
+            gc_pending: false,
+            last_live: 0,
+            live_at_last_collect: 0,
+            next_trigger: usize::MAX,
+            min_trigger: 0,
             mark_stack: Vec::new(),
             collections: 0,
             peak_live: 0,
         }
+    }
+
+    /// Switch this (grow-only) heap to **request mode** (GC Step 4): from now
+    /// on, [`Heap::grow`] raises [`Heap::gc_pending`] whenever the footprint
+    /// has grown `max(last_live, floor)` nodes past the last live set, and the
+    /// owner is expected to call [`Heap::collect_at_safepoint`] at its next
+    /// quiescent point. Allocation itself still never collects
+    /// (`collection_enabled` stays `false`) — that is the whole point: the
+    /// root set is only sound at owner-chosen safepoints.
+    pub fn enable_request_gc(&mut self, floor: usize) {
+        self.request_mode = true;
+        self.min_trigger = floor.max(1);
+        self.next_trigger = self.min_trigger;
+    }
+
+    /// Has request-mode collection been enabled on this heap?
+    pub fn request_gc_enabled(&self) -> bool {
+        self.request_mode
+    }
+
+    /// Deferred-collection request flag (see [`Heap::enable_request_gc`]).
+    #[inline]
+    pub fn gc_pending(&self) -> bool {
+        self.gc_pending
+    }
+
+    /// Run a collection at an owner-chosen quiescent point, then recompute the
+    /// trigger and clear [`Heap::gc_pending`].
+    ///
+    /// Roots are the **hybrid set**: `precise` must contain every root the
+    /// owner tracks in heap containers (environment tables, caches, pins);
+    /// `Value`s living in native stack frames or callee-saved registers are
+    /// found by the conservative scan (see `gc::stack` — on targets where the
+    /// scan is unsupported it compiles out, request-mode enable refuses, and
+    /// this is precise-only, which is what the miri tests exercise).
+    pub fn collect_at_safepoint(&mut self, precise: &[Gc]) {
+        self.collect_inner(precise, &[], true);
+        self.live_at_last_collect = self.last_live;
+        self.next_trigger = self.last_live.max(self.min_trigger);
+        self.gc_pending = false;
     }
 
     // ---- allocation --------------------------------------------------------
@@ -131,7 +211,12 @@ impl Heap {
     /// be in `roots` (a collection may fire here). See the type docs.
     #[inline]
     pub fn alloc_cons(&mut self, head: Gc, tail: Gc, roots: &[Gc]) -> Gc {
-        let p = self.obtain_slot(roots);
+        // Self-root the in-flight operands: a collection fired by this very
+        // allocation must keep `head`/`tail` alive even when the caller's
+        // `roots` omits them (belt-and-braces for the `Heap::new(cap)`
+        // auto-collect path; free on the live request-mode heap, which never
+        // collects inside alloc).
+        let p = self.obtain_slot_with(roots, &[head, tail]);
         // SAFETY: `p` is a fresh free slot owned by this heap (see `obtain_slot`).
         unsafe {
             (*p).kind = Kind::Cons;
@@ -145,7 +230,9 @@ impl Heap {
     /// Allocate an absvector node from its cells. Pointer cells **must** also
     /// be in `roots`.
     pub fn alloc_vec(&mut self, cells: Vec<Gc>, roots: &[Gc]) -> Gc {
-        let p = self.obtain_slot(roots);
+        // Self-root the cells (see `alloc_cons`): they are boxed only after a
+        // slot is obtained, so a collection here must trace them directly.
+        let p = self.obtain_slot_with(roots, &cells);
         let a = expose(Box::into_raw(Box::new(cells)));
         // SAFETY: fresh free slot; `a` owns the boxed `Vec` until reclaimed.
         unsafe {
@@ -231,7 +318,14 @@ impl Heap {
     /// Allocate a closure node owning `obj`. The collector traces `obj`'s
     /// [`GcObject::gc_edges`] on mark and runs its Rust `Drop` on sweep.
     pub fn alloc_closure(&mut self, obj: Box<dyn GcObject>, roots: &[Gc]) -> Gc {
-        let p = self.obtain_slot(roots);
+        // Self-root the closure's edges (see `alloc_cons`): only the cap path
+        // can collect inside alloc, so the edge walk is skipped on the live
+        // (request-mode / grow-only) heap where it would be pure overhead.
+        let mut operands: Vec<Gc> = Vec::new();
+        if self.collection_enabled {
+            obj.gc_edges(&mut operands);
+        }
+        let p = self.obtain_slot_with(roots, &operands);
         // Double-box so the payload word is a *thin* pointer (a `dyn GcObject`
         // box is a fat pointer); mirrors `alloc_opaque`.
         let a = expose(Box::into_raw(Box::new(obj)));
@@ -251,9 +345,17 @@ impl Heap {
     /// its fields directly.
     #[inline]
     fn obtain_slot(&mut self, roots: &[Gc]) -> *mut Node {
+        self.obtain_slot_with(roots, &[])
+    }
+
+    /// As [`Heap::obtain_slot`], with a second root slice for the allocation's
+    /// own in-flight operands (cons head/tail, vec cells, closure edges) —
+    /// traced alongside `roots` if the cap path collects here.
+    #[inline]
+    fn obtain_slot_with(&mut self, roots: &[Gc], operands: &[Gc]) -> *mut Node {
         if self.free.is_empty() {
             if self.collection_enabled && self.all.len() >= self.cap {
-                self.collect(roots);
+                self.collect2(roots, operands);
             }
             if self.free.is_empty() {
                 self.grow();
@@ -265,6 +367,16 @@ impl Heap {
     /// Grow the heap by one block, appending its nodes to the free-list and
     /// registering it in the membership table.
     fn grow(&mut self) {
+        // Request-mode trigger (GC Step 4). Checked here — not on the alloc
+        // fast path — because `grow` runs at most once per `BLOCK_SIZE`
+        // allocations: the cost is amortized to ~zero. The collection itself
+        // is deferred to the owner's next safepoint; this call still grows,
+        // so allocation always succeeds in between.
+        if self.request_mode
+            && self.all.len().saturating_sub(self.live_at_last_collect) >= self.next_trigger
+        {
+            self.gc_pending = true;
+        }
         let block: Box<[Node]> = (0..BLOCK_SIZE).map(|_| Node::empty()).collect();
         // Leak the box to a raw pointer *before* deriving any node pointers, so
         // there is no live `Box` whose later move would Unique-retag the
@@ -307,9 +419,26 @@ impl Heap {
     /// blob bytes / opaque `Drop`) and resets the node to `Free` — and clear
     /// marks on survivors. Free nodes are unmarked, so they correctly stay free.
     pub fn collect(&mut self, roots: &[Gc]) {
+        self.collect_inner(roots, &[], false);
+    }
+
+    /// [`Heap::collect`] with a second root slice (in-flight alloc operands).
+    fn collect2(&mut self, roots: &[Gc], extra: &[Gc]) {
+        self.collect_inner(roots, extra, false);
+    }
+
+    /// The full mark-sweep: mark from the conservative native-stack scan (if
+    /// requested and supported), then from both precise slices, trace, sweep.
+    fn collect_inner(&mut self, roots: &[Gc], extra: &[Gc], scan_stack: bool) {
         // ---- mark ----
         self.mark_stack.clear();
+        if scan_stack {
+            self.scan_native_roots();
+        }
         for &r in roots {
+            self.mark_edge(r);
+        }
+        for &r in extra {
             self.mark_edge(r);
         }
         while let Some(p) = self.mark_stack.pop() {
@@ -333,6 +462,7 @@ impl Heap {
                 }
             }
         }
+        self.last_live = live;
         self.peak_live = self.peak_live.max(live);
         self.collections += 1;
     }
@@ -347,32 +477,120 @@ impl Heap {
     /// (i.e. were written by the corresponding `alloc_*`).
     unsafe fn free_resource(p: *mut Node) {
         unsafe {
-            match (*p).kind {
+            let kind = (*p).kind;
+            let a = (*p).a;
+            let b = (*p).b;
+            // Reset the node BEFORE running any payload `Drop`: if a payload
+            // Drop panics (e.g. the debug heap-reentry sentinel tripping on a
+            // forbidden funnel call), the unwind then passes an
+            // already-`Free` node, and `Heap::drop`'s second `free_resource`
+            // pass is a no-op instead of a double-free.
+            (*p).kind = Kind::Free;
+            // Debug builds poison the freed words instead of zeroing them: a
+            // missed root that reads a reclaimed node then yields a
+            // deterministic, recognizable pattern (tag bits 0b101 — not a
+            // pointer, not nil) rather than silently aliasing the slot's next
+            // occupant. Every alloc_* writes both words, so the poison never
+            // escapes through a legitimate path.
+            #[cfg(debug_assertions)]
+            {
+                (*p).a = 0xDEAD_DEAD_DEAD_DEAD;
+                (*p).b = 0xDEAD_DEAD_DEAD_DEAD;
+            }
+            #[cfg(not(debug_assertions))]
+            {
+                (*p).a = 0;
+                (*p).b = 0;
+            }
+            match kind {
                 Kind::Vec => {
-                    let vp = with_exposed_provenance_mut::<Vec<Gc>>((*p).a as usize);
+                    let vp = with_exposed_provenance_mut::<Vec<Gc>>(a as usize);
                     drop(Box::from_raw(vp));
                 }
                 Kind::Blob | Kind::Error => {
-                    let data = with_exposed_provenance_mut::<u8>((*p).a as usize);
-                    let slice = slice_from_raw_parts_mut(data, (*p).b as usize);
+                    let data = with_exposed_provenance_mut::<u8>(a as usize);
+                    let slice = slice_from_raw_parts_mut(data, b as usize);
                     drop(Box::from_raw(slice));
                 }
                 Kind::Closure => {
-                    let bp = with_exposed_provenance_mut::<Box<dyn GcObject>>((*p).a as usize);
+                    let bp = with_exposed_provenance_mut::<Box<dyn GcObject>>(a as usize);
                     drop(Box::from_raw(bp));
                 }
                 Kind::Opaque => {
-                    let bp = with_exposed_provenance_mut::<Box<dyn Any>>((*p).a as usize);
+                    let bp = with_exposed_provenance_mut::<Box<dyn Any>>(a as usize);
                     drop(Box::from_raw(bp));
                 }
                 // `Float` is a leaf with the bits inline in `a` — no owned
                 // allocation, nothing to free. `Cons`/`Free` likewise.
                 Kind::Float | Kind::Cons | Kind::Free => {}
             }
-            (*p).kind = Kind::Free;
-            (*p).a = 0;
-            (*p).b = 0;
         }
+    }
+
+    /// Conservatively mark roots found on the native stack and in flushed
+    /// callee-saved registers (the §6g hybrid — see `gc::stack`). Sound for
+    /// this NON-MOVING collector: a false-positive word can only over-retain.
+    /// Compiled out under miri and on unsupported targets (where request-mode
+    /// enable refuses, so nothing depends on it).
+    #[cfg(all(
+        target_arch = "aarch64",
+        any(target_os = "macos", target_os = "linux"),
+        not(miri)
+    ))]
+    fn scan_native_roots(&mut self) {
+        let mut regbuf = [0u64; 10];
+        super::stack::flush_callee_saved(&mut regbuf);
+        for &w in &regbuf {
+            self.mark_conservative(w);
+        }
+        let lo = super::stack::current_sp() & !0b111;
+        let hi = super::stack::stack_base();
+        assert!(
+            lo < hi,
+            "stack scan bounds inverted (sp {lo:#x} >= base {hi:#x})"
+        );
+        let mut a = lo;
+        while a < hi {
+            // SAFETY: reading our own live thread's stack region as raw
+            // 8-aligned words — the same read the §6g spike validated. The
+            // region is mapped (it is between our own sp and the pthread
+            // stack base); values are inspected as integers only. Excluded
+            // from miri, which cannot reason about this.
+            let w = unsafe { core::ptr::read_volatile(a as *const u64) };
+            self.mark_conservative(w);
+            a += 8;
+        }
+    }
+
+    #[cfg(not(all(
+        target_arch = "aarch64",
+        any(target_os = "macos", target_os = "linux"),
+        not(miri)
+    )))]
+    fn scan_native_roots(&mut self) {
+        // Precise-only configuration (miri / unsupported target). Request-mode
+        // enable refuses on these targets, so no live heap relies on the scan.
+    }
+
+    /// Treat `w` as a potential root word from the conservative scan: mark it
+    /// iff it is a `TAG_PTR`-tagged address of a live (non-`Free`) node we
+    /// own. Stale words naming freed slots are skipped — without the `Free`
+    /// check they would pin recycled slots off the free-list for a cycle.
+    #[cfg(all(
+        target_arch = "aarch64",
+        any(target_os = "macos", target_os = "linux"),
+        not(miri)
+    ))]
+    fn mark_conservative(&mut self, w: u64) {
+        let g = Gc::from_bits(w);
+        if !g.is_ptr() || !self.is_heap_ptr(g.addr()) {
+            return;
+        }
+        // SAFETY: `is_heap_ptr` verified `w` names the head of a node we own.
+        if unsafe { (*g.node_ptr()).kind } == Kind::Free {
+            return;
+        }
+        self.mark_edge(g);
     }
 
     /// If `g` is a heap pointer to an unmarked node, mark it and enqueue it.
@@ -568,10 +786,14 @@ impl Heap {
     // ---- raw-pointer accessors (the value layer's lifetime bridge) ---------
     //
     // These return a *raw pointer* into a node rather than a borrow, so the
-    // caller can drop the (thread-local `RefCell`) heap borrow and then form a
-    // reference whose lifetime it ties to its own `&self` — sound because the
-    // heap is non-moving (the node address is stable) and, in Step 3, grow-only
-    // (the node is never freed). See `value::Value::{head,tail,as_str}`.
+    // caller can drop the thread-local heap borrow and then form a reference
+    // whose lifetime it ties to its own `&self` — sound because the heap is
+    // non-moving (the node address is stable) and a node is never freed while
+    // reachable. With Step-4 request-mode collection, "while reachable" is
+    // load-bearing: collection runs only at interpreter depth-0 safepoints,
+    // where no interpreter-internal bridged borrow exists, and hosts must not
+    // hold one across `Interp::eval`/`apply` (see the `value.rs` module
+    // "Collection" note). See `value::Value::{head,tail,as_str}`.
 
     /// Raw pointers to a cons node's `(head, tail)` words, or `None` if `g` is
     /// not a cons node. Each `*const Gc` aliases a payload word in the pinned
@@ -645,7 +867,8 @@ impl Heap {
     /// Hot-path combined accessor: if `g` is a closure node, return a raw
     /// pointer to its object in **one** heap access (vs `classify` *then*
     /// `closure_obj` — two thread-local round-trips). `None` for any non-closure.
-    /// The pointer is valid while `g` stays rooted (non-moving + grow-only).
+    /// The pointer is valid while `g` stays reachable (non-moving heap; see
+    /// the lifetime-bridge note above for the Step-4 collection rules).
     #[inline]
     pub fn closure_obj_ptr(&self, g: Gc) -> Option<*const dyn GcObject> {
         if !g.is_ptr() {
@@ -696,6 +919,11 @@ impl Heap {
     /// Largest live-node count observed at the end of any sweep.
     pub fn peak_live(&self) -> usize {
         self.peak_live
+    }
+
+    /// Live-node count measured by the most recent sweep (0 before any).
+    pub fn last_live(&self) -> usize {
+        self.last_live
     }
 
     /// Total nodes ever allocated (heap footprint, in nodes).
@@ -866,6 +1094,174 @@ mod tests {
             heap.node_count()
         );
         assert!(heap.collections() > 0, "never collected — cap too high");
+    }
+
+    #[test]
+    fn in_flight_operands_survive_alloc_collect() {
+        // The roots:&[] hole: a cap-path collection fired by an allocation
+        // must not sweep the operands of that very allocation, even when the
+        // caller's `roots` slice omits them.
+        let mut heap = Heap::new(64);
+        for _ in 0..BLOCK_SIZE - 1 {
+            heap.alloc_cons(Gc::fixnum(0), Gc::nil(), &[]);
+        }
+        // Takes the block's last free slot; nothing roots it.
+        let inner = heap.alloc_cons(Gc::fixnum(42), Gc::nil(), &[]);
+        // Free-list now empty and len >= cap: this alloc collects. `inner`
+        // must survive purely as an in-flight operand.
+        let outer = heap.alloc_cons(inner, Gc::nil(), &[]);
+        assert_eq!(heap.collections(), 1, "cap collection should have fired");
+        assert_eq!(heap.cons_head(heap.cons_head(outer)).as_fixnum(), 42);
+    }
+
+    #[test]
+    fn in_flight_vec_cells_survive_alloc_collect() {
+        let mut heap = Heap::new(64);
+        for _ in 0..BLOCK_SIZE - 1 {
+            heap.alloc_cons(Gc::fixnum(0), Gc::nil(), &[]);
+        }
+        let cell = heap.alloc_cons(Gc::fixnum(7), Gc::nil(), &[]);
+        let v = heap.alloc_vec(vec![cell], &[]);
+        assert_eq!(heap.collections(), 1);
+        assert_eq!(heap.cons_head(heap.vec_get(v, 0)).as_fixnum(), 7);
+    }
+
+    #[test]
+    fn request_mode_defers_to_safepoint() {
+        // Request mode: alloc never collects; `grow` raises the pending flag
+        // once footprint outgrows the trigger; collect_at_safepoint reclaims,
+        // recomputes the trigger, and clears the flag.
+        let mut heap = Heap::grow_only();
+        heap.enable_request_gc(BLOCK_SIZE);
+        assert!(heap.request_gc_enabled());
+        assert!(!heap.gc_pending());
+
+        let mut roots = vec![Gc::nil()];
+        // Two blocks' worth of garbage: the second `grow` sees
+        // all.len() (1024) - live_at_last_collect (0) >= trigger (1024).
+        build_list(&mut heap, 2 * BLOCK_SIZE as i64, &mut roots, 0);
+        assert!(heap.gc_pending(), "grow should have raised the request");
+        assert_eq!(heap.collections(), 0, "alloc must never collect here");
+
+        // Keep a small live list; everything else is garbage.
+        roots[0] = Gc::nil();
+        let live = build_list(&mut heap, 10, &mut roots, 0);
+        roots[0] = live;
+        heap.collect_at_safepoint(&roots);
+        assert!(!heap.gc_pending());
+        assert_eq!(heap.collections(), 1);
+        assert_eq!(heap.last_live(), 10);
+        assert_eq!(sum_list(&heap, live), (0..10).sum::<i64>());
+        // Trigger recomputed to max(live, floor) = floor here.
+        assert!(heap.free_count() > 0, "sweep must rebuild the free-list");
+    }
+
+    #[test]
+    fn request_mode_trigger_doubles_with_live_set() {
+        let mut heap = Heap::grow_only();
+        heap.enable_request_gc(64);
+        let mut roots = vec![Gc::nil()];
+        // Big live set, then a safepoint collect: next trigger = live size.
+        let live = build_list(&mut heap, 3 * BLOCK_SIZE as i64, &mut roots, 0);
+        roots[0] = live;
+        heap.collect_at_safepoint(&roots);
+        assert_eq!(heap.last_live(), 3 * BLOCK_SIZE);
+        assert!(!heap.gc_pending());
+
+        // Allocating less than a live-set's worth must NOT re-raise the flag
+        // (footprint grew < next_trigger past the last collect)...
+        roots.push(Gc::nil());
+        build_list(&mut heap, (BLOCK_SIZE / 2) as i64, &mut roots, 1);
+        assert!(!heap.gc_pending(), "trigger fired too early");
+        // ...but doubling past it must.
+        let mut more = vec![live, Gc::nil()];
+        let mut xs = Gc::nil();
+        for i in 0..(4 * BLOCK_SIZE) as i64 {
+            more[1] = xs;
+            xs = heap.alloc_cons(Gc::fixnum(i), xs, &more);
+            more[1] = xs;
+        }
+        assert!(heap.gc_pending(), "doubling past the live set must trigger");
+    }
+
+    /// Conservative-scan integration tests — only meaningful where the scan
+    /// is compiled in (aarch64 + macOS/Linux, not miri).
+    #[cfg(all(
+        target_arch = "aarch64",
+        any(target_os = "macos", target_os = "linux"),
+        not(miri)
+    ))]
+    mod scan {
+        use super::*;
+        use std::hint::black_box;
+
+        /// Build a list whose head ends up ONLY in the caller's frame /
+        /// registers — no external root container survives the return.
+        #[inline(never)]
+        fn build_keeper(heap: &mut Heap, n: i64) -> Gc {
+            let mut roots = vec![Gc::nil()];
+            build_list(heap, n, &mut roots, 0)
+        }
+
+        /// Build garbage rooted only in this (immediately popped) frame.
+        #[inline(never)]
+        fn build_garbage(heap: &mut Heap, n: i64) {
+            let mut roots = vec![Gc::nil()];
+            let xs = build_list(heap, n, &mut roots, 0);
+            assert_eq!(sum_list(heap, xs), (0..n).sum::<i64>());
+        }
+
+        #[test]
+        fn stack_local_survives_safepoint_collect() {
+            // The §6g property on the REAL heap: a head held only in a host
+            // stack slot / callee-saved register — with NO precise root —
+            // survives a safepoint collection via the conservative scan.
+            let mut heap = Heap::grow_only();
+            heap.enable_request_gc(64);
+            let keeper = black_box(build_keeper(&mut heap, 50));
+            heap.collect_at_safepoint(&[]);
+            assert_eq!(
+                sum_list(&heap, black_box(keeper)),
+                (0..50).sum::<i64>(),
+                "conservative scan missed a live stack root"
+            );
+        }
+
+        #[test]
+        fn popped_frame_garbage_is_mostly_reclaimed() {
+            // The depth-0 over-retention claim: garbage whose only handles
+            // lived in an already-popped callee frame is reclaimable at a
+            // shallow safepoint. Stale spill slots can pin stragglers (that
+            // is the conservative tax), so assert "mostly", not "all" — the
+            // spike's pathological mid-descent case measured 7.7x retained;
+            // here the bulk must be free.
+            let mut heap = Heap::grow_only();
+            heap.enable_request_gc(64);
+            build_garbage(&mut heap, 5_000);
+            let keeper = black_box(build_keeper(&mut heap, 10));
+            heap.collect_at_safepoint(&[]);
+            assert!(
+                heap.free_count() * 2 > heap.node_count(),
+                "over-retention: {} of {} nodes still pinned after a \
+                 shallow-depth collect",
+                heap.node_count() - heap.free_count(),
+                heap.node_count()
+            );
+            assert_eq!(sum_list(&heap, black_box(keeper)), (0..10).sum::<i64>());
+        }
+
+        #[test]
+        fn precise_and_conservative_roots_compose() {
+            let mut heap = Heap::grow_only();
+            heap.enable_request_gc(64);
+            let mut precise = vec![Gc::nil()];
+            let in_container = build_list(&mut heap, 20, &mut precise, 0);
+            precise[0] = in_container;
+            let on_stack = black_box(build_keeper(&mut heap, 30));
+            heap.collect_at_safepoint(&precise);
+            assert_eq!(sum_list(&heap, in_container), (0..20).sum::<i64>());
+            assert_eq!(sum_list(&heap, black_box(on_stack)), (0..30).sum::<i64>());
+        }
     }
 
     #[test]

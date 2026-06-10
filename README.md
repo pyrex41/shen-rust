@@ -44,6 +44,15 @@ The same Shen semantics run on tiers chosen for the workload:
 
 Every tier is differentially tested against the tree-walker and held at 134/0.
 
+**Memory**: `Value` is a word-sized `Copy` tagged `u64` over a non-moving
+mark-sweep GC heap. Collection is opt-in (`SHEN_RUST_GC=1`): the heap stays
+grow-only by default (protects one-shot latency), and in GC mode a long-running
+embedding gets a **bounded heap** — collection runs at interpreter safepoints
+with hybrid roots (precise interpreter tables + a conservative native-stack
+scan, aarch64 macOS/Linux). On a 20k-request served loop:
+grow-only ≈ 482 MB and climbing; GC ≈ 26 MB flat, wall-time neutral
+(`cargo bench --bench gc_boundedness`, machine-checked).
+
 ## Shen + Cedar
 
 Cedar is AWS's authorization-policy language. `shen-rust` combines with it on
@@ -137,9 +146,10 @@ funded direction, where the tiers stack:
 
 On served spec code the overlay leaves the interpreter entirely (the
 SBCL-shaped answer for that niche): `benches/authz_served.rs` measures
-~3.1× over the VM-loaded arm. Full history and the GC /
-value-representation / JIT ladder live in `PERFORMANCE.md`, `BENCHMARKS.md`,
-and `design/perf-*.md`.
+~3.1× over the VM-loaded arm. For long-running served processes,
+`SHEN_RUST_GC=1` bounds the heap (see "Execution engine" above). Full history
+and the GC / value-representation / JIT ladder live in `PERFORMANCE.md`,
+`BENCHMARKS.md`, and `design/perf-*.md`.
 
 ## Development
 

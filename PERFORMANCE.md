@@ -91,17 +91,42 @@ split-brain that was live for kernel names. It composes with tc-cache
 overlaid spec code runs native. Cold one-shot `--kernel-tests` is unaffected
 by design (loaded defuns are ~0% of that wall).
 
+## GC Step 4: collection ON (shipped 2026-06-10, opt-in)
+
+The last greenlit ladder rung. `SHEN_RUST_GC=1` switches the heap to
+**request mode**: allocation never collects — `Heap::grow` raises a pending
+flag once the footprint outgrows the last live set (heap-doubling policy) —
+and the interpreter collects when its activation depth returns to **0**
+(guards on `Interp::eval`/`apply`), where no transient `Value` exists in an
+owned scope, VM stack, or spilled arg buffer by construction. Roots are the
+§6g hybrid: precise enumeration of the interpreter's containers (env tables,
+closure-cache constant pools, tc-cache, host `gc_pins`) plus a conservative
+native-stack scan with an aarch64 callee-saved register flush for `Value`s
+held in host frames. The safepoint choice also collapses the spike's ~7.7×
+mid-descent over-retention to ~nothing (dead deep frames sit below the
+collect-time stack pointer).
+
+Measured (`benches/gc_boundedness.rs`, 20k served requests, machine-checked):
+grow-only ≈ **482 MB and climbing** vs GC ≈ **26 MB flat**, wall-time
+neutral; one-shot `--kernel-tests` with GC *on* is ≈ +1% (a run sees ~1–2
+collections), and the GC-*off* default path is unchanged (one TLS load +
+branch per funnel; paired mins identical). Verification: 134/0 across
+release/debug × {GC off, on, aggressive-floor} × {tree-walk, VM}; the
+`--debug-gc` gate leg runs the suite under the reentrancy sentinel +
+poison-on-sweep; miri covers the precise-collect path. Ship posture:
+**off by default** (one-shot needs no reclamation), aarch64 macOS/Linux only
+(hard refusal elsewhere), mutually exclusive with the JIT (Cranelift frame
+roots unverified), refused on multi-`Interp` threads.
+
 ## What's left
 
-- **GC Step 4** — turn collection on (precise shadow-stack + conservative
-  AOT-frame scan). ~2–3% speed but a real memory win (today's heap is grow-only)
-  and finishes the ladder. The only remaining greenlit rung. (Overlay
-  `make_aot_closure` captures are on the Step-4 roots checklist.)
 - **JIT Win-A W2 for served: parked on measurement** — the JIT cannot see
   loaded named defuns (no `do_defun` tier) and recorded zero executions on the
   authz workload; revival requires an AOT-overlaid profile showing >~40%
   cross-call edges in a mutual-tail group AOT can't loop-compile, gated vs the
   AOT baseline.
+- **x86_64 conservative scan** — a `rbx/rbp/r12–r15` register spill would
+  extend `SHEN_RUST_GC` beyond aarch64; mechanical, unfunded.
 
 ## Reproducing
 

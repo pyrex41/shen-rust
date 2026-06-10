@@ -23,14 +23,27 @@
 //!
 //! ## Where the heap lives
 //!
-//! A **thread-local grow-only [`gc::Heap`]** (`HEAP_OWNER`/`HEAP_PTR`, see the
+//! A **thread-local [`gc::Heap`]** (`HEAP_OWNER`/`HEAP_PTR`, see the
 //! split-TLS note below) backs construction, so
 //! the Step-1 constructor/inspector seam keeps its signatures (`Value::cons(a,
 //! b)` gains no `Heap` parameter) and the thousands of call sites don't churn.
-//! Collection stays **off** in Step 3 (the precise root set is Step 4); the heap
-//! only grows. Reference-returning inspectors (`head`/`tail`/`as_str`) bridge a
-//! raw node pointer to a `&Value`/`&str` tied to `&self`: sound because the heap
-//! is non-moving (stable addresses) and grow-only (nodes never freed).
+//!
+//! ## Collection (GC Step 4)
+//!
+//! The heap is grow-only by default; `SHEN_RUST_GC` switches it to **request
+//! mode**: allocation still never collects — `Heap::grow` raises a pending
+//! flag, and the interpreter runs `Heap::collect_at_safepoint` when its
+//! activation depth returns to 0 (see `interp::eval`'s `DepthGuard`). Roots
+//! are hybrid: the interpreter's containers, precisely (`Interp::gc_roots`),
+//! plus a conservative native-stack scan (`gc::stack`) for `Value`s in host
+//! frames. Reference-returning inspectors (`head`/`tail`/`as_str`) bridge a
+//! raw node pointer to a `&Value`/`&str` tied to `&self`: sound because the
+//! heap is non-moving (stable addresses) and a node is never freed while
+//! reachable — and *unreachable-but-borrowed* cannot happen, because every
+//! interpreter-internal bridged borrow lives at activation depth > 0 where
+//! collection never runs, and a HOST must not hold a bridged borrow (or an
+//! unpinned heap-container `Value` — see `Interp::gc_pins`) across
+//! `Interp::eval`/`apply` when the GC is enabled.
 
 use std::any::Any;
 use std::cell::{Cell, RefCell, UnsafeCell};
@@ -71,9 +84,14 @@ use crate::symbol::SymId;
 // reachable from a `with_heap`/`with_heap_mut` closure must never call back
 // into these funnels. Today that holds because the closures only call `Heap`
 // methods, `Value::from_gc`/`to_gc` bit-casts, the global allocator, and
-// `Rc`/`Any` operations. GC Step 4 note: `Heap::collect`'s mark phase calls
-// `GcObject::gc_edges` and its sweep drops opaque payloads — those impls must
-// stay free of `Value` heap accessors (they are today; keep it that way).
+// `Rc`/`Any` operations. GC Step 4 made the highest-stakes instance LIVE:
+// `Heap::collect_at_safepoint` runs inside `with_heap_mut`, its mark phase
+// calls `GcObject::gc_edges`, and its sweep runs Closure/Opaque payload
+// `Drop`s — all of those must stay free of `Value` heap accessors. The known
+// trap class is `Value`'s `Debug`/`Display` formatting (it calls
+// `heap_kind()` → `with_heap`): never debug-format a `Value` from a payload
+// `Drop` or `gc_edges`. Tripwires: the sweep-Drop `should_panic` test below,
+// the poison-on-sweep words, and the `--debug-gc` gate leg.
 thread_local! {
     /// Fast-path raw pointer to this thread's heap. See the module note above
     /// for why this is a separate key from the owner.
@@ -195,6 +213,79 @@ fn with_heap_mut<R>(f: impl FnOnce(&mut Heap) -> R) -> R {
     // (debug-checked) guarantees no other `&Heap`/`&mut Heap` derived from it
     // is live during `f`.
     f(unsafe { &mut *p })
+}
+
+// ---- GC Step 4 glue: request-mode collection at interpreter safepoints ----
+//
+// The interpreter (`interp::eval`) owns WHEN to collect (activation depth 0,
+// see its `DepthGuard`); the heap owns the trigger bookkeeping and the hybrid
+// mark (precise roots + conservative native-stack scan). These funnels bridge
+// the two without exposing `Gc` or the TLS heap outside this module.
+
+/// Can request-mode collection run on this build? False where the
+/// conservative native-stack scan is unsupported (non-aarch64, miri) — the
+/// enable path must refuse rather than collect with an unsound root set.
+pub(crate) fn gc_scan_supported() -> bool {
+    crate::gc::stack::SCAN_SUPPORTED
+}
+
+thread_local! {
+    /// Mirror of this thread's `Heap::request_gc_enabled()`, kept as its own
+    /// no-`Drop` const-init key so the interpreter's per-`eval`/`apply` "is
+    /// the GC even on?" check is a single bare TLS load — the GC-off default
+    /// path pays one predicted branch, not the full depth-guard protocol.
+    static GC_ACTIVE: Cell<bool> = const { Cell::new(false) };
+}
+
+/// Has request-mode collection been enabled on this thread? (The cheap
+/// mirror — see `GC_ACTIVE`.)
+#[inline]
+pub(crate) fn gc_request_active() -> bool {
+    GC_ACTIVE.with(|g| g.get())
+}
+
+/// Switch this thread's heap to request mode (see `Heap::enable_request_gc`).
+pub(crate) fn gc_enable_request_mode(floor: usize) {
+    with_heap_mut(|h| h.enable_request_gc(floor));
+    GC_ACTIVE.with(|g| g.set(true));
+}
+
+/// Has request mode been enabled on this thread's heap?
+pub(crate) fn gc_request_enabled() -> bool {
+    with_heap(|h| h.request_gc_enabled())
+}
+
+/// Is a deferred collection pending? Cheap (one TLS load + a field read);
+/// polled by the interpreter at depth-0 funnel exits.
+#[inline]
+pub(crate) fn gc_request_pending() -> bool {
+    with_heap(|h| h.gc_pending())
+}
+
+/// Run a safepoint collection with `precise` as the precise root set (the
+/// conservative stack scan supplies the rest). Returns
+/// `(collections, last_live, node_count)` for stats reporting.
+///
+/// The caller must hold NO bridged heap borrows (`&str` from `as_str`,
+/// `&Closure` from `as_closure`, …) across this call — the interpreter
+/// guarantees that structurally by collecting only at activation depth 0.
+pub(crate) fn gc_collect_at_safepoint(precise: &[Value]) -> (u64, usize, usize) {
+    with_heap_mut(|h| {
+        // SAFETY: `Value` and `Gc` are both `#[repr(transparent)]` over `u64`
+        // and share the fixnum/ptr/nil tag encodings (module docs); `sym`/
+        // `bool` words read as non-pointer `Gc`s the collector ignores. The
+        // cast is the bulk form of `Value::to_gc`.
+        let gcs: &[Gc] =
+            unsafe { std::slice::from_raw_parts(precise.as_ptr().cast::<Gc>(), precise.len()) };
+        h.collect_at_safepoint(gcs);
+        (h.collections(), h.last_live(), h.node_count())
+    })
+}
+
+/// `(collections, last_live, node_count)` of this thread's heap — for stats
+/// reporting and the GC stress/boundedness harnesses.
+pub(crate) fn gc_heap_stats() -> (u64, usize, usize) {
+    with_heap(|h| (h.collections(), h.last_live(), h.node_count()))
 }
 
 /// Mutable absvector backing type (legacy alias — absvectors now live as
@@ -601,7 +692,8 @@ impl Value {
     }
 
     /// The string contents, if this is a `Str`. The returned `&str` is borrowed
-    /// from the pinned heap node (sound: non-moving + grow-only).
+    /// from the pinned heap node (sound: non-moving, and never freed while
+    /// reachable — see the module's "Collection" note for the borrow rules).
     #[inline]
     pub fn as_str(&self) -> Option<&str> {
         let raw = with_heap(|h| h.blob_raw(self.to_gc()));
@@ -630,7 +722,8 @@ impl Value {
     }
 
     /// The head (car) of a cons cell, if this is a `Cons`. Borrowed from the
-    /// pinned node (sound: non-moving + grow-only).
+    /// pinned node (sound: non-moving, never freed while reachable — module
+    /// "Collection" note).
     #[inline]
     pub fn head(&self) -> Option<&Value> {
         let ptrs = with_heap(|h| h.cons_word_ptrs(self.to_gc()));
@@ -697,7 +790,8 @@ impl Value {
     }
 
     /// Borrow the closure behind a closure value, if this is one. Borrowed from
-    /// the pinned node (sound: non-moving + grow-only).
+    /// the pinned node (sound: non-moving, never freed while reachable —
+    /// module "Collection" note).
     pub fn as_closure(&self) -> Option<&Closure> {
         // Hot path (every AOT/VM/tree-walker call dispatches through here):
         // a single thread-local heap access resolves node→kind→object pointer,
@@ -866,6 +960,84 @@ mod tests {
         assert!(shen_eq(&v, &v));
         let w = Value::cons(Value::int(2), v);
         assert!(w.is_cons());
+    }
+
+    /// GC Step 4 sweep-Drop tripwire: a heap payload whose `Drop` calls a
+    /// `Value` heap accessor must trip the reentrancy sentinel when it is
+    /// reclaimed by a sweep (the sweep runs inside the live `&mut Heap` of
+    /// `with_heap_mut` — an accessor there is debug-panic / release-UB).
+    /// `heap_reentry_panics_in_debug` covers funnel reentry; this covers the
+    /// *sweep-Drop* path specifically. Runs on a dedicated thread because the
+    /// deliberate mid-sweep panic leaves that thread's heap unusable.
+    #[test]
+    #[cfg(debug_assertions)]
+    fn sweep_drop_calling_funnel_panics_in_debug() {
+        let result = std::thread::spawn(|| {
+            struct EvilDrop;
+            impl Drop for EvilDrop {
+                fn drop(&mut self) {
+                    // The forbidden class: any Value accessor during sweep.
+                    let _ = Value::str("boom".to_string());
+                }
+            }
+            let _unrooted = Value::foreign(Rc::new(EvilDrop));
+            // Precise-only collect with no roots: the foreign node is swept
+            // and its Drop runs inside the exclusive heap borrow.
+            with_heap_mut(|h| h.collect(&[]));
+        })
+        .join();
+        let payload = result.expect_err("sweep-Drop funnel call must panic in debug");
+        let msg = payload
+            .downcast_ref::<String>()
+            .map(String::as_str)
+            .or_else(|| payload.downcast_ref::<&str>().copied())
+            .unwrap_or("");
+        assert!(
+            msg.contains("heap re-entered"),
+            "expected the reentrancy sentinel, got: {msg:?}"
+        );
+    }
+
+    /// The positive side of the sweep-Drop constraint: well-behaved payload
+    /// `Drop`s (streams, foreign handles, closures) run exactly once when
+    /// swept, and the heap stays healthy afterwards.
+    #[test]
+    fn sweep_runs_well_behaved_drops_once() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        use std::sync::Arc;
+
+        let drops = Arc::new(AtomicUsize::new(0));
+        let drops_in = Arc::clone(&drops);
+        std::thread::spawn(move || {
+            struct CountedDrop(Arc<AtomicUsize>);
+            impl Drop for CountedDrop {
+                fn drop(&mut self) {
+                    self.0.fetch_add(1, Ordering::Relaxed);
+                }
+            }
+            let _foreign = Value::foreign(Rc::new(CountedDrop(Arc::clone(&drops_in))));
+            let _stream = Value::stream(Rc::new(RefCell::new(Stream::Closed)));
+            let _closure = Value::closure(Closure {
+                name: None,
+                arity: 1,
+                partial: vec![Value::int(1)],
+                kind: ClosureKind::Native(
+                    Rc::new(|_: &mut crate::interp::eval::Interp, _: &[Value]| Ok(Value::nil())),
+                    vec![Value::int(2)],
+                ),
+            });
+            with_heap_mut(|h| h.collect(&[]));
+            // Heap stays usable after the sweep.
+            let v = Value::cons(Value::int(1), Value::nil());
+            assert!(v.is_cons());
+        })
+        .join()
+        .expect("well-behaved sweep must not panic");
+        assert_eq!(
+            drops.load(Ordering::Relaxed),
+            1,
+            "foreign Drop must run exactly once"
+        );
     }
 
     #[test]

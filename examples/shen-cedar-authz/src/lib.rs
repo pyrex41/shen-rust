@@ -150,6 +150,12 @@ impl ShenHost {
 }
 
 /// Walk a Shen proper list into a `Vec<Value>` (`Value` is `Copy`).
+///
+/// GC note: if the embedding enables `SHEN_RUST_GC`, do NOT hold this `Vec`
+/// across a later `eval`/`call` — a heap-allocated `Vec`'s elements are
+/// invisible to the collector's stack scan. Either consume it first, or pin
+/// the values via `Interp::gc_pins` for the duration (see the `value.rs`
+/// "Collection" note).
 pub fn read_list(v: &Value) -> Vec<Value> {
     let mut out = Vec::new();
     let mut cur = *v;

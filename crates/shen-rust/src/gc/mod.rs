@@ -1,11 +1,13 @@
 //! A non-moving, mark-sweep garbage collector with `Copy` heap handles.
 //!
-//! This is **Step 2** of the GC ladder (see `design/gc-conversion-handoff.md`
-//! and `design/gc-step2-collector-handoff.md`): the collector machinery landed
-//! as a real, tested subsystem **but not yet wired to [`crate::value::Value`]**.
-//! Step 3 flips `Value` onto this heap; Step 4 adds the conservative
-//! AOT-frame root scan that the membership table here ([`Heap::is_heap_ptr`])
-//! exists to serve.
+//! Built as **Step 2** of the GC ladder (see `design/gc-conversion-handoff.md`
+//! and `design/gc-step2-collector-handoff.md`); **Step 3** flipped
+//! [`crate::value::Value`] onto this heap, and **Step 4** wired live
+//! collection: request mode ([`Heap::enable_request_gc`]) defers collection
+//! to interpreter depth-0 safepoints, where [`Heap::collect_at_safepoint`]
+//! marks from precise container roots plus the conservative native-stack
+//! scan (`stack` module) that the membership table ([`Heap::is_heap_ptr`])
+//! was built to serve.
 //!
 //! It is a faithful productionization of the proven spike
 //! `benches/gc_spike.rs` (which measured 3.34× over the 24-byte `Rc` enum on a
@@ -41,6 +43,7 @@
 
 mod heap;
 pub mod node;
+pub(crate) mod stack;
 
 pub use heap::Heap;
 
@@ -90,6 +93,7 @@ pub trait GcObject: std::any::Any {
 /// Assigning, copying, reading, or tracing a `Gc` is pure data movement — no
 /// refcount, no allocation. The collector follows only `TAG_PTR` words.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(transparent)]
 pub struct Gc(u64);
 
 const TAG_MASK: u64 = 0b111;

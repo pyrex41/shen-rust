@@ -730,6 +730,17 @@ pub fn install_jit(interp: &mut Interp) {
     if std::env::var_os("SHEN_RUST_JIT").is_none() {
         return;
     }
+    if crate::value::gc_request_enabled() {
+        // GC Step 4 mutual exclusion: Cranelift's frame spill discipline is
+        // unverified against the conservative scan — a JIT'd frame could hold
+        // the only reference to a node in a slot the scan cannot prove it
+        // sees. `Interp::maybe_enable_gc` refuses in the other order.
+        eprintln!(
+            "shen-rust: SHEN_RUST_JIT ignored: SHEN_RUST_GC is enabled and \
+             JIT frame roots are unverified"
+        );
+        return;
+    }
     interp.jit = Some(Box::new(JitEngine::new()));
     interp.register_aot_direct("shen.length-h", jit_shim_length_h);
     install_w1_sumto(interp);

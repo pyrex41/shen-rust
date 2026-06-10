@@ -90,13 +90,32 @@ a coverage probe only (the JIT has no tier for named defuns): on `authz_served`
 it recorded **zero JIT executions**, which is the measurement that parked
 JIT-W2-for-served.
 
+## GC boundedness (`benches/gc_boundedness.rs`)
+
+The GC Step-4 deliverable: a load-once / serve-many loop (kernel boot + 20k
+list-building requests) run twice — grow-only vs `SHEN_RUST_GC=1` — each on
+its own thread/heap, every request's result asserted.
+
+| Arm | final heap | live set | collections | wall |
+|---|---:|---:|---:|---:|
+| grow-only (default) | ≈ 20.1 M nodes (**482 MB**, monotonic) | — | 0 | ≈ 3.04 s |
+| `SHEN_RUST_GC=1` | ≈ 1.07 M nodes (**26 MB, flat**) | ≈ 3.3 k | 18 | ≈ 3.03 s |
+
+The harness machine-checks all three headline properties: the GC arm
+collects, its footprint is flat across the back half (≤5% drift), and the
+control grows well past it. Wall-time is neutral — free-list reuse pays for
+the collections. One-shot `--kernel-tests` with GC on measures ≈ +1%
+(paired); the GC-off default path is unchanged.
+
 ## Kernel conformance (`scripts/kernel-tests.sh`)
 
 The upstream suite runs end-to-end via `bin/shen-rust --kernel-tests`:
 **passed: 134, failed: 0** — in every engine mode (tree-walk, `SHEN_RUST_VM=1`,
-`--served`). This is Gate 7 in `scripts/gates.sh`; Gate 8 repeats it in a
-debug build, where the heap-reentrancy sentinel (`value.rs` split-TLS note)
-is live.
+`--served`) and with GC collection off, on, and forced-aggressive. This is
+Gate 7 in `scripts/gates.sh`; Gate 8 repeats it in a debug build, where the
+heap-reentrancy sentinel (`value.rs` split-TLS note) is live; Gate 9 repeats
+the debug run with `SHEN_RUST_GC` at a small trigger floor, so full
+mark/sweep cycles run under the sentinel plus the debug poison-on-sweep.
 
 ## Methodology
 
