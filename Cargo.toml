@@ -23,13 +23,12 @@ klcompile = { path = "crates/klcompile" }
 cedar-policy = "4"
 
 # Release profile tuned for the AOT kernel modules (~12 MB generated).
-# opt-level=2 is the sweet spot: ~15% faster kernel-tests than opt-level=1
-# while keeping the shen-rust crate build at ~1 min. opt-level=3 (no LTO)
-# adds ~35s of build for no measurable runtime gain — the hot path is
-# malloc-bound, which optimization can't eliminate. opt-level=3 *with* LTO
-# costs 8+ min and >8 GB RSS, making gates impractical, so LTO stays off.
-# The `#[inline(always)]` rt:: hot helpers still inline at any opt-level.
+# opt-level=3 + *thin* LTO + codegen-units=1 measured ~5% faster on
+# --kernel-tests than the old opt2/no-LTO/cgu16 settings (paired interleaved,
+# min-of-6: 2.93s vs 3.08s, 2026-06-10) at the same ~1 min clean build and a
+# 27% smaller binary. The earlier "LTO costs 8+ min / >8 GB RSS" note was
+# *fat* LTO (lto = true) — keep that off; thin is cheap.
 [profile.release]
-lto = false
-opt-level = 2
-codegen-units = 16
+lto = "thin"
+opt-level = 3
+codegen-units = 1
