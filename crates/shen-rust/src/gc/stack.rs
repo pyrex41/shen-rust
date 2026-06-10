@@ -127,14 +127,18 @@ pub(crate) fn current_sp() -> usize {
     std::hint::black_box(&probe) as *const u8 as usize
 }
 
-/// Spill the aarch64 callee-saved registers (x19–x28) into `buf`, so a root
-/// whose only home is a callee-saved register is visible to the scan. A value
-/// live across a call sits EITHER in a stack slot (scanned) OR in a
-/// callee-saved register (flushed here); caller-saved registers cannot hold a
-/// value across the call into the collector. Verbatim from the §6g spike.
+/// Spill the aarch64 callee-saved registers into `buf`, so a root whose only
+/// home is a callee-saved register is visible to the scan. A value live
+/// across a call sits EITHER in a stack slot (scanned) OR in a callee-saved
+/// register (flushed here); caller-saved registers cannot hold a value across
+/// the call into the collector. Covers the FULL AAPCS64 callee-saved set:
+/// x19–x28 (from the §6g spike) **plus d8–d15** — LLVM can in principle park
+/// a u64 in a callee-saved FP register under GPR pressure, and Boehm's
+/// aarch64 flush covers them for exactly this reason (adversarial-review
+/// hardening; no concrete miss was demonstrated).
 #[cfg(all(target_arch = "aarch64", not(miri)))]
 #[inline(never)]
-pub(crate) fn flush_callee_saved(buf: &mut [u64; 10]) {
+pub(crate) fn flush_callee_saved(buf: &mut [u64; 18]) {
     // SAFETY: pure stores of register contents into a caller-provided buffer.
     unsafe {
         std::arch::asm!(
@@ -143,6 +147,10 @@ pub(crate) fn flush_callee_saved(buf: &mut [u64; 10]) {
             "stp x23, x24, [{b}, #32]",
             "stp x25, x26, [{b}, #48]",
             "stp x27, x28, [{b}, #64]",
+            "stp d8, d9, [{b}, #80]",
+            "stp d10, d11, [{b}, #96]",
+            "stp d12, d13, [{b}, #112]",
+            "stp d14, d15, [{b}, #128]",
             b = in(reg) buf.as_mut_ptr(),
             options(nostack, preserves_flags),
         );
@@ -151,7 +159,7 @@ pub(crate) fn flush_callee_saved(buf: &mut [u64; 10]) {
 
 #[cfg(not(all(target_arch = "aarch64", not(miri))))]
 #[inline(never)]
-pub(crate) fn flush_callee_saved(_buf: &mut [u64; 10]) {
+pub(crate) fn flush_callee_saved(_buf: &mut [u64; 18]) {
     // Unsupported: deliberately unreachable in a collecting configuration —
     // `SCAN_SUPPORTED` is false and request-mode enable refuses. NOT a silent
     // degraded mode (a missed register root would be a use-after-free).

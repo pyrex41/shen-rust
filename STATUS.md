@@ -6,7 +6,7 @@ A working port of the Shen language to Rust. It boots the upstream
 **ShenOSKernel-41.1** and passes the full conformance suite — **134 / 134**
 kernel tests (`scripts/kernel-tests.sh`) — in every execution mode. All gates
 green (`scripts/gates.sh`): shengen-codegen, fmt+clippy, build, test
-(unit + 11 integration suites), shen-check, tcb-audit, kernel-aot-audit,
+(unit + integration suites), shen-check, tcb-audit, kernel-aot-audit,
 kernel-tests, kernel-tests-debug (the debug-build run carries the heap
 reentrancy sentinel — see the split-TLS note in `value.rs`), and
 kernel-tests-debug-gc (the same debug suite with GC collection forced

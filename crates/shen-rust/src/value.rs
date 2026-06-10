@@ -575,12 +575,20 @@ impl Value {
         Value::from_gc(with_heap_mut(|h| h.alloc_closure(Box::new(c), &[])))
     }
 
-    /// A shared I/O stream value.
+    /// A shared I/O stream value. Opaque to the collector: its Rust `Drop`
+    /// (closing the stream) runs when the node is swept, and that `Drop`
+    /// must never touch `Value` heap accessors (module invariant above).
     pub fn stream(s: SharedStream) -> Value {
         Value::from_gc(with_heap_mut(|h| h.alloc_opaque(Box::new(s), &[])))
     }
 
     /// A host-language opaque value (Cedar handles, etc.).
+    ///
+    /// GC contract: the payload is an untraced **leaf** — it must not
+    /// contain `Value`s (they would be invisible to the collector and swept
+    /// while the foreign object lives, once `SHEN_RUST_GC` is enabled), and
+    /// its `Drop` must never call `Value` heap accessors or debug-format a
+    /// `Value` (it runs mid-sweep; see the module invariant above).
     pub fn foreign(obj: Rc<dyn Any>) -> Value {
         Value::from_gc(with_heap_mut(|h| h.alloc_opaque(Box::new(obj), &[])))
     }

@@ -13,12 +13,23 @@ use crate::error::{ShenError, ShenResult};
 use crate::interp::eval::Interp;
 use crate::value::{shen_eq, Closure, ClosureKind, NativeFn, Value};
 
+// GC Step 4 contract for this module's `pub` entry points: with
+// `SHEN_RUST_GC` enabled, a HOST must not call `apply_named`/`apply_direct`/
+// `apply_value` at activation depth 0 — enter through `Interp::eval`/`apply`
+// instead. These are the hottest call edges in the engine (every AOT call
+// dispatches here), so unlike `vm::exec::exec` they take no runtime depth
+// guard — measured +3% on kernel-tests, the exact tax the design review
+// rejected. In-tree they are only ever reached beneath a guarded funnel (or
+// from benches that don't enable the GC); the debug assert below makes any
+// violation deterministic in debug builds and the `--debug-gc` gate leg.
+
 /// Look up `name` in the function namespace and apply it to `args`.
 /// This is the call site for everything AOT code does — primitives,
 /// kernel functions, peer AOT functions. `args` is a borrowed slice
 /// (emitted as a stack array `&[a, b]`) so the overwhelmingly common
 /// full-arity native call allocates nothing.
 pub fn apply_named(interp: &mut Interp, name: &'static str, args: &[Value]) -> ShenResult<Value> {
+    crate::interp::eval::debug_assert_gc_safe_entry();
     let sym = interp.intern_static(name);
     let f = interp.env.get_fn(sym).cloned().ok_or_else(|| {
         ShenError::new(format!("aot: undefined function `{}`", interp.resolve(sym)))
@@ -34,6 +45,7 @@ pub fn apply_named(interp: &mut Interp, name: &'static str, args: &[Value]) -> S
 /// functions, tree-walked lambdas, partials, etc.): falls back to the
 /// normal apply_named path.
 pub fn apply_direct(interp: &mut Interp, name: &'static str, args: &[Value]) -> ShenResult<Value> {
+    crate::interp::eval::debug_assert_gc_safe_entry();
     let sym = interp.intern_static(name);
     if let Some(f) = interp.get_aot_direct(sym) {
         f(interp, args)
@@ -44,6 +56,7 @@ pub fn apply_direct(interp: &mut Interp, name: &'static str, args: &[Value]) -> 
 
 /// Apply an already-resolved `Value::Closure` to `args`.
 pub fn apply_value(interp: &mut Interp, f: Value, args: &[Value]) -> ShenResult<Value> {
+    crate::interp::eval::debug_assert_gc_safe_entry();
     call_or_apply(interp, f, args)
 }
 

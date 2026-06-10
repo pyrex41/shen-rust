@@ -101,6 +101,14 @@ pub struct Heap {
     /// Floor for `next_trigger` (avoids thrashing tiny heaps). Set by
     /// [`Heap::enable_request_gc`]; overridable via `SHEN_RUST_GC=<nodes>`.
     min_trigger: usize,
+    /// Set for the duration of the sweep loop. If a payload `Drop` panics
+    /// mid-sweep, the unwind leaves this `true`: mark bits on the
+    /// not-yet-swept tail of `all` are stale, and tracing again from them
+    /// would under-mark (an already-marked node is never re-enqueued, so its
+    /// children would be missed and swept while live). A poisoned heap
+    /// therefore refuses all further collection — it degrades to grow-only,
+    /// which is sound — instead of corrupting on the *next* collect.
+    sweep_incomplete: bool,
     /// Reused mark-phase work stack (avoids a per-collection allocation).
     mark_stack: Vec<*mut Node>,
     collections: u64,
@@ -124,6 +132,7 @@ impl Heap {
             live_at_last_collect: 0,
             next_trigger: usize::MAX,
             min_trigger: 0,
+            sweep_incomplete: false,
             mark_stack: Vec::new(),
             collections: 0,
             peak_live: 0,
@@ -159,6 +168,7 @@ impl Heap {
             live_at_last_collect: 0,
             next_trigger: usize::MAX,
             min_trigger: 0,
+            sweep_incomplete: false,
             mark_stack: Vec::new(),
             collections: 0,
             peak_live: 0,
@@ -430,6 +440,24 @@ impl Heap {
     /// The full mark-sweep: mark from the conservative native-stack scan (if
     /// requested and supported), then from both precise slices, trace, sweep.
     fn collect_inner(&mut self, roots: &[Gc], extra: &[Gc], scan_stack: bool) {
+        if self.sweep_incomplete {
+            // A previous sweep unwound mid-loop (a payload Drop panicked and
+            // the host caught the unwind): mark bits are stale, so another
+            // trace would under-mark and free live nodes. Refuse forever —
+            // grow-only from here on is sound.
+            use std::sync::atomic::{AtomicBool, Ordering};
+            static WARNED: AtomicBool = AtomicBool::new(false);
+            if !WARNED.swap(true, Ordering::Relaxed) {
+                eprintln!(
+                    "shen-rust gc: a sweep was interrupted by a panicking \
+                     payload Drop; collection is disabled on this heap (it \
+                     will only grow from now on)"
+                );
+            }
+            self.request_mode = false;
+            self.gc_pending = false;
+            return;
+        }
         // ---- mark ----
         self.mark_stack.clear();
         if scan_stack {
@@ -446,6 +474,10 @@ impl Heap {
         }
 
         // ---- sweep ----
+        // Armed across the loop: payload Drops below can panic (debug
+        // sentinel, broken host Drop); an unwind must poison the heap (see
+        // `sweep_incomplete`) rather than leave it half-swept and re-traceable.
+        self.sweep_incomplete = true;
         self.free.clear();
         let mut live = 0usize;
         for &p in &self.all {
@@ -462,6 +494,7 @@ impl Heap {
                 }
             }
         }
+        self.sweep_incomplete = false;
         self.last_live = live;
         self.peak_live = self.peak_live.max(live);
         self.collections += 1;
@@ -538,7 +571,7 @@ impl Heap {
         not(miri)
     ))]
     fn scan_native_roots(&mut self) {
-        let mut regbuf = [0u64; 10];
+        let mut regbuf = [0u64; 18];
         super::stack::flush_callee_saved(&mut regbuf);
         for &w in &regbuf {
             self.mark_conservative(w);
@@ -1094,6 +1127,40 @@ mod tests {
             heap.node_count()
         );
         assert!(heap.collections() > 0, "never collected — cap too high");
+    }
+
+    #[test]
+    fn mid_sweep_panic_poisons_collection() {
+        // A payload Drop that panics mid-sweep leaves stale mark bits; a
+        // subsequent trace would under-mark and free live children. The heap
+        // must refuse all further collection (degrade to grow-only) instead.
+        struct PanicDrop;
+        impl Drop for PanicDrop {
+            fn drop(&mut self) {
+                panic!("payload drop panicked");
+            }
+        }
+        let mut heap = Heap::new(usize::MAX); // explicit collects only
+        let mut roots = vec![Gc::nil()];
+        let live = build_list(&mut heap, 50, &mut roots, 0);
+        roots[0] = live;
+        let _unrooted = heap.alloc_opaque(Box::new(PanicDrop), &roots);
+
+        let unwound = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            heap.collect(&roots);
+        }));
+        assert!(unwound.is_err(), "the panicking Drop must unwind the sweep");
+        assert_eq!(heap.collections(), 0, "an interrupted sweep doesn't count");
+
+        // Further collection is refused — and the live list is untouched.
+        heap.collect_at_safepoint(&roots);
+        assert_eq!(
+            heap.collections(),
+            0,
+            "poisoned heap must refuse to collect"
+        );
+        assert!(!heap.gc_pending());
+        assert_eq!(sum_list(&heap, live), (0..50).sum::<i64>());
     }
 
     #[test]

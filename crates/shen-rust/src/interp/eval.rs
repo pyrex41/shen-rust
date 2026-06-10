@@ -141,6 +141,41 @@ impl Drop for DepthGuard {
     }
 }
 
+/// Engine-activation guard for public entry points that are NOT safepoint
+/// funnels (`vm::exec::exec`, `aot::runtime::apply_*`). When request-mode GC
+/// is active, entering one of these pushes the activation depth so that a
+/// *nested* `eval`/`apply` exit can never look outermost while the entry's
+/// malloc'd state (the VM operand stack, owned scopes, spilled arg buffers —
+/// all invisible to the conservative stack scan) is live. Unlike the
+/// funnels, these entries run NO collection at their own exit: a pending
+/// request simply waits for the next guarded funnel exit. GC-off cost: one
+/// TLS load + a predicted branch.
+pub(crate) struct EngineGuard(#[allow(dead_code)] Option<DepthGuard>);
+
+#[inline]
+pub(crate) fn engine_guard() -> EngineGuard {
+    EngineGuard(if crate::value::gc_request_active() {
+        Some(DepthGuard::enter())
+    } else {
+        None
+    })
+}
+
+/// Debug-only tripwire for engine entry points too hot to carry a runtime
+/// guard (`aot::runtime::apply_*` — every AOT call edge; a release guard
+/// there measured +3% on kernel-tests): with request-mode GC active they
+/// must only ever be reached beneath a guarded funnel. A depth-0 call with
+/// GC on is an out-of-contract host entry whose interior funnel exits could
+/// collect over live malloc'd containers.
+#[inline]
+pub(crate) fn debug_assert_gc_safe_entry() {
+    debug_assert!(
+        !crate::value::gc_request_active() || GC_DEPTH.get() > 0,
+        "engine entry at GC activation depth 0 with SHEN_RUST_GC active: \
+         enter through Interp::eval/apply (see aot::runtime GC contract)"
+    );
+}
+
 pub struct Interp {
     pub symbols: Interner,
     pub env: Env,
@@ -338,17 +373,42 @@ impl Interp {
         if crate::value::gc_request_enabled() {
             return; // a previous Interp on this thread already enabled it
         }
+        use std::sync::atomic::{AtomicBool, Ordering};
+        fn warn_once(flag: &AtomicBool, msg: &str) {
+            if !flag.swap(true, Ordering::Relaxed) {
+                eprintln!("{msg}");
+            }
+        }
+        if GC_DEPTH.get() != 0 || LIVE_INTERPS.get() > 1 {
+            // Enabling mid-activation (an Interp constructed inside a running
+            // eval that took the GC-off fast path) or beside live siblings
+            // would flip `GC_ACTIVE` while an outer, unguarded evaluation is
+            // in flight — its interior funnel exits would look outermost and
+            // collect over live owned scopes. Refuse; the env var takes
+            // effect only for a fresh, sole Interp on the thread.
+            static WARNED_MID: AtomicBool = AtomicBool::new(false);
+            warn_once(
+                &WARNED_MID,
+                "shen-rust: SHEN_RUST_GC ignored: Interp created \
+                 mid-evaluation or beside live siblings; heap stays grow-only",
+            );
+            return;
+        }
         if std::env::var("SHEN_RUST_JIT").is_ok_and(|v| v == "1") {
-            eprintln!(
-                "shen-rust: SHEN_RUST_GC ignored: SHEN_RUST_JIT is set and JIT \
-                 frame roots are unverified; heap stays grow-only"
+            static WARNED_JIT: AtomicBool = AtomicBool::new(false);
+            warn_once(
+                &WARNED_JIT,
+                "shen-rust: SHEN_RUST_GC ignored: SHEN_RUST_JIT is set and \
+                 JIT frame roots are unverified; heap stays grow-only",
             );
             return;
         }
         if !crate::value::gc_scan_supported() {
-            eprintln!(
+            static WARNED_ARCH: AtomicBool = AtomicBool::new(false);
+            warn_once(
+                &WARNED_ARCH,
                 "shen-rust: SHEN_RUST_GC ignored: the conservative stack scan \
-                 supports aarch64 macOS/Linux only; heap stays grow-only"
+                 supports aarch64 macOS/Linux only; heap stays grow-only",
             );
             return;
         }
@@ -910,7 +970,8 @@ impl Interp {
             roots.push(*v);
         }
         let (n, live, nodes) = crate::value::gc_collect_at_safepoint(&roots);
-        if std::env::var("SHEN_RUST_GC_STATS").is_ok() {
+        static STATS: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+        if *STATS.get_or_init(|| std::env::var("SHEN_RUST_GC_STATS").is_ok()) {
             eprintln!(
                 "shen-rust gc: collection #{n}: live {live} / {nodes} nodes, \
                  {} precise roots, {:.2?}",

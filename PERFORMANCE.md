@@ -108,9 +108,11 @@ collect-time stack pointer).
 
 Measured (`benches/gc_boundedness.rs`, 20k served requests, machine-checked):
 grow-only ≈ **482 MB and climbing** vs GC ≈ **26 MB flat**, wall-time
-neutral; one-shot `--kernel-tests` with GC *on* is ≈ +1% (a run sees ~1–2
-collections), and the GC-*off* default path is unchanged (one TLS load +
-branch per funnel; paired mins identical). Verification: 134/0 across
+neutral; one-shot `--kernel-tests` with GC *on* is ≈ +1–2% — a run sees ~1–2
+collections, one of which is a terminal sweep of the full footprint after
+results print (pure waste for a one-shot, another reason the default is
+off) — and the GC-*off* default path is unchanged (one TLS load + branch
+per funnel; paired mins identical). Verification: 134/0 across
 release/debug × {GC off, on, aggressive-floor} × {tree-walk, VM}; the
 `--debug-gc` gate leg runs the suite under the reentrancy sentinel +
 poison-on-sweep; miri covers the precise-collect path. Ship posture:

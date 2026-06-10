@@ -71,6 +71,11 @@ pub fn exec(
         )));
     }
 
+    // GC Step 4: this is a public engine door, and the operand `stack` below
+    // is a malloc'd `Vec<Value>` the conservative scan cannot see — see
+    // `eval::engine_guard`.
+    let _gc = crate::interp::eval::engine_guard();
+
     // Frame 0 lives at base 0. Args become locals[0..arity); the rest of
     // the locals slots are Nil. Operands push above `floor`.
     let mut stack: Stack = Vec::with_capacity(bf.n_locals + 8);

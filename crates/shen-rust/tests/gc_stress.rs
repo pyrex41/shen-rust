@@ -33,9 +33,12 @@ fn served_loop_with_aggressive_gc_is_correct_and_bounded() {
     // Tiny floor: collect whenever footprint grows ≥4096 nodes past the live
     // set. Must be set before the first Interp (checked in Interp::new).
     std::env::set_var("SHEN_RUST_GC", "4096");
+    // Must match gc::stack::SCAN_SUPPORTED (incl. miri, where the env var is
+    // refused and this test degrades to a plain correctness loop).
     let gc_active = cfg!(all(
         target_arch = "aarch64",
-        any(target_os = "macos", target_os = "linux")
+        any(target_os = "macos", target_os = "linux"),
+        not(miri)
     ));
 
     let mut interp = Interp::new();
