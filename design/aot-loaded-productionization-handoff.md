@@ -1,5 +1,17 @@
 # Handoff: AOT-Native Loaded Shen — Productionization Planning
 
+> **OUTCOME (2026-06-09): EXECUTED IN FULL — all kill-gates green.**
+> Commits `93a8fe7` (0A clear_aot_direct, was a live bug for ~1123 kernel
+> names), `dc73404` (0B register_native clears + 6 DirectFn promotions, ~5%
+> faster), `cef0bea` (klcompile lib+CLI, zero kernel byte drift), `b41833a`
+> (authz_served bench: **3.0–3.2× over VM-loaded**, gate was ≥1.5×),
+> `38750e9` (overlay API + `scripts/codegen-shen-aot.sh` pipeline),
+> `41582ac` (examples wired opt-in; W2 probe). §5 RESOLVED: AOT-first; W2
+> parked on a measured 0.0% (zero JIT executions on the authz workload — the
+> JIT has no tier for named defuns); dylib (§6.2) dead, no user. Posture:
+> opt-in only, bare default untouched. See BENCHMARKS.md §"AOT overlay" and
+> memory `project_aot_overlay_shipped`.
+
 **For: a fresh ultracode planning session.** Everything below is measured,
 committed evidence — do not re-derive it; plan from it. The deliverable of
 that session is a staged, kill-gated productionization plan for **Lever B:

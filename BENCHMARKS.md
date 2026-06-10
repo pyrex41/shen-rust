@@ -48,8 +48,40 @@ on the tree-walker vs the AOT-compiled body.
 With `#[inline(always)]` on the `rt::add`/`rt::sub`/`rt::eq` helpers, each
 Int+Int op collapses to a `match` + inline `checked_add` and the hot tuple stays
 in registers — a large (tens-of-×) speedup over the tree-walker in release. This
-is the upper bound for *kernel* code (AOT'd at build time); it does **not** apply
-to runtime-defined user code, which is the tree-walker's / VM's job.
+is the upper bound for code klcompile sees ahead of time: the kernel (AOT'd at
+build time) and, since the overlay shipped, any committed `.shen` file (next
+section). Truly runtime-defined code stays the tree-walker's / VM's job.
+
+## AOT overlay on loaded code (`benches/normal_form_aot.rs`, `benches/authz_served.rs`)
+
+The Lever-B measurement: load `.shen` files normally (datatypes/macros/declares
+all fire), then swap the loaded defuns for klcompile-emitted native Rust via the
+verified overlay (`aot::overlay`). Loaded-vs-AOT is paired in-process;
+tree-vs-VM is cross-process interleaved (the engine is process-global). Both
+benches assert shen_eq identity on every query before any timing counts, and
+`authz_served` installs through the production `install_overlay_if_match` path
+(manifest: source FNV + kernel digest), plus a post-timing redefinition leg
+proving a `(defun ...)` over the installed overlay wins on both dispatch paths.
+
+| Workload | engine | loaded (min) | AOT (min) | AOT speedup |
+|---|---|---:|---:|---:|
+| `normal_form_aot` (interpreter.shen, lambda-heavy rewriter) | tree | ≈ 282 ms/batch | ≈ 54 ms/batch | **≈ 5.3×** |
+| | VM | ≈ 99 ms/batch | ≈ 58 ms/batch | **≈ 1.7–2.1×** |
+| `authz_served` (authz spec: `reaches`/`classify` over a 64-role DAG, 576 classifications/query) | tree | ≈ 300 ms/batch | ≈ 26 ms/batch | **≈ 11.7×** |
+| | VM | ≈ 80 ms/batch | ≈ 26 ms/batch | **≈ 3.0–3.2×** |
+
+The AOT arm is engine-independent (~26 ms/batch either way) — it has left the
+interpreter entirely. **Kill-gate: AOT ≥ 1.5× over the VM-loaded arm** on
+`authz_served` before any default-on consideration (passed at 2× margin; the
+overlay still ships opt-in). Pure cons-recursion (authz) benefits more than the
+closure-heavy rewriter shape (normal-form). Regenerate artifacts with
+`scripts/codegen-shen-aot.sh <out.rs> <in.shen>...` — the bench refuses
+(loudly) on a stale manifest.
+
+A `--features jit SHEN_RUST_JIT=1 SHEN_RUST_JIT_STATS=1` run of either bench is
+a coverage probe only (the JIT has no tier for named defuns): on `authz_served`
+it recorded **zero JIT executions**, which is the measurement that parked
+JIT-W2-for-served.
 
 ## Kernel conformance (`scripts/kernel-tests.sh`)
 

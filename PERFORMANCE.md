@@ -56,14 +56,34 @@ type-checker's continuations 98.9% VM-served. So the VM ships behind the
 `--served` entrypoint (`SHEN_RUST_VM=1`) for long-running embeddings, while the
 bare default stays the tree-walker to protect the one-shot cross-port ratio.
 
+## The AOT overlay (loaded code, served shape)
+
+AOT-native-compiling *loaded* user code — the SBCL-shaped answer — **shipped
+2026-06-09 for the served niche**, as an opt-in overlay: known `.shen` files
+are compiled offline (`scripts/codegen-shen-aot.sh`, the same klcompile that
+AOTs the kernel) and, after a normal load (all side effects live), swapped
+over the loaded defuns through a verified manifest (source hash + kernel
+digest + arity precheck; any mismatch silently falls back to the loaded
+engine). Measured on the served authz workload (`benches/authz_served.rs`):
+**3.0–3.2× over the VM-loaded arm** (kill-gate was ≥1.5×), 11.4–11.8× over
+tree-walk, shen_eq-identical results. Redefinition coherence is guaranteed —
+`do_defun`/`register_native` invalidate the direct-dispatch slot, fixing a
+split-brain that was live for kernel names. It composes with tc-cache
+(fast load) and `--served` (fast dynamic closures): load fast, then the
+overlaid spec code runs native. Cold one-shot `--kernel-tests` is unaffected
+by design (loaded defuns are ~0% of that wall).
+
 ## What's left
 
 - **GC Step 4** — turn collection on (precise shadow-stack + conservative
   AOT-frame scan). ~2–3% speed but a real memory win (today's heap is grow-only)
-  and finishes the ladder. The only remaining greenlit rung.
-- **Closing to ~1×** would require AOT-native-compiling *loaded* user code (the
-  SBCL-shaped answer) — a different project; see
-  `design/execution-engine-roadmap.md`. Not currently funded.
+  and finishes the ladder. The only remaining greenlit rung. (Overlay
+  `make_aot_closure` captures are on the Step-4 roots checklist.)
+- **JIT Win-A W2 for served: parked on measurement** — the JIT cannot see
+  loaded named defuns (no `do_defun` tier) and recorded zero executions on the
+  authz workload; revival requires an AOT-overlaid profile showing >~40%
+  cross-call edges in a mutual-tail group AOT can't loop-compile, gated vs the
+  AOT baseline.
 
 ## Reproducing
 

@@ -16,6 +16,14 @@ What's in the tree today:
   (tagged; immediates unboxed, cons/string/foreign heap-boxed).
 - **AOT kernel** — every kernel `.kl` compiled to Rust at build time by
   `crates/klcompile/`, installed over the tree-walked defuns.
+- **AOT overlay for loaded code** (opt-in) — known `.shen` files compiled
+  offline by the same klcompile (now lib+CLI; `scripts/codegen-shen-aot.sh`)
+  and swapped over the loaded defuns through a verified manifest
+  (`aot/overlay.rs`: source hash + kernel digest, all-or-nothing arity
+  precheck, silent fallback). ~3.1× over the VM on the served authz workload
+  (`benches/authz_served.rs`, gate ≥1.5×); redefinition coherence guaranteed
+  (`do_defun`/`register_native` clear the direct-dispatch slot —
+  `tests/aot_redefine_coherence.rs`, a fix that was live for kernel names too).
 - **Bytecode VM** (`src/vm/`) — runtime closures compile to bytecode; **~2.3×
   warm** via `--served` / `SHEN_RUST_VM=1` (`scripts/warm-bench.sh`).
 - **Cranelift JIT** (`src/jit/`, `--features jit`) — experimental; correct and
@@ -56,6 +64,13 @@ boxed-`Value` + interpreted-dispatch model, not a single hot spot. Full story in
   - Cranelift JIT spike → J1/J2 — falsified for closures, kept gated.
 - **Cedar app work** — three hardened integration examples consolidated into
   `examples/shen-cedar-authz` (gate / verify / generate).
+- **AOT overlay productionized** (2026-06-09) — two-table redefinition
+  coherence fixed (was live for ~1123 kernel names), klcompile split lib+CLI
+  with zero kernel byte drift, verified overlay install API + canonical
+  codegen pipeline, `authz_served` bench gates the lever at 3.0–3.2× over the
+  VM-loaded arm; verify/generate examples serve it opt-in. JIT-W2-for-served
+  parked on a measured 0.0% (the JIT cannot see loaded named defuns; zero JIT
+  executions on the authz workload).
 - **Rename** — the engine port `shen-cedar` → **`shen-rust`** (the name
   `shen-cedar` now denotes the Shen+Cedar examples). History before that commit
   says "shen-cedar".

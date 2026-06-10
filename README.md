@@ -39,6 +39,7 @@ The same Shen semantics run on tiers chosen for the workload:
 | **Tree-walker** | default | Allocation-light interpreter over the KL AST. Best for one-shot runs. |
 | **AOT kernel** | build time | The 21 kernel KL files are compiled to Rust ahead of time by `crates/klcompile` — control flow lowered (self-tail-calls → loops; `if`/`let`/`cond` and ~18 primitives inlined). |
 | **Bytecode VM** | `--served` / `SHEN_RUST_VM=1` | Runtime closures (`defun`/`lambda`/`freeze`) compile to bytecode. **~2.3× faster than the tree-walker on warm / served workloads** (load a theory once, serve many requests), where the compile cost amortizes. Not the bare default because a one-shot run can't amortize it. See `scripts/warm-bench.sh`. |
+| **AOT overlay** | opt-in, per `.shen` file | Known `.shen` files are compiled to Rust offline (`scripts/codegen-shen-aot.sh`, same klcompile) and committed; after a normal load (all side effects live) the host swaps the loaded defuns for the native versions via a verified manifest (`Interp::install_overlay_if_match` — source hash + kernel digest, silent fallback on mismatch). **~3.1× over the VM, ~11.7× over the tree-walker on served authz workloads** (`benches/authz_served.rs`). |
 | **Cranelift JIT** | `--features jit`, `SHEN_RUST_JIT=1` | Experimental; native codegen for runtime closures. Wins on compute loops but was falsified for the type-checker's CPS continuations — kept gated/off. See `design/jit-productionization-plan.md`. |
 
 Every tier is differentially tested against the tree-walker and held at 134/0.
