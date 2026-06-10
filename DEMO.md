@@ -11,7 +11,8 @@ sequent-calculus type system — plus first-class
 
 This document is **executable proof**: every code block below was run against
 the repo, and its captured output is what the command actually printed.
-Re-verify the whole tour at any time with `showboat verify DEMO.md`.
+Re-verify the whole tour at any time with
+[showboat](https://github.com/simonw/showboat): `showboat verify DEMO.md`.
 (Requires Rust ≥ 1.85; the GC demo block expects aarch64 macOS/Linux.)
 
 ## Build and conformance

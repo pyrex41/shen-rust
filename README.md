@@ -37,7 +37,7 @@ automatically; a Nix flake (`nix develop`) provides a dev shell.
 
 | Doc | Contents |
 |---|---|
-| [DEMO.md](DEMO.md) | **executable tour** — every code block ran for real; re-check it with `showboat verify DEMO.md` |
+| [DEMO.md](DEMO.md) | **executable tour** — every code block ran for real; re-check it with [showboat](https://github.com/simonw/showboat) (`showboat verify DEMO.md`) |
 | [STATUS.md](STATUS.md) | current state, milestones, known limitations |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | layering, value representation, execution tiers, Cedar bridge |
 | [PERFORMANCE.md](PERFORMANCE.md) | how the gap to `shen-cl` was closed (17× → ~3×), and what remains |
