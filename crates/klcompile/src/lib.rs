@@ -55,6 +55,23 @@ pub struct CompileOptions {
     /// skipped defun is safe: `rt::apply_direct` falls back to the env
     /// closure, so partial coverage degrades to the loaded engine.
     pub skip: SkipPolicy,
+    /// Emit an overlay manifest (`KLCOMPILE_FORMAT` / `SOURCE_FNV` /
+    /// `KERNEL_FNV` / `COMPILED` consts + an `overlay()` constructor for
+    /// `Interp::install_overlay*`). Overlay/external configs only — the
+    /// kernel AOT modules are manifest-free and byte-frozen (Gate 6).
+    pub emit_manifest: Option<ManifestInfo>,
+}
+
+/// Generation-time provenance recorded into the overlay manifest. Both
+/// hashes are computed by the generation driver (it knows the `.shen`
+/// inputs and the booted kernel dir); klcompile only embeds them.
+pub struct ManifestInfo {
+    /// FNV-1a over the `.shen` source bytes, concatenated in load order
+    /// (what the host can re-hash at serve time).
+    pub source_fnv: u64,
+    /// `shen_rust::aot::overlay::kernel_digest` of the generating boot's
+    /// kernel directory.
+    pub kernel_fnv: u64,
 }
 
 /// Skip policy for defuns that should not be AOT-compiled.
@@ -84,6 +101,7 @@ impl CompileOptions {
                 max_body_nodes: None,
                 force_skip: KERNEL_SLOW_DEFUNS.iter().map(|s| s.to_string()).collect(),
             },
+            emit_manifest: None,
         }
     }
 
@@ -101,6 +119,7 @@ impl CompileOptions {
                 max_body_nodes: Some(3000),
                 force_skip: Vec::new(),
             },
+            emit_manifest: None,
         }
     }
 }
@@ -148,6 +167,7 @@ pub fn compile_kl(src: &str, opts: &CompileOptions) -> Result<(String, CompileRe
     g.emit_header(opts);
     let mut compiled = Vec::new();
     let mut skipped = Vec::new();
+    let mut arities: Vec<(String, usize)> = Vec::new();
     for (i, form) in forms.iter().enumerate() {
         if let Some(name) = defun_name(form, &interner) {
             if last_index.get(&name) != Some(&i) {
@@ -168,11 +188,17 @@ pub fn compile_kl(src: &str, opts: &CompileOptions) -> Result<(String, CompileRe
             }
         }
         match g.compile_top(form) {
-            Ok(name) => compiled.push(name),
+            Ok((name, arity)) => {
+                arities.push((name.clone(), arity));
+                compiled.push(name);
+            }
             Err(reason) => skipped.push(reason),
         }
     }
     g.emit_install(&compiled);
+    if let Some(manifest) = &opts.emit_manifest {
+        g.emit_manifest(opts, manifest, &arities);
+    }
 
     Ok((g.finish(), CompileReport { compiled, skipped }))
 }
@@ -286,9 +312,58 @@ impl<'a> Codegen<'a> {
         format!("__t{n}")
     }
 
-    /// Compile a top-level form. Returns the function name on success or
-    /// a `Skipped` reason describing why klcompile bailed.
-    fn compile_top(&mut self, form: &KlExpr) -> Result<String, String> {
+    /// Emit the overlay manifest: provenance consts plus an `overlay()`
+    /// constructor for `Interp::install_overlay*`. Only valid for
+    /// external configs (the constructor names `{prefix}::aot::overlay`).
+    fn emit_manifest(
+        &mut self,
+        opts: &CompileOptions,
+        manifest: &ManifestInfo,
+        arities: &[(String, usize)],
+    ) {
+        let p = &opts.import_prefix;
+        self.out
+            .push_str("/// Overlay manifest (see `aot::overlay`): provenance recorded at\n");
+        self.out
+            .push_str("/// generation time, checked by `Interp::install_overlay_if_match`.\n");
+        self.out.push_str(&format!(
+            "pub const KLCOMPILE_FORMAT: &str = {:?};\n",
+            shen_rust::aot::overlay::OVERLAY_FORMAT
+        ));
+        self.out.push_str(&format!(
+            "pub const SOURCE_FNV: u64 = {:#018x};\n",
+            manifest.source_fnv
+        ));
+        self.out.push_str(&format!(
+            "pub const KERNEL_FNV: u64 = {:#018x};\n",
+            manifest.kernel_fnv
+        ));
+        self.out
+            .push_str("pub const COMPILED: &[(&str, usize)] = &[\n");
+        for (name, arity) in arities {
+            self.out.push_str(&format!("    ({name:?}, {arity}),\n"));
+        }
+        self.out.push_str("];\n\n");
+        self.out
+            .push_str("/// Bundle this module as an overlay for the verified install API.\n");
+        self.out.push_str(&format!(
+            "pub fn overlay() -> {p}::aot::overlay::OverlayModule {{\n"
+        ));
+        self.out
+            .push_str(&format!("    {p}::aot::overlay::OverlayModule {{\n"));
+        self.out
+            .push_str(&format!("        label: {:?},\n", opts.source_label));
+        self.out.push_str("        format: KLCOMPILE_FORMAT,\n");
+        self.out.push_str("        source_fnv: SOURCE_FNV,\n");
+        self.out.push_str("        kernel_fnv: KERNEL_FNV,\n");
+        self.out.push_str("        compiled: COMPILED,\n");
+        self.out.push_str("        install,\n");
+        self.out.push_str("    }\n}\n");
+    }
+
+    /// Compile a top-level form. Returns the function name and arity on
+    /// success or a `Skipped` reason describing why klcompile bailed.
+    fn compile_top(&mut self, form: &KlExpr) -> Result<(String, usize), String> {
         let items = match form {
             KlExpr::App(items) => items,
             _ => return Err("top-level non-application".into()),
@@ -383,7 +458,7 @@ impl<'a> Codegen<'a> {
         ));
         self.out.push_str("}\n\n");
 
-        Ok(name)
+        Ok((name, params.len()))
     }
 
     /// Compile a KL expression at tail position. Output is a Rust

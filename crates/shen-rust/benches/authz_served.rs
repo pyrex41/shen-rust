@@ -142,8 +142,10 @@ fn run() -> i32 {
 
     // Normal load of the committed spec + scaled data, in last-wins order
     // (bench data redefines authz.shen's three data defuns at scale —
-    // the same order the gen module was compiled with).
+    // the same order the gen module was compiled with). Collect the live
+    // source bytes in load order for the manifest check below.
     let spec = root.join("examples").join("shen-cedar-authz").join("spec");
+    let mut live_src = String::new();
     for path in [
         spec.join("verify.shen"),
         spec.join("authz.shen"),
@@ -152,6 +154,7 @@ fn run() -> i32 {
             .join("benches")
             .join("authz_bench_data.shen"),
     ] {
+        live_src.push_str(&std::fs::read_to_string(&path).expect("read spec source"));
         eval_src(&mut interp, &format!("(load \"{}\")", path.display()));
     }
 
@@ -164,9 +167,16 @@ fn run() -> i32 {
     let _ = batch(&mut interp);
     let loaded = min_of(&mut interp, ITERS);
 
-    // Install the klcompile AOT versions over the loaded defuns —
-    // exactly what a compiled-load overlay would do.
-    gen::install(&mut interp);
+    // Install the klcompile AOT versions over the loaded defuns through
+    // the PRODUCTION path: manifest check (format + source FNV + kernel
+    // digest) and per-name exists+arity verification, exactly what a
+    // served host calls.
+    let installed = interp.install_overlay_if_match(&gen::overlay(), &live_src, &kernel);
+    assert!(
+        installed,
+        "overlay manifest must match the live sources/kernel (regenerate: \
+         scripts/codegen-shen-aot.sh)"
+    );
 
     // Same results, byte-for-byte?
     for (q, exp) in QUERIES.iter().zip(&expected) {

@@ -29,6 +29,28 @@ fn main() -> ExitCode {
         shen_rust::interp::eval::enable_vm();
         eprintln!("shen-rust: served mode — bytecode VM enabled.");
     }
+    // `--aot-gen OUT.rs IN1.shen [IN2.shen ...]`: the canonical AOT
+    // overlay generation recipe — fresh kernel boot, `(bootstrap F)` per
+    // input, concatenate the .kl in load order (KL last-wins), compile
+    // via klcompile's external config with an overlay manifest, write
+    // OUT.rs. Run rustfmt on the output afterwards (the wrapper script
+    // scripts/codegen-shen-aot.sh does). A fresh boot per generation is
+    // load-bearing: gensym'd locals in the bootstrap output depend on
+    // session state, so dirty sessions produce byte-different output.
+    if args.iter().skip(1).any(|a| a == "--aot-gen") {
+        let pos = args.iter().position(|a| a == "--aot-gen").unwrap();
+        let rest: Vec<String> = args[pos + 1..].to_vec();
+        if rest.len() < 2 {
+            eprintln!("Usage: shen-rust --aot-gen <out.rs> <in1.shen> [in2.shen ...]");
+            return ExitCode::from(2);
+        }
+        let handle = std::thread::Builder::new()
+            .name("aot-gen".to_string())
+            .stack_size(1024 * 1024 * 1024)
+            .spawn(move || run_aot_gen(&rest))
+            .expect("spawn aot-gen thread");
+        return handle.join().unwrap_or(ExitCode::from(2));
+    }
     if args.iter().skip(1).any(|a| a == "--kernel-tests") {
         // The kernel suite hits deep AOT recursion in places (the reader,
         // YACC, type checker) which we don't trampoline through the Rust
@@ -64,6 +86,122 @@ fn run_repl() -> ExitCode {
     if let Err(e) = repl_loop(&mut interp) {
         eprintln!("repl: {e}");
         return ExitCode::from(1);
+    }
+    ExitCode::SUCCESS
+}
+
+/// The canonical AOT-overlay generation recipe (see `aot::overlay` docs):
+/// boot once, `(bootstrap F)` each `.shen` input via the kernel reader,
+/// concatenate the emitted `.kl` in load order, compile with klcompile's
+/// external config + manifest (source FNV over the `.shen` bytes in load
+/// order, kernel digest of the booted kernel dir), write the module.
+fn run_aot_gen(rest: &[String]) -> ExitCode {
+    let out_path = std::path::PathBuf::from(&rest[0]);
+    let inputs: Vec<std::path::PathBuf> = rest[1..].iter().map(std::path::PathBuf::from).collect();
+
+    let kernel_dir = match shen_rust::interp::boot::find_kernel_dir() {
+        Ok(d) => d,
+        Err(e) => {
+            eprintln!("aot-gen: locate kernel: {e}");
+            return ExitCode::from(1);
+        }
+    };
+    let mut interp = Interp::new();
+    eprint!("aot-gen booting kernel… ");
+    if let Err(e) = shen_rust::interp::boot::boot_with_kernel(&mut interp, &kernel_dir) {
+        eprintln!("FAILED\n  {e}");
+        return ExitCode::from(2);
+    }
+    eprintln!("ready.");
+
+    // Bootstrap each input from its own directory (the kernel's
+    // read-file/open resolve against the process cwd), collect the .kl
+    // text, and remove the intermediate file.
+    let orig_cwd = std::env::current_dir().expect("cwd");
+    let mut kl_src = String::new();
+    let mut shen_src = String::new();
+    for input in &inputs {
+        let file_name = match input.file_name().and_then(|n| n.to_str()) {
+            Some(n) => n.to_string(),
+            None => {
+                eprintln!("aot-gen: bad input path {input:?}");
+                return ExitCode::from(1);
+            }
+        };
+        match std::fs::read_to_string(input) {
+            Ok(s) => shen_src.push_str(&s),
+            Err(e) => {
+                eprintln!("aot-gen: read {input:?}: {e}");
+                return ExitCode::from(1);
+            }
+        }
+        let dir = input.parent().filter(|p| !p.as_os_str().is_empty());
+        if let Some(d) = dir {
+            if let Err(e) = std::env::set_current_dir(d) {
+                eprintln!("aot-gen: chdir {d:?}: {e}");
+                return ExitCode::from(1);
+            }
+        }
+        let src = format!("(bootstrap {file_name:?})");
+        let result = parse_one(&src, &mut interp.symbols)
+            .map_err(|e| shen_rust::error::ShenError::new(format!("parse: {e}")))
+            .and_then(|expr| dispatch_through_kernel_eval(&mut interp, &expr));
+        // `bootstrap` returns the emitted .kl path (as a string or symbol).
+        let kl_name = match &result {
+            Ok(v) => v
+                .as_str()
+                .map(str::to_string)
+                .or_else(|| v.as_sym().map(|s| interp.resolve(s).to_string()))
+                .unwrap_or_else(|| format!("{}.kl", file_name.trim_end_matches(".shen"))),
+            Err(e) => {
+                eprintln!("aot-gen: (bootstrap {file_name:?}): {e}");
+                return ExitCode::from(1);
+            }
+        };
+        match std::fs::read_to_string(&kl_name) {
+            Ok(s) => {
+                kl_src.push_str(&s);
+                kl_src.push('\n');
+                std::fs::remove_file(&kl_name).ok();
+            }
+            Err(e) => {
+                eprintln!("aot-gen: read bootstrap output {kl_name:?}: {e}");
+                return ExitCode::from(1);
+            }
+        }
+        std::env::set_current_dir(&orig_cwd).expect("restore cwd");
+    }
+
+    let label = inputs
+        .iter()
+        .map(|p| p.display().to_string())
+        .collect::<Vec<_>>()
+        .join(" + ");
+    let mut opts =
+        klcompile::CompileOptions::external(format!("{label} (canonical aot-gen recipe)"));
+    opts.emit_manifest = Some(klcompile::ManifestInfo {
+        source_fnv: shen_rust::aot::overlay::fnv64(shen_src.as_bytes()),
+        kernel_fnv: shen_rust::aot::overlay::kernel_digest(&kernel_dir),
+    });
+    let (module, report) = match klcompile::compile_kl(&kl_src, &opts) {
+        Ok(r) => r,
+        Err(e) => {
+            eprintln!("aot-gen: klcompile: {e}");
+            return ExitCode::from(1);
+        }
+    };
+    if let Err(e) = std::fs::write(&out_path, module) {
+        eprintln!("aot-gen: write {out_path:?}: {e}");
+        return ExitCode::from(1);
+    }
+    eprintln!(
+        "aot-gen: {} compiled, {} skipped → {}",
+        report.compiled.len(),
+        report.skipped.len(),
+        out_path.display()
+    );
+    for s in &report.skipped {
+        eprintln!("  skipped: {s}");
     }
     ExitCode::SUCCESS
 }

@@ -19,6 +19,7 @@ repository = "https://github.com/pyrex41/shen-rust"
 [workspace.dependencies]
 shen-rust = { path = "crates/shen-rust" }
 shengen-rust = { path = "crates/shengen-rust" }
+klcompile = { path = "crates/klcompile" }
 cedar-policy = "4"
 
 # Release profile tuned for the AOT kernel modules (~12 MB generated).

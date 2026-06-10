@@ -11,4 +11,5 @@
 
 pub mod generated;
 pub mod kernel;
+pub mod overlay;
 pub mod runtime;

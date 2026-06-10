@@ -1310,6 +1310,7 @@ dependencies = [
 name = "shen-rust-bin"
 version = "0.1.0"
 dependencies = [
+ "klcompile",
  "shen-rust",
 ]
 
