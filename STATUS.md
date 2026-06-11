@@ -3,7 +3,7 @@
 ## Current state
 
 A working port of the Shen language to Rust. It boots the upstream
-**ShenOSKernel-41.1** and passes the full conformance suite — **134 / 134**
+**ShenOSKernel-41.2** and passes the full conformance suite — **134 / 134**
 kernel tests (`scripts/kernel-tests.sh`) — in every execution mode. All gates
 green (`scripts/gates.sh`): shengen-codegen, fmt+clippy, build, test
 (unit + integration suites), shen-check, tcb-audit, kernel-aot-audit,
@@ -55,7 +55,7 @@ model, not a single hot spot. On served workloads the story inverts: VM
 ## Milestones
 
 - **Phase 0–2** — workspace + vendored kernel; KL runtime (parser, interner,
-  dual-namespace env, tree-walker w/ trampolined TCO); boot ShenOSKernel-41.1,
+  dual-namespace env, tree-walker w/ trampolined TCO); boot ShenOSKernel-41.2,
   REPL up.
 - **Phase 3** — `cedar.*` primitives: Cedar policies/entities/requests as
   first-class Shen values (`src/cedar/`, `cedar_smoke` tests).

@@ -1,6 +1,6 @@
 //! shen-rust REPL.
 //!
-//! Boots the ShenOSKernel-41.1 then routes each user line through the
+//! Boots the ShenOSKernel-41.2 then routes each user line through the
 //! kernel's own `eval` (which in turn does `(eval-kl (shen.shen->kl …))`).
 //! Input is read one balanced s-expression at a time — partial lines are
 //! buffered until the parentheses balance.

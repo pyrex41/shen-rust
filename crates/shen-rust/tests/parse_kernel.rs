@@ -43,7 +43,7 @@ fn parses_every_kernel_file() {
         total_forms += forms.len();
     }
 
-    // The ShenOSKernel-41.1 klambda set is around 3000+ top-level forms;
+    // The ShenOSKernel-41.2 klambda set is around 3000+ top-level forms;
     // exact number changes between releases. We just want a sanity floor.
     assert!(
         total_forms > 1000,

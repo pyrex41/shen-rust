@@ -1,7 +1,7 @@
 #!/bin/bash
 # Gate 4: type-check specs through the shen-rust binary itself.
 #
-# Boots ShenOSKernel-41.1, turns on the type checker, loads the spec
+# Boots ShenOSKernel-41.2, turns on the type checker, loads the spec
 # file. The kernel reports `typechecked in N inferences` on success;
 # we grep for that string.
 set -euo pipefail

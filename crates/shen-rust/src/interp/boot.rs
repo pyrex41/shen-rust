@@ -3,7 +3,7 @@
 //! kernel's property vector so `(fn NAME)` resolves correctly.
 //!
 //! The fixed file order matches `shen-ocaml/src/interp/boot.ml`. Per the
-//! 41.1 spec, order does not strictly matter (the files only `defun` —
+//! 41.x spec, order does not strictly matter (the files only `defun` —
 //! they have no top-level effects). The fixed order makes errors easier
 //! to compare against other ports.
 
@@ -186,7 +186,7 @@ pub fn boot_with_kernel(interp: &mut Interp, kernel_dir: &Path) -> ShenResult<()
 /// the on-disk kernel dir, the JIT tier, and the tc-cache:
 ///
 /// 1. port metadata / home dir / standard streams,
-/// 2. tree-walk every form in `kernel_src` (defuns only, per the 41.1
+/// 2. tree-walk every form in `kernel_src` (defuns only, per the 41.x
 ///    contract — registering closures is cheap),
 /// 3. `(shen.initialise)`,
 /// 4. primitive arity / `shen.lambda-form` metadata on `*property-vector*`,
@@ -249,7 +249,9 @@ pub fn eval_kl_source(
 /// If `form` is `(defun NAME …)`, return NAME's text.
 fn top_level_defun_name(interp: &Interp, form: &crate::kl::ast::KlExpr) -> Option<String> {
     use crate::kl::ast::KlExpr;
-    let KlExpr::App(items) = form else { return None };
+    let KlExpr::App(items) = form else {
+        return None;
+    };
     if items.len() != 4 {
         return None;
     }
@@ -300,7 +302,7 @@ fn set_standard_streams(interp: &mut Interp) {
 /// `*porters*` identify this port.
 fn set_port_metadata(interp: &mut Interp) {
     let pairs: &[(&str, &str)] = &[
-        ("*version*", "41.1"),
+        ("*version*", "41.2"),
         ("*language*", "Rust"),
         ("*implementation*", "shen-rust"),
         ("*release*", "0.1.0"),

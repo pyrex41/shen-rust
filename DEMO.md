@@ -18,7 +18,7 @@ Re-verify the whole tour at any time with
 ## Build and conformance
 
 One workspace, plain cargo. The build AOT-compiles the entire vendored
-ShenOSKernel-41.1 (21 KLambda files) to Rust via `crates/klcompile`.
+ShenOSKernel-41.2 (21 KLambda files) to Rust via `crates/klcompile`.
 
 ```bash
 cargo build --release --quiet --bin shen-rust && echo build ok
@@ -53,7 +53,7 @@ printf '(define fact 0 -> 1 N -> (* N (fact (- N 1))))\n(fact 20)\n(map (* 2) [1
 ```output
 shen-rust booting kernel… ready.
 
-Shen 41.1, ©2021–2026 Mark Tarver  (shen-rust 0.1.0, Rust)
+Shen 41.2, ©2021–2026 Mark Tarver  (shen-rust 0.1.0, Rust)
 
 (0-) (fn fact)
 (0-) 2432902008176640000
