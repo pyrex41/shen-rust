@@ -1,25 +1,25 @@
-(defun datatypes () (map (lambda Z880 (shen.typename Z880)) (value shen.*alldatatypes*)))
+(defun datatypes () (map (lambda Z904 (shen.typename Z904)) (value shen.*alldatatypes*)))
 
-(defun shen.included () (map (lambda Z881 (shen.typename Z881)) (value shen.*datatypes*)))
+(defun shen.included () (map (lambda Z905 (shen.typename Z905)) (value shen.*datatypes*)))
 
-(defun shen.typename (V884) (cond ((cons? V884) (intern (shen.typename-h (str (hd V884))))) (true (shen.f-error shen.typename))))
+(defun shen.typename (V908) (cond ((cons? V908) (intern (shen.typename-h (str (hd V908))))) (true (shen.f-error shen.typename))))
 
-(defun shen.typename-h (V885) (cond ((= "#type" V885) "") ((shen.+string? V885) (cn (hdstr V885) (shen.typename-h (tlstr V885)))) (true (shen.f-error shen.typename-h))))
+(defun shen.typename-h (V909) (cond ((= "#type" V909) "") ((shen.+string? V909) (cn (hdstr V909) (shen.typename-h (tlstr V909)))) (true (shen.f-error shen.typename-h))))
 
-(defun prolog-memory (V886) (if (< V886 0) (value shen.*prolog-memory*) (if (integer? V886) (set shen.*prolog-memory* V886) (simple-error "prolog memory expects an integer value
+(defun prolog-memory (V910) (if (< V910 0) (value shen.*prolog-memory*) (if (integer? V910) (set shen.*prolog-memory* V910) (simple-error "prolog memory expects an integer value
 "))))
 
-(defun arity (V887) (trap-error (get V887 arity (value *property-vector*)) (lambda Z888 -1)))
+(defun arity (V911) (trap-error (get V911 arity (value *property-vector*)) (lambda Z912 -1)))
 
-(defun shen.initialise-arity-table (V891) (cond ((= () V891) ()) ((and (cons? V891) (cons? (tl V891))) (let W892 (put (hd V891) arity (hd (tl V891)) (value *property-vector*)) (shen.initialise-arity-table (tl (tl V891))))) (true (simple-error "implementation error in shen.initialise-arity-table"))))
+(defun shen.initialise-arity-table (V915) (cond ((= () V915) ()) ((and (cons? V915) (cons? (tl V915))) (let W916 (put (hd V915) arity (hd (tl V915)) (value *property-vector*)) (shen.initialise-arity-table (tl (tl V915))))) (true (simple-error "implementation error in shen.initialise-arity-table"))))
 
-(defun systemf (V893) (let W894 (get shen shen.external-symbols (value *property-vector*)) (let W895 (put shen shen.external-symbols (adjoin V893 W894) (value *property-vector*)) V893)))
+(defun systemf (V917) (let W918 (get shen shen.external-symbols (value *property-vector*)) (let W919 (put shen shen.external-symbols (adjoin V917 W918) (value *property-vector*)) V917)))
 
-(defun adjoin (V896 V897) (if (element? V896 V897) V897 (cons V896 V897)))
+(defun adjoin (V920 V921) (if (element? V920 V921) V921 (cons V920 V921)))
 
-(defun shen.lambda-entry (V898) (let W899 (arity V898) (if (or (= W899 -1) (= W899 0)) () (cons V898 (eval-kl (shen.lambda-function (cons V898 ()) W899))))))
+(defun shen.lambda-entry (V922) (let W923 (arity V922) (if (or (= W923 -1) (= W923 0)) () (cons V922 (eval-kl (shen.lambda-function (cons V922 ()) W923))))))
 
-(defun shen.set-lambda-form-entry (V900) (cond ((cons? V900) (put (hd V900) shen.lambda-form (tl V900) (value *property-vector*))) (true (shen.f-error shen.set-lambda-form-entry))))
+(defun shen.set-lambda-form-entry (V924) (cond ((cons? V924) (put (hd V924) shen.lambda-form (tl V924) (value *property-vector*))) (true (shen.f-error shen.set-lambda-form-entry))))
 
-(defun shen.build-lambda-table (V901) (let W902 (map (lambda Z903 (shen.lambda-entry Z903)) V901) (shen.for-each (lambda Z904 (shen.set-lambda-form-entry Z904)) (cons (cons shen.tuple (lambda Z905 (shen.tuple Z905))) (cons (cons shen.pvar (lambda Z906 (shen.pvar Z906))) (cons (cons shen.dictionary (lambda Z907 (shen.dictionary Z907))) (cons (cons shen.print-prolog-vector (lambda Z908 (shen.print-prolog-vector Z908))) (cons (cons shen.print-freshterm (lambda Z909 (shen.print-freshterm Z909))) (cons (cons shen.printF (lambda Z910 (shen.printF Z910))) W902)))))))))
+(defun shen.build-lambda-table (V925) (let W926 (map (lambda Z927 (shen.lambda-entry Z927)) V925) (shen.for-each (lambda Z928 (shen.set-lambda-form-entry Z928)) (cons (cons shen.tuple (lambda Z929 (shen.tuple Z929))) (cons (cons shen.pvar (lambda Z930 (shen.pvar Z930))) (cons (cons shen.dictionary (lambda Z931 (shen.dictionary Z931))) (cons (cons shen.print-prolog-vector (lambda Z932 (shen.print-prolog-vector Z932))) (cons (cons shen.print-freshterm (lambda Z933 (shen.print-freshterm Z933))) (cons (cons shen.printF (lambda Z934 (shen.printF Z934))) W926)))))))))
 

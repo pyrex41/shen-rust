@@ -1,0 +1,34 @@
+"Copyright (c) 2019 Bruno Deferrari.  All rights reserved.
+BSD 3-Clause License: http://opensource.org/licenses/BSD-3-Clause"
+
+(defun shen.x.programmable-pattern-matching.apply-pattern-handlers (V7168 V7169 V7170 V7171 V7172) (cond ((= () V7168) (fail)) (true (let Freeze7174 (freeze (cond ((cons? V7168) (shen.x.programmable-pattern-matching.apply-pattern-handlers (tl V7168) V7169 V7170 V7171 V7172)) (true (shen.f-error shen.x.programmable-pattern-matching.apply-pattern-handlers)))) (if (cons? V7168) (let Result7173 (((((hd V7168) V7169) V7170) V7171) V7172) (if (= Result7173 (fail)) (thaw Freeze7174) Result7173)) (thaw Freeze7174))))))
+
+(defun shen.x.programmable-pattern-matching.make-stack () (address-> (absvector 1) 0 ()))
+
+(defun shen.x.programmable-pattern-matching.push (V7175 V7176) (address-> V7175 0 (cons V7176 (<-address V7175 0))))
+
+(defun shen.x.programmable-pattern-matching.pop-all (V7177) (let W7178 (<-address V7177 0) (let W7179 (address-> V7177 0 ()) W7178)))
+
+(defun shen.x.programmable-pattern-matching.surface-pattern (V7180) (cond ((and (cons? V7180) (and (= cons (hd V7180)) (and (cons? (tl V7180)) (and (cons? (tl (tl V7180))) (= () (tl (tl (tl V7180)))))))) (cons (shen.x.programmable-pattern-matching.surface-pattern (hd (tl V7180))) (shen.x.programmable-pattern-matching.surface-pattern-tail (hd (tl (tl V7180)))))) (true V7180)))
+
+(defun shen.x.programmable-pattern-matching.surface-pattern-tail (V7181) (cond ((= () V7181) ()) ((and (cons? V7181) (and (= cons (hd V7181)) (and (cons? (tl V7181)) (and (cons? (tl (tl V7181))) (= () (tl (tl (tl V7181)))))))) (cons (shen.x.programmable-pattern-matching.surface-pattern (hd (tl V7181))) (shen.x.programmable-pattern-matching.surface-pattern-tail (hd (tl (tl V7181)))))) (true V7181)))
+
+(defun shen.x.programmable-pattern-matching.compile-pattern (V7182 V7183 V7184) (let W7185 (shen.x.programmable-pattern-matching.surface-pattern V7182) (let W7186 (shen.x.programmable-pattern-matching.make-stack) (let W7187 Self$$7907$$ (let W7188 (lambda Z7189 shen.x.programmable-pattern-matching.ignored) (let W7190 (lambda Z7191 (lambda Z7192 (shen.x.programmable-pattern-matching.push W7186 Z7191))) (let W7193 (shen.x.programmable-pattern-matching.apply-pattern-handlers V7183 W7187 W7188 W7190 W7185) (if (= W7193 (fail)) (thaw V7184) (cons @p (cons shen.custom-pattern (cons (shen.x.programmable-pattern-matching.compile-pattern-h W7185 (reverse (shen.x.programmable-pattern-matching.pop-all W7186))) ())))))))))))
+
+(defun shen.x.programmable-pattern-matching.compile-pattern-h (V7194 V7195) (cond ((cons? V7194) (let W7196 (map (lambda Z7197 (if (element? Z7197 V7195) (shen.compile-pattern-fragment Z7197) Z7197)) (tl V7194)) (cons (hd V7194) W7196))) (true (shen.f-error shen.x.programmable-pattern-matching.compile-pattern-h))))
+
+(defun shen.x.programmable-pattern-matching.reduce (V7198 V7199) (cond ((tuple? V7198) (let W7200 (shen.x.programmable-pattern-matching.surface-pattern (fst V7198)) (let W7201 (shen.x.programmable-pattern-matching.make-stack) (let W7202 (shen.x.programmable-pattern-matching.make-stack) (let W7203 (lambda Z7204 (shen.x.programmable-pattern-matching.push W7201 Z7204)) (let W7205 (lambda Z7206 (lambda Z7207 (shen.x.programmable-pattern-matching.push W7202 (@p Z7206 Z7207)))) (let W7208 (shen.x.programmable-pattern-matching.apply-pattern-handlers V7199 (snd V7198) W7203 W7205 W7200) (if (= W7208 (fail)) (fail) (@p (reverse (shen.x.programmable-pattern-matching.pop-all W7201)) (reverse (shen.x.programmable-pattern-matching.pop-all W7202))))))))))) (true (shen.f-error shen.x.programmable-pattern-matching.reduce))))
+
+(defun shen.x.programmable-pattern-matching.initialise () (do (set shen.*custom-pattern-compiler* (lambda Z7209 (lambda Z7210 (shen.x.programmable-pattern-matching.compile-pattern Z7209 (value shen.x.programmable-pattern-matching.*pattern-handlers*) Z7210)))) (do (set shen.*custom-pattern-reducer* (lambda Z7211 (shen.x.programmable-pattern-matching.reduce Z7211 (value shen.x.programmable-pattern-matching.*pattern-handlers*)))) (do (set shen.x.programmable-pattern-matching.*pattern-handlers* ()) (do (set shen.x.programmable-pattern-matching.*pattern-handlers-reg* ()) shen.x.programmable-pattern-matching.done)))))
+
+(defun shen.x.programmable-pattern-matching.register-handler (V7212) (cond ((element? V7212 (value shen.x.programmable-pattern-matching.*pattern-handlers-reg*)) V7212) (true (do (set shen.x.programmable-pattern-matching.*pattern-handlers-reg* (cons V7212 (value shen.x.programmable-pattern-matching.*pattern-handlers-reg*))) (do (set shen.x.programmable-pattern-matching.*pattern-handlers* (cons (fn V7212) (value shen.x.programmable-pattern-matching.*pattern-handlers*))) V7212)))))
+
+(defun shen.x.programmable-pattern-matching.findpos (V7213 V7214) (shen.x.programmable-pattern-matching.findpos-h V7213 V7214 1))
+
+(defun shen.x.programmable-pattern-matching.findpos-h (V7222 V7223 V7224) (cond ((= () V7223) (simple-error (shen.app V7222 " is not a pattern handler
+" shen.a))) ((and (cons? V7223) (= V7222 (hd V7223))) V7224) ((cons? V7223) (shen.x.programmable-pattern-matching.findpos-h V7222 (tl V7223) (+ V7224 1))) (true (shen.f-error shen.x.programmable-pattern-matching.findpos-h))))
+
+(defun shen.x.programmable-pattern-matching.remove-nth (V7229 V7230) (cond ((not (and (integer? V7229) (> V7229 0))) V7230) ((= () V7230) ()) ((and (= 1 V7229) (cons? V7230)) (tl V7230)) ((cons? V7230) (cons (hd V7230) (shen.x.programmable-pattern-matching.remove-nth (- V7229 1) (tl V7230)))) (true (shen.f-error shen.x.programmable-pattern-matching.remove-nth))))
+
+(defun shen.x.programmable-pattern-matching.unregister-handler (V7231) (let W7232 (value shen.x.programmable-pattern-matching.*pattern-handlers-reg*) (let W7233 (shen.x.programmable-pattern-matching.findpos V7231 W7232) (let W7234 (set shen.x.programmable-pattern-matching.*pattern-handlers-reg* (remove V7231 W7232)) (let W7235 (set shen.x.programmable-pattern-matching.*pattern-handlers* (shen.x.programmable-pattern-matching.remove-nth W7233 (value shen.x.programmable-pattern-matching.*pattern-handlers*))) V7231)))))
+
