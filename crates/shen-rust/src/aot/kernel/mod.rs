@@ -21,6 +21,11 @@ pub mod dict;
 pub mod extension_expand_dynamic;
 pub mod extension_features;
 pub mod extension_launcher;
+// Opt-in extension (new in 41.2): vendored + generated so the Gate 6
+// audit stays exhaustive, but deliberately NOT called from `install_all`
+// — it is not part of the canonical 21-module boot list in
+// `interp::boot::KERNEL_FILES`.
+pub mod extension_programmable_pattern_matching;
 pub mod init;
 pub mod load;
 pub mod macros;

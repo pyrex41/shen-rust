@@ -35,12 +35,12 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_quiet_x2d_load(
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V7078 = args[0].clone();
+    let mut v_V7102 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         {
-            let v_W7079 = {
-                let __t0 = v_V7078.clone();
+            let v_W7103 = {
+                let __t0 = v_V7102.clone();
                 rt::apply_direct(interp, "read-file", &[__t0])?
             };
             break Ok({
@@ -49,9 +49,9 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_quiet_x2d_load(
                         "<lambda>",
                         1,
                         move |interp, args| {
-                            let v_Z7080 = args[0].clone();
+                            let v_Z7104 = args[0].clone();
                             Ok({
-                                let __t1 = v_Z7080.clone();
+                                let __t1 = v_Z7104.clone();
                                 rt::apply_direct(interp, "eval", &[__t1])?
                             })
                         },
@@ -59,7 +59,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_quiet_x2d_load(
                         interp,
                     )
                 };
-                let __t3 = v_W7079.clone();
+                let __t3 = v_W7103.clone();
                 rt::apply_direct(interp, "map", &[__t2, __t3])?
             });
         }
@@ -167,13 +167,13 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_help_x2d_text(
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V7081 = args[0].clone();
+    let mut v_V7105 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
             let __t28 = Value::str("Usage: ");
             let __t32 = {
-                let __t29 = v_V7081.clone();
+                let __t29 = v_V7105.clone();
                 let __t30 = Value::str(" [--version] [--help] <COMMAND> [<ARGS>]\n\ncommands:\n    repl\n        Launches the interactive REPL.\n        Default action if no command is supplied.\n\n    script <FILE> [<ARGS>]\n        Runs the script in FILE. *argv* is set to [FILE | ARGS].\n\n    eval <ARGS>\n        Evaluates expressions and files. ARGS are evaluated from\n        left to right and can be a combination of:\n            -e, --eval <EXPR>\n                Evaluates EXPR and prints result.\n            -l, --load <FILE>\n                Reads and evaluates FILE.\n            -q, --quiet\n                Silences interactive output.\n            -s, --set <KEY> <VALUE>\n                Evaluates KEY, VALUE and sets as global.\n            -r, --repl\n                Launches the interactive REPL after evaluating\n                all the previous expresions.");
                 let __t31 = Value::sym(interp.intern("shen.a"));
                 rt::apply_direct(interp, "shen.app", &[__t29, __t30, __t31])?
@@ -207,13 +207,13 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_execute_x2d_all(
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V7082 = args[0].clone();
+    let mut v_V7106 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         {
             let __t44 = {
                 let __t40 = Value::nil();
-                let __t41 = v_V7082.clone();
+                let __t41 = v_V7106.clone();
                 rt::eq(&__t40, &__t41)
             };
             if match rt::is_truthy(interp, &__t44) {
@@ -228,7 +228,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_execute_x2d_all(
             } else {
                 {
                     let __t39 = {
-                        let __t35 = v_V7082.clone();
+                        let __t35 = v_V7106.clone();
                         rt::is_cons(&__t35)
                     };
                     if match rt::is_truthy(interp, &__t39) {
@@ -239,17 +239,17 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_execute_x2d_all(
                             let _ = rt::apply_value(
                                 interp,
                                 {
-                                    let __t36 = v_V7082.clone();
+                                    let __t36 = v_V7106.clone();
                                     rt::hd(&__t36)?
                                 },
                                 &[],
                             )?;
                             {
                                 let __t38 = {
-                                    let __t37 = v_V7082.clone();
+                                    let __t37 = v_V7106.clone();
                                     rt::tl(&__t37)?
                                 };
-                                v_V7082 = __t38;
+                                v_V7106 = __t38;
                                 continue;
                             }
                         }
@@ -300,13 +300,13 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_string(
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V7083 = args[0].clone();
+    let mut v_V7107 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
             let __t47 = {
                 let __t46 = {
-                    let __t45 = v_V7083.clone();
+                    let __t45 = v_V7107.clone();
                     rt::apply_direct(interp, "read-from-string", &[__t45])?
                 };
                 rt::apply_direct(interp, "head", &[__t46])?
@@ -340,13 +340,13 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_flag_x2d_map(
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V7086 = args[0].clone();
+    let mut v_V7110 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         {
             let __t63 = {
                 let __t61 = Value::str("-e");
-                let __t62 = v_V7086.clone();
+                let __t62 = v_V7110.clone();
                 rt::eq(&__t61, &__t62)
             };
             if match rt::is_truthy(interp, &__t63) {
@@ -358,7 +358,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_flag_x2d_map(
                 {
                     let __t60 = {
                         let __t58 = Value::str("-l");
-                        let __t59 = v_V7086.clone();
+                        let __t59 = v_V7110.clone();
                         rt::eq(&__t58, &__t59)
                     };
                     if match rt::is_truthy(interp, &__t60) {
@@ -370,7 +370,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_flag_x2d_map(
                         {
                             let __t57 = {
                                 let __t55 = Value::str("-q");
-                                let __t56 = v_V7086.clone();
+                                let __t56 = v_V7110.clone();
                                 rt::eq(&__t55, &__t56)
                             };
                             if match rt::is_truthy(interp, &__t57) {
@@ -382,7 +382,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_flag_x2d_map(
                                 {
                                     let __t54 = {
                                         let __t52 = Value::str("-s");
-                                        let __t53 = v_V7086.clone();
+                                        let __t53 = v_V7110.clone();
                                         rt::eq(&__t52, &__t53)
                                     };
                                     if match rt::is_truthy(interp, &__t54) {
@@ -394,7 +394,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_flag_x2d_map(
                                         {
                                             let __t51 = {
                                                 let __t49 = Value::str("-r");
-                                                let __t50 = v_V7086.clone();
+                                                let __t50 = v_V7110.clone();
                                                 rt::eq(&__t49, &__t50)
                                             };
                                             if match rt::is_truthy(interp, &__t51) {
@@ -453,15 +453,15 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V7091 = args[0].clone();
+    let mut v_V7115 = args[0].clone();
     #[allow(unused_mut)]
-    let mut v_V7092 = args[1].clone();
+    let mut v_V7116 = args[1].clone();
     #[allow(clippy::never_loop)]
     loop {
         {
             let __t201 = {
                 let __t197 = Value::nil();
-                let __t198 = v_V7091.clone();
+                let __t198 = v_V7115.clone();
                 rt::eq(&__t197, &__t198)
             };
             if match rt::is_truthy(interp, &__t201) {
@@ -470,7 +470,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
             } {
                 break Ok({
                     let __t200 = {
-                        let __t199 = v_V7092.clone();
+                        let __t199 = v_V7116.clone();
                         rt::apply_direct(interp, "reverse", &[__t199])?
                     };
                     rt::apply_direct(interp, "shen.x.launcher.execute-all", &[__t200])?
@@ -479,7 +479,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                 {
                     let __t196 = {
                         let __t180 = {
-                            let __t172 = v_V7091.clone();
+                            let __t172 = v_V7115.clone();
                             rt::is_cons(&__t172)
                         };
                         if !rt::is_truthy(interp, &__t180)? {
@@ -489,7 +489,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                 let __t178 = {
                                     let __t173 = Value::str("--eval");
                                     let __t175 = {
-                                        let __t174 = v_V7091.clone();
+                                        let __t174 = v_V7115.clone();
                                         rt::hd(&__t174)?
                                     };
                                     rt::eq(&__t173, &__t175)
@@ -499,7 +499,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                 } else {
                                     let __t179 = {
                                         let __t177 = {
-                                            let __t176 = v_V7091.clone();
+                                            let __t176 = v_V7115.clone();
                                             rt::tl(&__t176)?
                                         };
                                         rt::is_cons(&__t177)
@@ -517,14 +517,14 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                         {
                             let __t184 = {
                                 let __t183 = {
-                                    let __t182 = v_V7091.clone();
+                                    let __t182 = v_V7115.clone();
                                     rt::tl(&__t182)?
                                 };
                                 rt::tl(&__t183)?
                             };
                             let __t195 = {
                                 let __t193 = {
-                                    let v_V7091 = v_V7091.clone();
+                                    let v_V7115 = v_V7115.clone();
                                     rt::make_aot_closure(
                                         "<freeze>",
                                         0,
@@ -534,7 +534,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                     let __t188 = {
                                                         let __t187 = {
                                                             let __t186 = {
-                                                                let __t185 = v_V7091.clone();
+                                                                let __t185 = v_V7115.clone();
                                                                 rt::tl(&__t185)?
                                                             };
                                                             rt::hd(&__t186)?
@@ -559,22 +559,22 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                 rt::apply_direct(interp, "pr", &[__t191, __t192])?
                                             })
                                         },
-                                        vec![v_V7091],
+                                        vec![v_V7115],
                                         interp,
                                     )
                                 };
-                                let __t194 = v_V7092.clone();
+                                let __t194 = v_V7116.clone();
                                 rt::cons(&__t193, &__t194)
                             };
-                            v_V7091 = __t184;
-                            v_V7092 = __t195;
+                            v_V7115 = __t184;
+                            v_V7116 = __t195;
                             continue;
                         }
                     } else {
                         {
                             let __t171 = {
                                 let __t160 = {
-                                    let __t152 = v_V7091.clone();
+                                    let __t152 = v_V7115.clone();
                                     rt::is_cons(&__t152)
                                 };
                                 if !rt::is_truthy(interp, &__t160)? {
@@ -584,7 +584,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                         let __t158 = {
                                             let __t153 = Value::str("--load");
                                             let __t155 = {
-                                                let __t154 = v_V7091.clone();
+                                                let __t154 = v_V7115.clone();
                                                 rt::hd(&__t154)?
                                             };
                                             rt::eq(&__t153, &__t155)
@@ -594,7 +594,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                         } else {
                                             let __t159 = {
                                                 let __t157 = {
-                                                    let __t156 = v_V7091.clone();
+                                                    let __t156 = v_V7115.clone();
                                                     rt::tl(&__t156)?
                                                 };
                                                 rt::is_cons(&__t157)
@@ -612,14 +612,14 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                 {
                                     let __t164 = {
                                         let __t163 = {
-                                            let __t162 = v_V7091.clone();
+                                            let __t162 = v_V7115.clone();
                                             rt::tl(&__t162)?
                                         };
                                         rt::tl(&__t163)?
                                     };
                                     let __t170 = {
                                         let __t168 = {
-                                            let v_V7091 = v_V7091.clone();
+                                            let v_V7115 = v_V7115.clone();
                                             rt::make_aot_closure(
                                                 "<freeze>",
                                                 0,
@@ -627,7 +627,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                     Ok({
                                                         let __t167 = {
                                                             let __t166 = {
-                                                                let __t165 = v_V7091.clone();
+                                                                let __t165 = v_V7115.clone();
                                                                 rt::tl(&__t165)?
                                                             };
                                                             rt::hd(&__t166)?
@@ -635,22 +635,22 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                         rt::apply_direct(interp, "load", &[__t167])?
                                                     })
                                                 },
-                                                vec![v_V7091],
+                                                vec![v_V7115],
                                                 interp,
                                             )
                                         };
-                                        let __t169 = v_V7092.clone();
+                                        let __t169 = v_V7116.clone();
                                         rt::cons(&__t168, &__t169)
                                     };
-                                    v_V7091 = __t164;
-                                    v_V7092 = __t170;
+                                    v_V7115 = __t164;
+                                    v_V7116 = __t170;
                                     continue;
                                 }
                             } else {
                                 {
                                     let __t151 = {
                                         let __t142 = {
-                                            let __t138 = v_V7091.clone();
+                                            let __t138 = v_V7115.clone();
                                             rt::is_cons(&__t138)
                                         };
                                         if !rt::is_truthy(interp, &__t142)? {
@@ -659,7 +659,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                             let __t143 = {
                                                 let __t139 = Value::str("--quiet");
                                                 let __t141 = {
-                                                    let __t140 = v_V7091.clone();
+                                                    let __t140 = v_V7115.clone();
                                                     rt::hd(&__t140)?
                                                 };
                                                 rt::eq(&__t139, &__t141)
@@ -673,7 +673,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                     } {
                                         {
                                             let __t145 = {
-                                                let __t144 = v_V7091.clone();
+                                                let __t144 = v_V7115.clone();
                                                 rt::tl(&__t144)?
                                             };
                                             let __t150 = {
@@ -698,18 +698,18 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                         interp,
                                                     )
                                                 };
-                                                let __t149 = v_V7092.clone();
+                                                let __t149 = v_V7116.clone();
                                                 rt::cons(&__t148, &__t149)
                                             };
-                                            v_V7091 = __t145;
-                                            v_V7092 = __t150;
+                                            v_V7115 = __t145;
+                                            v_V7116 = __t150;
                                             continue;
                                         }
                                     } else {
                                         {
                                             let __t137 = {
                                                 let __t119 = {
-                                                    let __t106 = v_V7091.clone();
+                                                    let __t106 = v_V7115.clone();
                                                     rt::is_cons(&__t106)
                                                 };
                                                 if !rt::is_truthy(interp, &__t119)? {
@@ -719,7 +719,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                         let __t117 = {
                                                             let __t107 = Value::str("--set");
                                                             let __t109 = {
-                                                                let __t108 = v_V7091.clone();
+                                                                let __t108 = v_V7115.clone();
                                                                 rt::hd(&__t108)?
                                                             };
                                                             rt::eq(&__t107, &__t109)
@@ -731,7 +731,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                                 let __t115 = {
                                                                     let __t111 = {
                                                                         let __t110 =
-                                                                            v_V7091.clone();
+                                                                            v_V7115.clone();
                                                                         rt::tl(&__t110)?
                                                                     };
                                                                     rt::is_cons(&__t111)
@@ -744,7 +744,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                                         let __t114 = {
                                                                             let __t113 = {
                                                                                 let __t112 =
-                                                                                    v_V7091.clone();
+                                                                                    v_V7115.clone();
                                                                                 rt::tl(&__t112)?
                                                                             };
                                                                             rt::tl(&__t113)?
@@ -772,7 +772,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                     let __t124 = {
                                                         let __t123 = {
                                                             let __t122 = {
-                                                                let __t121 = v_V7091.clone();
+                                                                let __t121 = v_V7115.clone();
                                                                 rt::tl(&__t121)?
                                                             };
                                                             rt::tl(&__t122)?
@@ -781,7 +781,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                     };
                                                     let __t136 = {
                                                         let __t134 = {
-                                                            let v_V7091 = v_V7091.clone();
+                                                            let v_V7115 = v_V7115.clone();
                                                             rt::make_aot_closure(
                                                                 "<freeze>",
                                                                 0,
@@ -791,7 +791,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                                             let __t127 = {
                                                                                 let __t126 = {
                                                                                     let __t125 =
-                                                                                        v_V7091
+                                                                                        v_V7115
                                                                                             .clone(
                                                                                             );
                                                                                     rt::tl(&__t125)?
@@ -804,7 +804,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                                             let __t132 = {
                                                                                 let __t131 = {
                                                                                     let __t130 = {
-                                                                                        let __t129 = v_V7091.clone();
+                                                                                        let __t129 = v_V7115.clone();
                                                                                         rt::tl(
                                                                                             &__t129,
                                                                                         )?
@@ -822,22 +822,22 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                                         )?
                                                                     })
                                                                 },
-                                                                vec![v_V7091],
+                                                                vec![v_V7115],
                                                                 interp,
                                                             )
                                                         };
-                                                        let __t135 = v_V7092.clone();
+                                                        let __t135 = v_V7116.clone();
                                                         rt::cons(&__t134, &__t135)
                                                     };
-                                                    v_V7091 = __t124;
-                                                    v_V7092 = __t136;
+                                                    v_V7115 = __t124;
+                                                    v_V7116 = __t136;
                                                     continue;
                                                 }
                                             } else {
                                                 {
                                                     let __t105 = {
                                                         let __t98 = {
-                                                            let __t94 = v_V7091.clone();
+                                                            let __t94 = v_V7115.clone();
                                                             rt::is_cons(&__t94)
                                                         };
                                                         if !rt::is_truthy(interp, &__t98)? {
@@ -846,7 +846,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                             let __t99 = {
                                                                 let __t95 = Value::str("--repl");
                                                                 let __t97 = {
-                                                                    let __t96 = v_V7091.clone();
+                                                                    let __t96 = v_V7115.clone();
                                                                     rt::hd(&__t96)?
                                                                 };
                                                                 rt::eq(&__t95, &__t97)
@@ -863,7 +863,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                         {
                                                             let _ = {
                                                                 let __t100 = Value::nil();
-                                                                let __t101 = v_V7092.clone();
+                                                                let __t101 = v_V7116.clone();
                                                                 rt::apply_direct(interp, "shen.x.launcher.eval-command-h", &[__t100, __t101])?
                                                             };
                                                             break Ok({
@@ -871,7 +871,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                                     interp.intern("launch-repl"),
                                                                 );
                                                                 let __t104 = {
-                                                                    let __t103 = v_V7091.clone();
+                                                                    let __t103 = v_V7115.clone();
                                                                     rt::tl(&__t103)?
                                                                 };
                                                                 rt::cons(&__t102, &__t104)
@@ -885,31 +885,31 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                                 Err(e) => break Err(e),
                                                             } {
                                                                 {
-                                                                    let v_Freeze7095 = {
-                                                                        let v_V7091 =
-                                                                            v_V7091.clone();
+                                                                    let v_Freeze7119 = {
+                                                                        let v_V7115 =
+                                                                            v_V7115.clone();
                                                                         rt::make_aot_closure(
                                                                             "<freeze>",
                                                                             0,
                                                                             move |interp, _args| {
                                                                                 Ok({
                                                                                     let __t77 = {
-                                                                                        let __t66 = v_V7091.clone();
+                                                                                        let __t66 = v_V7115.clone();
                                                                                         rt::is_cons(
                                                                                             &__t66,
                                                                                         )
                                                                                     };
-                                                                                    if rt::is_truthy(interp, &__t77)? { { let __t67 = Value::sym(interp.intern("error")); let __t76 = { let __t74 = { let __t68 = Value::str("Invalid eval argument: "); let __t73 = { let __t70 = { let __t69 = v_V7091.clone(); rt::hd(&__t69)? }; let __t71 = Value::str(""); let __t72 = Value::sym(interp.intern("shen.a")); rt::apply_direct(interp, "shen.app", &[__t70, __t71, __t72])? }; rt::apply_direct(interp, "cn", &[__t68, __t73])? }; let __t75 = Value::nil(); rt::cons(&__t74, &__t75) }; rt::cons(&__t67, &__t76) } } else { { let __t65 = Value::bool(true); if rt::is_truthy(interp, &__t65)? { { let __t64 = Value::sym(interp.intern("shen.x.launcher.eval-command-h")); rt::apply_direct(interp, "shen.f-error", &[__t64])? } } else { return Err(ShenError::new("cond: no clause matched")) } } }
+                                                                                    if rt::is_truthy(interp, &__t77)? { { let __t67 = Value::sym(interp.intern("error")); let __t76 = { let __t74 = { let __t68 = Value::str("Invalid eval argument: "); let __t73 = { let __t70 = { let __t69 = v_V7115.clone(); rt::hd(&__t69)? }; let __t71 = Value::str(""); let __t72 = Value::sym(interp.intern("shen.a")); rt::apply_direct(interp, "shen.app", &[__t70, __t71, __t72])? }; rt::apply_direct(interp, "cn", &[__t68, __t73])? }; let __t75 = Value::nil(); rt::cons(&__t74, &__t75) }; rt::cons(&__t67, &__t76) } } else { { let __t65 = Value::bool(true); if rt::is_truthy(interp, &__t65)? { { let __t64 = Value::sym(interp.intern("shen.x.launcher.eval-command-h")); rt::apply_direct(interp, "shen.f-error", &[__t64])? } } else { return Err(ShenError::new("cond: no clause matched")) } } }
                                                                                 })
                                                                             },
-                                                                            vec![v_V7091],
+                                                                            vec![v_V7115],
                                                                             interp,
                                                                         )
                                                                     };
                                                                     {
                                                                         let __t79 = {
                                                                             let __t78 =
-                                                                                v_V7091.clone();
+                                                                                v_V7115.clone();
                                                                             rt::is_cons(&__t78)
                                                                         };
                                                                         if match rt::is_truthy(
@@ -919,10 +919,10 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                                             Err(e) => break Err(e),
                                                                         } {
                                                                             {
-                                                                                let v_Result7094 = {
-                                                                                    let v_W7093 = {
+                                                                                let v_Result7118 = {
+                                                                                    let v_W7117 = {
                                                                                         let __t81 = {
-                                                                                            let __t80 = v_V7091.clone();
+                                                                                            let __t80 = v_V7115.clone();
                                                                                             rt::hd(&__t80)?
                                                                                         };
                                                                                         rt::apply_direct(interp, "shen.x.launcher.eval-flag-map", &[__t81])?
@@ -930,15 +930,15 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                                                     {
                                                                                         let __t89 = {
                                                                                             let __t82 = Value::bool(false);
-                                                                                            let __t83 = v_W7093.clone();
+                                                                                            let __t83 = v_W7117.clone();
                                                                                             rt::eq(&__t82, &__t83)
                                                                                         };
-                                                                                        if rt::is_truthy(interp, &__t89)? { { rt::apply_direct(interp, "fail", &[])? } } else { { let __t87 = { let __t84 = v_W7093.clone(); let __t86 = { let __t85 = v_V7091.clone(); rt::tl(&__t85)? }; rt::cons(&__t84, &__t86) }; let __t88 = v_V7092.clone(); rt::apply_direct(interp, "shen.x.launcher.eval-command-h", &[__t87, __t88])? } }
+                                                                                        if rt::is_truthy(interp, &__t89)? { { rt::apply_direct(interp, "fail", &[])? } } else { { let __t87 = { let __t84 = v_W7117.clone(); let __t86 = { let __t85 = v_V7115.clone(); rt::tl(&__t85)? }; rt::cons(&__t84, &__t86) }; let __t88 = v_V7116.clone(); rt::apply_direct(interp, "shen.x.launcher.eval-command-h", &[__t87, __t88])? } }
                                                                                     }
                                                                                 };
                                                                                 {
                                                                                     let __t92 = {
-                                                                                        let __t90 = v_Result7094.clone();
+                                                                                        let __t90 = v_Result7118.clone();
                                                                                         let __t91 = {
                                                                                             rt::apply_direct(interp, "fail", &[])?
                                                                                         };
@@ -947,14 +947,14 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                                                             &__t91,
                                                                                         )
                                                                                     };
-                                                                                    if match rt::is_truthy(interp, &__t92) { Ok(b) => b, Err(e) => break Err(e), } { break Ok(rt::apply_value(interp, v_Freeze7095.clone(), &[])?); } else { break Ok(v_Result7094.clone()); }
+                                                                                    if match rt::is_truthy(interp, &__t92) { Ok(b) => b, Err(e) => break Err(e), } { break Ok(rt::apply_value(interp, v_Freeze7119.clone(), &[])?); } else { break Ok(v_Result7118.clone()); }
                                                                                 }
                                                                             }
                                                                         } else {
                                                                             break Ok(
                                                                                 rt::apply_value(
                                                                                     interp,
-                                                                                    v_Freeze7095
+                                                                                    v_Freeze7119
                                                                                         .clone(),
                                                                                     &[],
                                                                                 )?,
@@ -1007,11 +1007,11 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command(
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V7096 = args[0].clone();
+    let mut v_V7120 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t202 = v_V7096.clone();
+            let __t202 = v_V7120.clone();
             let __t203 = Value::nil();
             rt::apply_direct(interp, "shen.x.launcher.eval-command-h", &[__t202, __t203])?
         });
@@ -1042,24 +1042,24 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_script_x2d_command(
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V7097 = args[0].clone();
+    let mut v_V7121 = args[0].clone();
     #[allow(unused_mut)]
-    let mut v_V7098 = args[1].clone();
+    let mut v_V7122 = args[1].clone();
     #[allow(clippy::never_loop)]
     loop {
         {
             let _ = {
                 let __t204 = Value::sym(interp.intern("*argv*"));
                 let __t207 = {
-                    let __t205 = v_V7097.clone();
-                    let __t206 = v_V7098.clone();
+                    let __t205 = v_V7121.clone();
+                    let __t206 = v_V7122.clone();
                     rt::cons(&__t205, &__t206)
                 };
                 rt::apply_direct(interp, "set", &[__t204, __t207])?
             };
             {
                 let _ = {
-                    let __t208 = v_V7097.clone();
+                    let __t208 = v_V7121.clone();
                     rt::apply_direct(interp, "shen.x.launcher.quiet-load", &[__t208])?
                 };
                 break Ok({
@@ -1096,13 +1096,13 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V7099 = args[0].clone();
+    let mut v_V7123 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         {
             let __t319 = {
                 let __t315 = {
-                    let __t311 = v_V7099.clone();
+                    let __t311 = v_V7123.clone();
                     rt::is_cons(&__t311)
                 };
                 if !rt::is_truthy(interp, &__t315)? {
@@ -1111,7 +1111,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                     let __t316 = {
                         let __t312 = Value::nil();
                         let __t314 = {
-                            let __t313 = v_V7099.clone();
+                            let __t313 = v_V7123.clone();
                             rt::tl(&__t313)?
                         };
                         rt::eq(&__t312, &__t314)
@@ -1132,7 +1132,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                 {
                     let __t310 = {
                         let __t302 = {
-                            let __t293 = v_V7099.clone();
+                            let __t293 = v_V7123.clone();
                             rt::is_cons(&__t293)
                         };
                         if !rt::is_truthy(interp, &__t302)? {
@@ -1141,7 +1141,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                             let __t303 = {
                                 let __t300 = {
                                     let __t295 = {
-                                        let __t294 = v_V7099.clone();
+                                        let __t294 = v_V7123.clone();
                                         rt::tl(&__t294)?
                                     };
                                     rt::is_cons(&__t295)
@@ -1153,7 +1153,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                         let __t296 = Value::str("--help");
                                         let __t299 = {
                                             let __t298 = {
-                                                let __t297 = v_V7099.clone();
+                                                let __t297 = v_V7123.clone();
                                                 rt::tl(&__t297)?
                                             };
                                             rt::hd(&__t298)?
@@ -1175,7 +1175,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                             let __t309 = {
                                 let __t307 = {
                                     let __t306 = {
-                                        let __t305 = v_V7099.clone();
+                                        let __t305 = v_V7123.clone();
                                         rt::hd(&__t305)?
                                     };
                                     rt::apply_direct(
@@ -1193,7 +1193,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                         {
                             let __t292 = {
                                 let __t286 = {
-                                    let __t277 = v_V7099.clone();
+                                    let __t277 = v_V7123.clone();
                                     rt::is_cons(&__t277)
                                 };
                                 if !rt::is_truthy(interp, &__t286)? {
@@ -1202,7 +1202,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                     let __t287 = {
                                         let __t284 = {
                                             let __t279 = {
-                                                let __t278 = v_V7099.clone();
+                                                let __t278 = v_V7123.clone();
                                                 rt::tl(&__t278)?
                                             };
                                             rt::is_cons(&__t279)
@@ -1214,7 +1214,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                                 let __t280 = Value::str("--version");
                                                 let __t283 = {
                                                     let __t282 = {
-                                                        let __t281 = v_V7099.clone();
+                                                        let __t281 = v_V7123.clone();
                                                         rt::tl(&__t281)?
                                                     };
                                                     rt::hd(&__t282)?
@@ -1250,7 +1250,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                 {
                                     let __t276 = {
                                         let __t270 = {
-                                            let __t261 = v_V7099.clone();
+                                            let __t261 = v_V7123.clone();
                                             rt::is_cons(&__t261)
                                         };
                                         if !rt::is_truthy(interp, &__t270)? {
@@ -1259,7 +1259,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                             let __t271 = {
                                                 let __t268 = {
                                                     let __t263 = {
-                                                        let __t262 = v_V7099.clone();
+                                                        let __t262 = v_V7123.clone();
                                                         rt::tl(&__t262)?
                                                     };
                                                     rt::is_cons(&__t263)
@@ -1271,7 +1271,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                                         let __t264 = Value::str("repl");
                                                         let __t267 = {
                                                             let __t266 = {
-                                                                let __t265 = v_V7099.clone();
+                                                                let __t265 = v_V7123.clone();
                                                                 rt::tl(&__t265)?
                                                             };
                                                             rt::hd(&__t266)?
@@ -1292,7 +1292,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                             let __t272 = Value::sym(interp.intern("launch-repl"));
                                             let __t275 = {
                                                 let __t274 = {
-                                                    let __t273 = v_V7099.clone();
+                                                    let __t273 = v_V7123.clone();
                                                     rt::tl(&__t273)?
                                                 };
                                                 rt::tl(&__t274)?
@@ -1303,7 +1303,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                         {
                                             let __t260 = {
                                                 let __t250 = {
-                                                    let __t236 = v_V7099.clone();
+                                                    let __t236 = v_V7123.clone();
                                                     rt::is_cons(&__t236)
                                                 };
                                                 if !rt::is_truthy(interp, &__t250)? {
@@ -1312,7 +1312,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                                     let __t251 = {
                                                         let __t248 = {
                                                             let __t238 = {
-                                                                let __t237 = v_V7099.clone();
+                                                                let __t237 = v_V7123.clone();
                                                                 rt::tl(&__t237)?
                                                             };
                                                             rt::is_cons(&__t238)
@@ -1327,7 +1327,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                                                     let __t242 = {
                                                                         let __t241 = {
                                                                             let __t240 =
-                                                                                v_V7099.clone();
+                                                                                v_V7123.clone();
                                                                             rt::tl(&__t240)?
                                                                         };
                                                                         rt::hd(&__t241)?
@@ -1342,7 +1342,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                                                         let __t245 = {
                                                                             let __t244 = {
                                                                                 let __t243 =
-                                                                                    v_V7099.clone();
+                                                                                    v_V7123.clone();
                                                                                 rt::tl(&__t243)?
                                                                             };
                                                                             rt::tl(&__t244)?
@@ -1370,7 +1370,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                                     let __t255 = {
                                                         let __t254 = {
                                                             let __t253 = {
-                                                                let __t252 = v_V7099.clone();
+                                                                let __t252 = v_V7123.clone();
                                                                 rt::tl(&__t252)?
                                                             };
                                                             rt::tl(&__t253)?
@@ -1380,7 +1380,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                                     let __t259 = {
                                                         let __t258 = {
                                                             let __t257 = {
-                                                                let __t256 = v_V7099.clone();
+                                                                let __t256 = v_V7123.clone();
                                                                 rt::tl(&__t256)?
                                                             };
                                                             rt::tl(&__t257)?
@@ -1397,7 +1397,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                                 {
                                                     let __t235 = {
                                                         let __t230 = {
-                                                            let __t221 = v_V7099.clone();
+                                                            let __t221 = v_V7123.clone();
                                                             rt::is_cons(&__t221)
                                                         };
                                                         if !rt::is_truthy(interp, &__t230)? {
@@ -1407,7 +1407,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                                                 let __t228 = {
                                                                     let __t223 = {
                                                                         let __t222 =
-                                                                            v_V7099.clone();
+                                                                            v_V7123.clone();
                                                                         rt::tl(&__t222)?
                                                                     };
                                                                     rt::is_cons(&__t223)
@@ -1422,7 +1422,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                                                         let __t227 = {
                                                                             let __t226 = {
                                                                                 let __t225 =
-                                                                                    v_V7099.clone();
+                                                                                    v_V7123.clone();
                                                                                 rt::tl(&__t225)?
                                                                             };
                                                                             rt::hd(&__t226)?
@@ -1446,7 +1446,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                                         break Ok({
                                                             let __t234 = {
                                                                 let __t233 = {
-                                                                    let __t232 = v_V7099.clone();
+                                                                    let __t232 = v_V7123.clone();
                                                                     rt::tl(&__t232)?
                                                                 };
                                                                 rt::tl(&__t233)?
@@ -1461,7 +1461,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                                         {
                                                             let __t220 = {
                                                                 let __t216 = {
-                                                                    let __t213 = v_V7099.clone();
+                                                                    let __t213 = v_V7123.clone();
                                                                     rt::is_cons(&__t213)
                                                                 };
                                                                 if !rt::is_truthy(interp, &__t216)?
@@ -1471,7 +1471,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                                                     let __t217 = {
                                                                         let __t215 = {
                                                                             let __t214 =
-                                                                                v_V7099.clone();
+                                                                                v_V7123.clone();
                                                                             rt::tl(&__t214)?
                                                                         };
                                                                         rt::is_cons(&__t215)
@@ -1491,7 +1491,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                                                         Value::sym(interp.intern(
                                                                             "unknown-arguments",
                                                                         ));
-                                                                    let __t219 = v_V7099.clone();
+                                                                    let __t219 = v_V7123.clone();
                                                                     rt::cons(&__t218, &__t219)
                                                                 });
                                                             } else {
@@ -1556,13 +1556,13 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V7102 = args[0].clone();
+    let mut v_V7126 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         {
             let __t447 = {
                 let __t445 = {
-                    let __t436 = v_V7102.clone();
+                    let __t436 = v_V7126.clone();
                     rt::is_cons(&__t436)
                 };
                 if !rt::is_truthy(interp, &__t445)? {
@@ -1572,7 +1572,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                         let __t443 = {
                             let __t437 = Value::sym(interp.intern("success"));
                             let __t439 = {
-                                let __t438 = v_V7102.clone();
+                                let __t438 = v_V7126.clone();
                                 rt::hd(&__t438)?
                             };
                             rt::eq(&__t437, &__t439)
@@ -1583,7 +1583,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                             let __t444 = {
                                 let __t440 = Value::nil();
                                 let __t442 = {
-                                    let __t441 = v_V7102.clone();
+                                    let __t441 = v_V7126.clone();
                                     rt::tl(&__t441)?
                                 };
                                 rt::eq(&__t440, &__t442)
@@ -1603,7 +1603,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                 {
                     let __t435 = {
                         let __t426 = {
-                            let __t412 = v_V7102.clone();
+                            let __t412 = v_V7126.clone();
                             rt::is_cons(&__t412)
                         };
                         if !rt::is_truthy(interp, &__t426)? {
@@ -1613,7 +1613,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                 let __t424 = {
                                     let __t413 = Value::sym(interp.intern("success"));
                                     let __t415 = {
-                                        let __t414 = v_V7102.clone();
+                                        let __t414 = v_V7126.clone();
                                         rt::hd(&__t414)?
                                     };
                                     rt::eq(&__t413, &__t415)
@@ -1624,7 +1624,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                     let __t425 = {
                                         let __t422 = {
                                             let __t417 = {
-                                                let __t416 = v_V7102.clone();
+                                                let __t416 = v_V7126.clone();
                                                 rt::tl(&__t416)?
                                             };
                                             rt::is_cons(&__t417)
@@ -1636,7 +1636,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                                 let __t418 = Value::nil();
                                                 let __t421 = {
                                                     let __t420 = {
-                                                        let __t419 = v_V7102.clone();
+                                                        let __t419 = v_V7126.clone();
                                                         rt::tl(&__t419)?
                                                     };
                                                     rt::tl(&__t420)?
@@ -1660,7 +1660,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                             let __t433 = {
                                 let __t430 = {
                                     let __t429 = {
-                                        let __t428 = v_V7102.clone();
+                                        let __t428 = v_V7126.clone();
                                         rt::tl(&__t428)?
                                     };
                                     rt::hd(&__t429)?
@@ -1676,7 +1676,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                         {
                             let __t411 = {
                                 let __t400 = {
-                                    let __t386 = v_V7102.clone();
+                                    let __t386 = v_V7126.clone();
                                     rt::is_cons(&__t386)
                                 };
                                 if !rt::is_truthy(interp, &__t400)? {
@@ -1686,7 +1686,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                         let __t398 = {
                                             let __t387 = Value::sym(interp.intern("error"));
                                             let __t389 = {
-                                                let __t388 = v_V7102.clone();
+                                                let __t388 = v_V7126.clone();
                                                 rt::hd(&__t388)?
                                             };
                                             rt::eq(&__t387, &__t389)
@@ -1697,7 +1697,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                             let __t399 = {
                                                 let __t396 = {
                                                     let __t391 = {
-                                                        let __t390 = v_V7102.clone();
+                                                        let __t390 = v_V7126.clone();
                                                         rt::tl(&__t390)?
                                                     };
                                                     rt::is_cons(&__t391)
@@ -1709,7 +1709,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                                         let __t392 = Value::nil();
                                                         let __t395 = {
                                                             let __t394 = {
-                                                                let __t393 = v_V7102.clone();
+                                                                let __t393 = v_V7126.clone();
                                                                 rt::tl(&__t393)?
                                                             };
                                                             rt::tl(&__t394)?
@@ -1735,7 +1735,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                         let __t408 = {
                                             let __t405 = {
                                                 let __t404 = {
-                                                    let __t403 = v_V7102.clone();
+                                                    let __t403 = v_V7126.clone();
                                                     rt::tl(&__t403)?
                                                 };
                                                 rt::hd(&__t404)?
@@ -1757,7 +1757,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                 {
                                     let __t385 = {
                                         let __t383 = {
-                                            let __t379 = v_V7102.clone();
+                                            let __t379 = v_V7126.clone();
                                             rt::is_cons(&__t379)
                                         };
                                         if !rt::is_truthy(interp, &__t383)? {
@@ -1767,7 +1767,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                                 let __t380 =
                                                     Value::sym(interp.intern("launch-repl"));
                                                 let __t382 = {
-                                                    let __t381 = v_V7102.clone();
+                                                    let __t381 = v_V7126.clone();
                                                     rt::hd(&__t381)?
                                                 };
                                                 rt::eq(&__t380, &__t382)
@@ -1784,7 +1784,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                         {
                                             let __t378 = {
                                                 let __t369 = {
-                                                    let __t355 = v_V7102.clone();
+                                                    let __t355 = v_V7126.clone();
                                                     rt::is_cons(&__t355)
                                                 };
                                                 if !rt::is_truthy(interp, &__t369)? {
@@ -1796,7 +1796,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                                                 interp.intern("show-help"),
                                                             );
                                                             let __t358 = {
-                                                                let __t357 = v_V7102.clone();
+                                                                let __t357 = v_V7126.clone();
                                                                 rt::hd(&__t357)?
                                                             };
                                                             rt::eq(&__t356, &__t358)
@@ -1808,7 +1808,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                                                 let __t365 = {
                                                                     let __t360 = {
                                                                         let __t359 =
-                                                                            v_V7102.clone();
+                                                                            v_V7126.clone();
                                                                         rt::tl(&__t359)?
                                                                     };
                                                                     rt::is_cons(&__t360)
@@ -1822,7 +1822,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                                                         let __t364 = {
                                                                             let __t363 = {
                                                                                 let __t362 =
-                                                                                    v_V7102.clone();
+                                                                                    v_V7126.clone();
                                                                                 rt::tl(&__t362)?
                                                                             };
                                                                             rt::tl(&__t363)?
@@ -1850,7 +1850,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                                     let __t376 = {
                                                         let __t373 = {
                                                             let __t372 = {
-                                                                let __t371 = v_V7102.clone();
+                                                                let __t371 = v_V7126.clone();
                                                                 rt::tl(&__t371)?
                                                             };
                                                             rt::hd(&__t372)?
@@ -1877,7 +1877,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                                 {
                                                     let __t354 = {
                                                         let __t335 = {
-                                                            let __t322 = v_V7102.clone();
+                                                            let __t322 = v_V7126.clone();
                                                             rt::is_cons(&__t322)
                                                         };
                                                         if !rt::is_truthy(interp, &__t335)? {
@@ -1891,7 +1891,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                                                         ));
                                                                     let __t325 = {
                                                                         let __t324 =
-                                                                            v_V7102.clone();
+                                                                            v_V7126.clone();
                                                                         rt::hd(&__t324)?
                                                                     };
                                                                     rt::eq(&__t323, &__t325)
@@ -1904,7 +1904,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                                                         let __t331 = {
                                                                             let __t327 = {
                                                                                 let __t326 =
-                                                                                    v_V7102.clone();
+                                                                                    v_V7126.clone();
                                                                                 rt::tl(&__t326)?
                                                                             };
                                                                             rt::is_cons(&__t327)
@@ -1917,7 +1917,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                                                             let __t332 = {
                                                                                 let __t330 = {
                                                                                     let __t329 = {
-                                                                                        let __t328 = v_V7102.clone();
+                                                                                        let __t328 = v_V7126.clone();
                                                                                         rt::tl(
                                                                                             &__t328,
                                                                                         )?
@@ -1957,7 +1957,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                                                         let __t340 = {
                                                                             let __t339 = {
                                                                                 let __t338 =
-                                                                                    v_V7102.clone();
+                                                                                    v_V7126.clone();
                                                                                 rt::tl(&__t338)?
                                                                             };
                                                                             rt::tl(&__t339)?
@@ -1971,7 +1971,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                                                             let __t345 = {
                                                                                 let __t344 = {
                                                                                     let __t343 =
-                                                                                        v_V7102
+                                                                                        v_V7126
                                                                                             .clone(
                                                                                             );
                                                                                     rt::tl(&__t343)?
@@ -2088,12 +2088,12 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_main(
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V7103 = args[0].clone();
+    let mut v_V7127 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
             let __t449 = {
-                let __t448 = v_V7103.clone();
+                let __t448 = v_V7127.clone();
                 rt::apply_direct(interp, "shen.x.launcher.launch-shen", &[__t448])?
             };
             rt::apply_direct(interp, "shen.x.launcher.default-handle-result", &[__t449])?

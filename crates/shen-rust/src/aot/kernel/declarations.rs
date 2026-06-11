@@ -39,9 +39,9 @@ pub fn aot_datatypes(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                     "<lambda>",
                     1,
                     move |interp, args| {
-                        let v_Z880 = args[0].clone();
+                        let v_Z904 = args[0].clone();
                         Ok({
-                            let __t0 = v_Z880.clone();
+                            let __t0 = v_Z904.clone();
                             rt::apply_direct(interp, "shen.typename", &[__t0])?
                         })
                     },
@@ -79,9 +79,9 @@ pub fn aot_shen_x2e_included(interp: &mut Interp, args: &[Value]) -> ShenResult<
                     "<lambda>",
                     1,
                     move |interp, args| {
-                        let v_Z881 = args[0].clone();
+                        let v_Z905 = args[0].clone();
                         Ok({
-                            let __t4 = v_Z881.clone();
+                            let __t4 = v_Z905.clone();
                             rt::apply_direct(interp, "shen.typename", &[__t4])?
                         })
                     },
@@ -112,12 +112,12 @@ pub fn aot_shen_x2e_typename(interp: &mut Interp, args: &[Value]) -> ShenResult<
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V884 = args[0].clone();
+    let mut v_V908 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         {
             let __t15 = {
-                let __t10 = v_V884.clone();
+                let __t10 = v_V908.clone();
                 rt::is_cons(&__t10)
             };
             if match rt::is_truthy(interp, &__t15) {
@@ -128,7 +128,7 @@ pub fn aot_shen_x2e_typename(interp: &mut Interp, args: &[Value]) -> ShenResult<
                     let __t14 = {
                         let __t13 = {
                             let __t12 = {
-                                let __t11 = v_V884.clone();
+                                let __t11 = v_V908.clone();
                                 rt::hd(&__t11)?
                             };
                             rt::apply_direct(interp, "str", &[__t12])?
@@ -171,13 +171,13 @@ pub fn aot_shen_x2e_typename_x2d_h(interp: &mut Interp, args: &[Value]) -> ShenR
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V885 = args[0].clone();
+    let mut v_V909 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         {
             let __t27 = {
                 let __t25 = Value::str("#type");
-                let __t26 = v_V885.clone();
+                let __t26 = v_V909.clone();
                 rt::eq(&__t25, &__t26)
             };
             if match rt::is_truthy(interp, &__t27) {
@@ -188,7 +188,7 @@ pub fn aot_shen_x2e_typename_x2d_h(interp: &mut Interp, args: &[Value]) -> ShenR
             } else {
                 {
                     let __t24 = {
-                        let __t18 = v_V885.clone();
+                        let __t18 = v_V909.clone();
                         rt::apply_direct(interp, "shen.+string?", &[__t18])?
                     };
                     if match rt::is_truthy(interp, &__t24) {
@@ -197,12 +197,12 @@ pub fn aot_shen_x2e_typename_x2d_h(interp: &mut Interp, args: &[Value]) -> ShenR
                     } {
                         break Ok({
                             let __t20 = {
-                                let __t19 = v_V885.clone();
+                                let __t19 = v_V909.clone();
                                 rt::apply_direct(interp, "hdstr", &[__t19])?
                             };
                             let __t23 = {
                                 let __t22 = {
-                                    let __t21 = v_V885.clone();
+                                    let __t21 = v_V909.clone();
                                     rt::apply_direct(interp, "tlstr", &[__t21])?
                                 };
                                 rt::apply_direct(interp, "shen.typename-h", &[__t22])?
@@ -245,12 +245,12 @@ pub fn aot_prolog_x2d_memory(interp: &mut Interp, args: &[Value]) -> ShenResult<
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V886 = args[0].clone();
+    let mut v_V910 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         {
             let __t30 = {
-                let __t28 = v_V886.clone();
+                let __t28 = v_V910.clone();
                 let __t29 = Value::int(0i64);
                 rt::lt(&__t28, &__t29)?
             };
@@ -265,7 +265,7 @@ pub fn aot_prolog_x2d_memory(interp: &mut Interp, args: &[Value]) -> ShenResult<
             } else {
                 {
                     let __t33 = {
-                        let __t32 = v_V886.clone();
+                        let __t32 = v_V910.clone();
                         rt::apply_direct(interp, "integer?", &[__t32])?
                     };
                     if match rt::is_truthy(interp, &__t33) {
@@ -274,7 +274,7 @@ pub fn aot_prolog_x2d_memory(interp: &mut Interp, args: &[Value]) -> ShenResult<
                     } {
                         break Ok({
                             let __t34 = Value::sym(interp.intern("shen.*prolog-memory*"));
-                            let __t35 = v_V886.clone();
+                            let __t35 = v_V910.clone();
                             rt::apply_direct(interp, "set", &[__t34, __t35])?
                         });
                     } else {
@@ -303,13 +303,13 @@ pub fn aot_arity(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V887 = args[0].clone();
+    let mut v_V911 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         break Ok(
             match (|| -> ShenResult<Value> {
                 Ok({
-                    let __t37 = v_V887.clone();
+                    let __t37 = v_V911.clone();
                     let __t38 = Value::sym(interp.intern("arity"));
                     let __t40 = {
                         let __t39 = Value::sym(interp.intern("*property-vector*"));
@@ -325,7 +325,7 @@ pub fn aot_arity(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                             "<lambda>",
                             1,
                             move |interp, args| {
-                                let v_Z888 = args[0].clone();
+                                let v_Z912 = args[0].clone();
                                 Ok(Value::int(-1i64))
                             },
                             Vec::new(),
@@ -357,13 +357,13 @@ pub fn aot_shen_x2e_initialise_x2d_arity_x2d_table(
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V891 = args[0].clone();
+    let mut v_V915 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         {
             let __t62 = {
                 let __t60 = Value::nil();
-                let __t61 = v_V891.clone();
+                let __t61 = v_V915.clone();
                 rt::eq(&__t60, &__t61)
             };
             if match rt::is_truthy(interp, &__t62) {
@@ -375,7 +375,7 @@ pub fn aot_shen_x2e_initialise_x2d_arity_x2d_table(
                 {
                     let __t59 = {
                         let __t46 = {
-                            let __t43 = v_V891.clone();
+                            let __t43 = v_V915.clone();
                             rt::is_cons(&__t43)
                         };
                         if !rt::is_truthy(interp, &__t46)? {
@@ -383,7 +383,7 @@ pub fn aot_shen_x2e_initialise_x2d_arity_x2d_table(
                         } else {
                             let __t47 = {
                                 let __t45 = {
-                                    let __t44 = v_V891.clone();
+                                    let __t44 = v_V915.clone();
                                     rt::tl(&__t44)?
                                 };
                                 rt::is_cons(&__t45)
@@ -396,15 +396,15 @@ pub fn aot_shen_x2e_initialise_x2d_arity_x2d_table(
                         Err(e) => break Err(e),
                     } {
                         {
-                            let v_W892 = {
+                            let v_W916 = {
                                 let __t49 = {
-                                    let __t48 = v_V891.clone();
+                                    let __t48 = v_V915.clone();
                                     rt::hd(&__t48)?
                                 };
                                 let __t50 = Value::sym(interp.intern("arity"));
                                 let __t53 = {
                                     let __t52 = {
-                                        let __t51 = v_V891.clone();
+                                        let __t51 = v_V915.clone();
                                         rt::tl(&__t51)?
                                     };
                                     rt::hd(&__t52)?
@@ -418,12 +418,12 @@ pub fn aot_shen_x2e_initialise_x2d_arity_x2d_table(
                             {
                                 let __t58 = {
                                     let __t57 = {
-                                        let __t56 = v_V891.clone();
+                                        let __t56 = v_V915.clone();
                                         rt::tl(&__t56)?
                                     };
                                     rt::tl(&__t57)?
                                 };
-                                v_V891 = __t58;
+                                v_V915 = __t58;
                                 continue;
                             }
                         }
@@ -472,11 +472,11 @@ pub fn aot_systemf(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V893 = args[0].clone();
+    let mut v_V917 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         {
-            let v_W894 = {
+            let v_W918 = {
                 let __t63 = Value::sym(interp.intern("shen"));
                 let __t64 = Value::sym(interp.intern("shen.external-symbols"));
                 let __t66 = {
@@ -486,12 +486,12 @@ pub fn aot_systemf(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                 rt::apply_direct(interp, "get", &[__t63, __t64, __t66])?
             };
             {
-                let v_W895 = {
+                let v_W919 = {
                     let __t67 = Value::sym(interp.intern("shen"));
                     let __t68 = Value::sym(interp.intern("shen.external-symbols"));
                     let __t71 = {
-                        let __t69 = v_V893.clone();
-                        let __t70 = v_W894.clone();
+                        let __t69 = v_V917.clone();
+                        let __t70 = v_W918.clone();
                         rt::apply_direct(interp, "adjoin", &[__t69, __t70])?
                     };
                     let __t73 = {
@@ -500,7 +500,7 @@ pub fn aot_systemf(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                     };
                     rt::apply_direct(interp, "put", &[__t67, __t68, __t71, __t73])?
                 };
-                break Ok(v_V893.clone());
+                break Ok(v_V917.clone());
             }
         }
     }
@@ -520,26 +520,26 @@ pub fn aot_adjoin(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V896 = args[0].clone();
+    let mut v_V920 = args[0].clone();
     #[allow(unused_mut)]
-    let mut v_V897 = args[1].clone();
+    let mut v_V921 = args[1].clone();
     #[allow(clippy::never_loop)]
     loop {
         {
             let __t76 = {
-                let __t74 = v_V896.clone();
-                let __t75 = v_V897.clone();
+                let __t74 = v_V920.clone();
+                let __t75 = v_V921.clone();
                 rt::apply_direct(interp, "element?", &[__t74, __t75])?
             };
             if match rt::is_truthy(interp, &__t76) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
-                break Ok(v_V897.clone());
+                break Ok(v_V921.clone());
             } else {
                 break Ok({
-                    let __t77 = v_V896.clone();
-                    let __t78 = v_V897.clone();
+                    let __t77 = v_V920.clone();
+                    let __t78 = v_V921.clone();
                     rt::cons(&__t77, &__t78)
                 });
             }
@@ -561,18 +561,18 @@ pub fn aot_shen_x2e_lambda_x2d_entry(interp: &mut Interp, args: &[Value]) -> She
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V898 = args[0].clone();
+    let mut v_V922 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         {
-            let v_W899 = {
-                let __t79 = v_V898.clone();
+            let v_W923 = {
+                let __t79 = v_V922.clone();
                 rt::apply_direct(interp, "arity", &[__t79])?
             };
             {
                 let __t86 = {
                     let __t84 = {
-                        let __t80 = v_W899.clone();
+                        let __t80 = v_W923.clone();
                         let __t81 = Value::int(-1i64);
                         rt::eq(&__t80, &__t81)
                     };
@@ -580,7 +580,7 @@ pub fn aot_shen_x2e_lambda_x2d_entry(interp: &mut Interp, args: &[Value]) -> She
                         Value::bool(true)
                     } else {
                         let __t85 = {
-                            let __t82 = v_W899.clone();
+                            let __t82 = v_W923.clone();
                             let __t83 = Value::int(0i64);
                             rt::eq(&__t82, &__t83)
                         };
@@ -594,15 +594,15 @@ pub fn aot_shen_x2e_lambda_x2d_entry(interp: &mut Interp, args: &[Value]) -> She
                     break Ok(Value::nil());
                 } else {
                     break Ok({
-                        let __t87 = v_V898.clone();
+                        let __t87 = v_V922.clone();
                         let __t93 = {
                             let __t92 = {
                                 let __t90 = {
-                                    let __t88 = v_V898.clone();
+                                    let __t88 = v_V922.clone();
                                     let __t89 = Value::nil();
                                     rt::cons(&__t88, &__t89)
                                 };
-                                let __t91 = v_W899.clone();
+                                let __t91 = v_W923.clone();
                                 rt::apply_direct(interp, "shen.lambda-function", &[__t90, __t91])?
                             };
                             rt::apply_direct(interp, "eval-kl", &[__t92])?
@@ -632,12 +632,12 @@ pub fn aot_shen_x2e_set_x2d_lambda_x2d_form_x2d_entry(
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V900 = args[0].clone();
+    let mut v_V924 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         {
             let __t104 = {
-                let __t96 = v_V900.clone();
+                let __t96 = v_V924.clone();
                 rt::is_cons(&__t96)
             };
             if match rt::is_truthy(interp, &__t104) {
@@ -646,12 +646,12 @@ pub fn aot_shen_x2e_set_x2d_lambda_x2d_form_x2d_entry(
             } {
                 break Ok({
                     let __t98 = {
-                        let __t97 = v_V900.clone();
+                        let __t97 = v_V924.clone();
                         rt::hd(&__t97)?
                     };
                     let __t99 = Value::sym(interp.intern("shen.lambda-form"));
                     let __t101 = {
-                        let __t100 = v_V900.clone();
+                        let __t100 = v_V924.clone();
                         rt::tl(&__t100)?
                     };
                     let __t103 = {
@@ -704,19 +704,19 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V901 = args[0].clone();
+    let mut v_V925 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         {
-            let v_W902 = {
+            let v_W926 = {
                 let __t106 = {
                     rt::make_aot_closure(
                         "<lambda>",
                         1,
                         move |interp, args| {
-                            let v_Z903 = args[0].clone();
+                            let v_Z927 = args[0].clone();
                             Ok({
-                                let __t105 = v_Z903.clone();
+                                let __t105 = v_Z927.clone();
                                 rt::apply_direct(interp, "shen.lambda-entry", &[__t105])?
                             })
                         },
@@ -724,7 +724,7 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                         interp,
                     )
                 };
-                let __t107 = v_V901.clone();
+                let __t107 = v_V925.clone();
                 rt::apply_direct(interp, "map", &[__t106, __t107])?
             };
             break Ok({
@@ -733,9 +733,9 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                         "<lambda>",
                         1,
                         move |interp, args| {
-                            let v_Z904 = args[0].clone();
+                            let v_Z928 = args[0].clone();
                             Ok({
-                                let __t108 = v_Z904.clone();
+                                let __t108 = v_Z928.clone();
                                 rt::apply_direct(interp, "shen.set-lambda-form-entry", &[__t108])?
                             })
                         },
@@ -751,9 +751,9 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                                 "<lambda>",
                                 1,
                                 move |interp, args| {
-                                    let v_Z905 = args[0].clone();
+                                    let v_Z929 = args[0].clone();
                                     Ok({
-                                        let __t111 = v_Z905.clone();
+                                        let __t111 = v_Z929.clone();
                                         rt::apply_direct(interp, "shen.tuple", &[__t111])?
                                     })
                                 },
@@ -771,9 +771,9 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                                     "<lambda>",
                                     1,
                                     move |interp, args| {
-                                        let v_Z906 = args[0].clone();
+                                        let v_Z930 = args[0].clone();
                                         Ok({
-                                            let __t115 = v_Z906.clone();
+                                            let __t115 = v_Z930.clone();
                                             rt::apply_direct(interp, "shen.pvar", &[__t115])?
                                         })
                                     },
@@ -791,9 +791,9 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                                         "<lambda>",
                                         1,
                                         move |interp, args| {
-                                            let v_Z907 = args[0].clone();
+                                            let v_Z931 = args[0].clone();
                                             Ok({
-                                                let __t119 = v_Z907.clone();
+                                                let __t119 = v_Z931.clone();
                                                 rt::apply_direct(
                                                     interp,
                                                     "shen.dictionary",
@@ -816,9 +816,9 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                                             "<lambda>",
                                             1,
                                             move |interp, args| {
-                                                let v_Z908 = args[0].clone();
+                                                let v_Z932 = args[0].clone();
                                                 Ok({
-                                                    let __t123 = v_Z908.clone();
+                                                    let __t123 = v_Z932.clone();
                                                     rt::apply_direct(
                                                         interp,
                                                         "shen.print-prolog-vector",
@@ -841,9 +841,9 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                                                 "<lambda>",
                                                 1,
                                                 move |interp, args| {
-                                                    let v_Z909 = args[0].clone();
+                                                    let v_Z933 = args[0].clone();
                                                     Ok({
-                                                        let __t127 = v_Z909.clone();
+                                                        let __t127 = v_Z933.clone();
                                                         rt::apply_direct(
                                                             interp,
                                                             "shen.print-freshterm",
@@ -865,9 +865,9 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                                                     "<lambda>",
                                                     1,
                                                     move |interp, args| {
-                                                        let v_Z910 = args[0].clone();
+                                                        let v_Z934 = args[0].clone();
                                                         Ok({
-                                                            let __t131 = v_Z910.clone();
+                                                            let __t131 = v_Z934.clone();
                                                             rt::apply_direct(
                                                                 interp,
                                                                 "shen.printF",
@@ -881,7 +881,7 @@ pub fn aot_shen_x2e_build_x2d_lambda_x2d_table(
                                             };
                                             rt::cons(&__t130, &__t132)
                                         };
-                                        let __t134 = v_W902.clone();
+                                        let __t134 = v_W926.clone();
                                         rt::cons(&__t133, &__t134)
                                     };
                                     rt::cons(&__t129, &__t135)

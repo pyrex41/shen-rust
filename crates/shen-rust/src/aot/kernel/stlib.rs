@@ -30739,21 +30739,21 @@ pub fn aot_stlib_x2e_initialise_x2d_final(
     loop {
         {
             let _ = {
-                let v_external = {
+                let v_External = {
                     let __t6910 = Value::sym(interp.intern("stlib"));
                     rt::apply_direct(interp, "external", &[__t6910])?
                 };
                 {
-                    let v_externalf = {
+                    let v_ExternalF = {
                         let __t6914 = {
                             rt::make_aot_closure(
                                 "<lambda>",
                                 1,
                                 move |interp, args| {
-                                    let v_x = args[0].clone();
+                                    let v_X = args[0].clone();
                                     Ok({
                                         let __t6912 = {
-                                            let __t6911 = v_x.clone();
+                                            let __t6911 = v_X.clone();
                                             rt::apply_direct(interp, "arity", &[__t6911])?
                                         };
                                         let __t6913 = Value::int(-1i64);
@@ -30764,11 +30764,11 @@ pub fn aot_stlib_x2e_initialise_x2d_final(
                                 interp,
                             )
                         };
-                        let __t6915 = v_external.clone();
+                        let __t6915 = v_External.clone();
                         rt::apply_direct(interp, "filter", &[__t6914, __t6915])?
                     };
                     {
-                        let v_systemf_x2d_result = {
+                        let v_SystemfResult = {
                             let __t6917 = {
                                 rt::make_aot_closure(
                                     "<lambda>",
@@ -30784,7 +30784,7 @@ pub fn aot_stlib_x2e_initialise_x2d_final(
                                     interp,
                                 )
                             };
-                            let __t6918 = v_externalf.clone();
+                            let __t6918 = v_ExternalF.clone();
                             rt::apply_direct(interp, "map", &[__t6917, __t6918])?
                         };
                         Value::sym(interp.intern("ok"))
