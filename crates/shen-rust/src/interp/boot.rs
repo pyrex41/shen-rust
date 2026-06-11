@@ -180,6 +180,100 @@ pub fn boot_with_kernel(interp: &mut Interp, kernel_dir: &Path) -> ShenResult<()
     Ok(())
 }
 
+/// Boot-from-subset (Yggdrasil stage 2): bring up an interpreter from a
+/// single shaken `kernel.kl` (KL source text) instead of the 21 vendored
+/// kernel files. The sequence mirrors `boot_with_kernel` exactly, minus
+/// the on-disk kernel dir, the JIT tier, and the tc-cache:
+///
+/// 1. port metadata / home dir / standard streams,
+/// 2. tree-walk every form in `kernel_src` (defuns only, per the 41.1
+///    contract — registering closures is cheap),
+/// 3. `(shen.initialise)`,
+/// 4. primitive arity / `shen.lambda-form` metadata on `*property-vector*`,
+/// 5. the caller's AOT installer (klcompile output for the same shaken
+///    kernel) over the tree-walked closures — partial coverage is fine,
+///    skipped defuns stay tree-walked,
+/// 6. `register_hot_overrides` LAST so the native fast paths
+///    (`shen.lazyderef`, `shen.pvar?`, `fail`, …) shadow the AOT defuns.
+pub fn boot_from_kl_source(
+    interp: &mut Interp,
+    kernel_src: &str,
+    install_aot: Option<fn(&mut Interp)>,
+) -> ShenResult<()> {
+    crate::interp::guard_types_link::witness();
+
+    set_port_metadata(interp);
+    set_home_directory(interp)?;
+    set_standard_streams(interp);
+
+    eval_kl_source(interp, kernel_src, "shaken kernel", &[])?;
+
+    run_shen_initialise(interp)?;
+    register_all_metadata(interp)?;
+
+    if let Some(install) = install_aot {
+        install(interp);
+    }
+
+    crate::primitives::register_hot_overrides(interp);
+    Ok(())
+}
+
+/// Parse `src` as KL and evaluate every top-level form in order, except
+/// `(defun NAME …)` forms whose NAME is in `skip_defuns` (used by the
+/// Yggdrasil builder to avoid re-tree-walking defuns its generated AOT
+/// module already registered). `label` is used in error messages only.
+pub fn eval_kl_source(
+    interp: &mut Interp,
+    src: &str,
+    label: &str,
+    skip_defuns: &[&str],
+) -> ShenResult<()> {
+    let forms = parse_all(src, &mut interp.symbols)
+        .map_err(|e| ShenError::new(format!("parse {label}: {e}")))?;
+    for (i, form) in forms.iter().enumerate() {
+        if !skip_defuns.is_empty() {
+            if let Some(name) = top_level_defun_name(interp, form) {
+                if skip_defuns.iter().any(|s| *s == name) {
+                    continue;
+                }
+            }
+        }
+        interp
+            .eval(form)
+            .map_err(|e| ShenError::new(format!("{label}: form {} (1-based): {e}", i + 1)))?;
+    }
+    Ok(())
+}
+
+/// If `form` is `(defun NAME …)`, return NAME's text.
+fn top_level_defun_name(interp: &Interp, form: &crate::kl::ast::KlExpr) -> Option<String> {
+    use crate::kl::ast::KlExpr;
+    let KlExpr::App(items) = form else { return None };
+    if items.len() != 4 {
+        return None;
+    }
+    let KlExpr::Sym(head) = &items[0] else {
+        return None;
+    };
+    if interp.resolve(*head) != "defun" {
+        return None;
+    }
+    let KlExpr::Sym(name) = &items[1] else {
+        return None;
+    };
+    Some(interp.resolve(*name).to_string())
+}
+
+/// Publish `arity` + `shen.lambda-form` entries on `*property-vector*`
+/// for already-registered functions, exactly as `register_all_metadata`
+/// does for primitives. The Yggdrasil builder calls this for user defuns
+/// (manifest `fn=` lines) after installing their AOT module, so
+/// `(fn NAME)` / partial application resolve for user code too.
+pub fn register_fn_metadata(interp: &mut Interp, fns: &[(&str, usize)]) -> ShenResult<()> {
+    register_metadata_entries(interp, fns.iter().copied())
+}
+
 /// Bind `*stinput*`, `*stoutput*`, `*sterror*` to host stdio streams.
 /// The kernel reads these inside `shen.initialise` to install the default
 /// `stinput`/`stoutput` global accessor functions.
@@ -283,6 +377,17 @@ fn run_shen_initialise(interp: &mut Interp) -> ShenResult<()> {
 /// when the primitive has positive arity, `(put NAME 'shen.lambda-form
 /// CLOSURE *pv*)` so `(fn NAME)` lookups succeed.
 fn register_all_metadata(interp: &mut Interp) -> ShenResult<()> {
+    let all = PRIMITIVE_METADATA
+        .iter()
+        .chain(crate::cedar::primitives::CEDAR_PRIMITIVES.iter())
+        .map(|(name, arity)| (*name, *arity));
+    register_metadata_entries(interp, all)
+}
+
+fn register_metadata_entries<'a>(
+    interp: &mut Interp,
+    entries: impl Iterator<Item = (&'a str, usize)>,
+) -> ShenResult<()> {
     let pv_sym = interp.intern("*property-vector*");
     let pv = match interp.env.get_global(pv_sym).cloned() {
         Some(v) => v,
@@ -296,10 +401,7 @@ fn register_all_metadata(interp: &mut Interp) -> ShenResult<()> {
     let arity_sym = interp.intern("arity");
     let lambda_form_sym = interp.intern("shen.lambda-form");
 
-    let all = PRIMITIVE_METADATA
-        .iter()
-        .chain(crate::cedar::primitives::CEDAR_PRIMITIVES.iter());
-    for (name, arity) in all {
+    for (name, arity) in entries {
         let name_sym = interp.intern(name);
         let closure = match interp.env.get_fn(name_sym).cloned() {
             Some(v) => v,
@@ -309,13 +411,13 @@ fn register_all_metadata(interp: &mut Interp) -> ShenResult<()> {
         let args = vec![
             Value::sym(name_sym),
             Value::sym(arity_sym),
-            Value::int(*arity as i64),
+            Value::int(arity as i64),
             pv.clone(),
         ];
         interp
             .apply(put.clone(), args)
             .map_err(|e| ShenError::new(format!("register arity for {name}: {e}")))?;
-        if *arity > 0 {
+        if arity > 0 {
             // (put NAME 'shen.lambda-form CLOSURE *pv*)
             let args = vec![
                 Value::sym(name_sym),
