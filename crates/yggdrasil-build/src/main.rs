@@ -60,10 +60,10 @@ fn parse_manifest(path: &Path) -> Result<Manifest, String> {
             ));
         };
         match key {
-            "manifest-version" => {
-                if value != "2" {
-                    return Err(format!("unsupported manifest-version {value:?} (expected 2)"));
-                }
+            "manifest-version" if value != "2" => {
+                return Err(format!(
+                    "unsupported manifest-version {value:?} (expected 2)"
+                ));
             }
             "kernel" => m.kernel = value.to_string(),
             "init" => m.init = value.to_string(),
@@ -112,7 +112,13 @@ fn compile_options(label: &str) -> CompileOptions {
 fn ident_suffix(stem: &str) -> String {
     let mut s: String = stem
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() { c.to_ascii_lowercase() } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() {
+                c.to_ascii_lowercase()
+            } else {
+                '_'
+            }
+        })
         .collect();
     if s.chars().next().is_none_or(|c| c.is_ascii_digit()) {
         s.insert(0, 'f');
@@ -151,7 +157,10 @@ fn shen_rust_path() -> Result<PathBuf, String> {
         if p.join("Cargo.toml").exists() {
             return Ok(p);
         }
-        return Err(format!("YGGDRASIL_SHEN_RUST={}: no Cargo.toml there", p.display()));
+        return Err(format!(
+            "YGGDRASIL_SHEN_RUST={}: no Cargo.toml there",
+            p.display()
+        ));
     }
     let here = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let candidate = here.join("..").join("shen-rust");
@@ -188,7 +197,7 @@ fn run() -> Result<(), String> {
     let manifest_path = shaken.join("yggdrasil.manifest.txt");
     let manifest = parse_manifest(&manifest_path)?;
     if manifest.init != "shen.initialise" {
-        // boot_from_kl_source hard-codes shen.initialise (41.1 contract).
+        // boot_from_kl_source hard-codes shen.initialise (41.x contract).
         return Err(format!("unsupported init function {:?}", manifest.init));
     }
 
@@ -204,8 +213,8 @@ fn run() -> Result<(), String> {
         .map_err(|e| format!("write kernel.kl: {e}"))?;
 
     let opts = compile_options(&format!("{} (Yggdrasil shaken kernel)", manifest.kernel));
-    let (kernel_module, kernel_report) =
-        compile_kl(&kernel_src, &opts).map_err(|e| format!("klcompile {}: {e}", manifest.kernel))?;
+    let (kernel_module, kernel_report) = compile_kl(&kernel_src, &opts)
+        .map_err(|e| format!("klcompile {}: {e}", manifest.kernel))?;
     fs::write(src_dir.join("kernel_aot.rs"), kernel_module)
         .map_err(|e| format!("write kernel_aot.rs: {e}"))?;
     eprintln!(
@@ -284,7 +293,10 @@ codegen-units = 1
     fs::write(outdir.join(".gitignore"), "/target\n").ok();
 
     eprintln!("scaffolded {}", outdir.display());
-    eprintln!("build: cargo build --release --manifest-path {}/Cargo.toml", outdir.display());
+    eprintln!(
+        "build: cargo build --release --manifest-path {}/Cargo.toml",
+        outdir.display()
+    );
     Ok(())
 }
 
