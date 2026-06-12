@@ -180,7 +180,7 @@ pub fn boot_with_kernel(interp: &mut Interp, kernel_dir: &Path) -> ShenResult<()
     Ok(())
 }
 
-/// Boot-from-subset (Yggdrasil stage 2): bring up an interpreter from a
+/// Boot-from-subset (Ratatoskr stage 2): bring up an interpreter from a
 /// single shaken `kernel.kl` (KL source text) instead of the 21 vendored
 /// kernel files. The sequence mirrors `boot_with_kernel` exactly, minus
 /// the on-disk kernel dir, the JIT tier, and the tc-cache:
@@ -221,7 +221,7 @@ pub fn boot_from_kl_source(
 
 /// Parse `src` as KL and evaluate every top-level form in order, except
 /// `(defun NAME …)` forms whose NAME is in `skip_defuns` (used by the
-/// Yggdrasil builder to avoid re-tree-walking defuns its generated AOT
+/// Ratatoskr builder to avoid re-tree-walking defuns its generated AOT
 /// module already registered). `label` is used in error messages only.
 pub fn eval_kl_source(
     interp: &mut Interp,
@@ -269,7 +269,7 @@ fn top_level_defun_name(interp: &Interp, form: &crate::kl::ast::KlExpr) -> Optio
 
 /// Publish `arity` + `shen.lambda-form` entries on `*property-vector*`
 /// for already-registered functions, exactly as `register_all_metadata`
-/// does for primitives. The Yggdrasil builder calls this for user defuns
+/// does for primitives. The Ratatoskr builder calls this for user defuns
 /// (manifest `fn=` lines) after installing their AOT module, so
 /// `(fn NAME)` / partial application resolve for user code too.
 pub fn register_fn_metadata(interp: &mut Interp, fns: &[(&str, usize)]) -> ShenResult<()> {
