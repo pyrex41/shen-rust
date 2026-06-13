@@ -483,23 +483,24 @@ fn register_core(interp: &mut Interp) {
     });
 
     // --- I/O streams ---
-    interp.register_native("open", 2, |_, args| {
-        match (args[0].as_str(), args[1].is_sym()) {
-            (Some(path), true) => {
+    interp.register_native("open", 2, |interp, args| {
+        match (args[0].as_str(), args[1].as_sym()) {
+            (Some(path), Some(mode)) => {
                 // Direction is encoded in the mode symbol (`in` / `out`).
-                // We accept the symbol name only — minimal v0 surface.
-                //
-                // We don't have interp here, so we can't resolve the symbol
-                // name. Use a heuristic: if path exists, open read; else open
-                // write. Real semantics come once we route interp through.
-                if let Ok(f) = std::fs::File::open(path) {
-                    let stream = Stream::In(Box::new(f) as Box<dyn Read>);
-                    Ok(Value::stream(Rc::new(RefCell::new(stream))))
-                } else {
-                    let f = std::fs::File::create(path)
-                        .map_err(|e| ShenError::new(format!("open: {e}")))?;
-                    let stream = Stream::Out(Box::new(f) as Box<dyn std::io::Write>);
-                    Ok(Value::stream(Rc::new(RefCell::new(stream))))
+                match interp.resolve(mode) {
+                    "in" => {
+                        let f = std::fs::File::open(path)
+                            .map_err(|e| ShenError::new(format!("open: {path}: {e}")))?;
+                        let stream = Stream::In(Box::new(f) as Box<dyn Read>);
+                        Ok(Value::stream(Rc::new(RefCell::new(stream))))
+                    }
+                    "out" => {
+                        let f = std::fs::File::create(path)
+                            .map_err(|e| ShenError::new(format!("open: {path}: {e}")))?;
+                        let stream = Stream::Out(Box::new(f) as Box<dyn std::io::Write>);
+                        Ok(Value::stream(Rc::new(RefCell::new(stream))))
+                    }
+                    other => Err(ShenError::new(format!("open: invalid direction: {other}"))),
                 }
             }
             _ => Err(ShenError::new(format!(

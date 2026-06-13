@@ -62,6 +62,32 @@ fn main() -> ExitCode {
             .expect("spawn kernel-tests thread");
         return handle.join().unwrap_or(ExitCode::from(2));
     }
+    // Standard Shen launcher protocol (extension-launcher.kl):
+    //   shen-rust eval [-q] [-l FILE] [-e EXPR] [-s KEY VALUE] [-r] ...
+    //   shen-rust script FILE [ARGS...]
+    //   shen-rust repl
+    //   shen-rust --help | --version
+    // Dispatched to the kernel's own `shen.x.launcher.launch-shen` — the
+    // same wiring shen-cl and ShenScript use. Existing entry points above
+    // (`--served`, `--aot-gen`, `--kernel-tests`, bare REPL) keep their
+    // behavior; only these launcher entry words route here.
+    if args.get(1).is_some_and(|a| {
+        matches!(
+            a.as_str(),
+            "eval" | "script" | "repl" | "--help" | "--version"
+        )
+    }) {
+        // Same deep-recursion story as --kernel-tests: loaded user code
+        // (e.g. the Ratatoskr shaker walking the kernel call graph)
+        // recurses through non-self-tail-call frames well past the
+        // default 8 MB. Give the launcher thread 1 GB.
+        let handle = std::thread::Builder::new()
+            .name("launcher".to_string())
+            .stack_size(1024 * 1024 * 1024)
+            .spawn(move || run_launcher(&args))
+            .expect("spawn launcher thread");
+        return handle.join().unwrap_or(ExitCode::from(2));
+    }
     // Same stack-size workaround for the REPL: `(load "...")`-ing any
     // user code that runs through the type-checker tends to recurse
     // through enough non-self-tail-call frames to blow the default
@@ -88,6 +114,62 @@ fn run_repl() -> ExitCode {
         return ExitCode::from(1);
     }
     ExitCode::SUCCESS
+}
+
+/// Hand argv to the kernel's standard launcher (extension-launcher.kl):
+/// `(shen.x.launcher.launch-shen ["shen-rust" ARGS...])` parses and runs
+/// the command list and returns a result tagged `success` / `error` /
+/// `show-help` / `unknown-arguments` / `launch-repl`. Non-REPL results
+/// are rendered by the kernel's own `shen.x.launcher.default-handle-result`
+/// and the tag is mapped onto the process exit code; `launch-repl` drops
+/// into this binary's own REPL loop on the already-booted interpreter.
+fn run_launcher(args: &[String]) -> ExitCode {
+    let mut interp = Interp::new();
+    if let Err(e) = boot(&mut interp) {
+        eprintln!("shen-rust: kernel boot failed: {e}");
+        return ExitCode::from(2);
+    }
+    let argv = Value::list(
+        std::iter::once("shen-rust")
+            .map(Value::str)
+            .chain(args[1..].iter().map(|s| Value::str(s.as_str()))),
+    );
+    let launch = interp.intern("shen.x.launcher.launch-shen");
+    let Some(f) = interp.env.get_fn(launch).cloned() else {
+        eprintln!("shen-rust: shen.x.launcher.launch-shen is not defined");
+        return ExitCode::from(2);
+    };
+    let result = match interp.apply(f, vec![argv]) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("shen-rust: {e}");
+            return ExitCode::from(1);
+        }
+    };
+    let tag = result
+        .head()
+        .and_then(|h| h.as_sym())
+        .map(|s| interp.resolve(s).to_string())
+        .unwrap_or_default();
+    if tag == "launch-repl" {
+        print_banner(&interp);
+        if let Err(e) = repl_loop(&mut interp) {
+            eprintln!("repl: {e}");
+            return ExitCode::from(1);
+        }
+        return ExitCode::SUCCESS;
+    }
+    let handler = interp.intern("shen.x.launcher.default-handle-result");
+    if let Some(h) = interp.env.get_fn(handler).cloned() {
+        if let Err(e) = interp.apply(h, vec![result]) {
+            eprintln!("shen-rust: {e}");
+            return ExitCode::from(1);
+        }
+    }
+    match tag.as_str() {
+        "error" | "unknown-arguments" => ExitCode::from(1),
+        _ => ExitCode::SUCCESS,
+    }
 }
 
 /// The canonical AOT-overlay generation recipe (see `aot::overlay` docs):

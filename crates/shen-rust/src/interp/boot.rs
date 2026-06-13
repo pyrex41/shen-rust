@@ -97,7 +97,9 @@ const PRIMITIVE_METADATA: &[(&str, usize)] = &[
 /// Locate the vendored `kernel/klambda` directory. Search order:
 /// 1. `SHEN_KERNEL_DIR` env var.
 /// 2. Walk parents looking for `kernel/klambda/core.kl`.
-/// 3. CWD-relative candidates.
+/// 3. Walk parents of the executable's directory (so `shen-rust eval …`
+///    works from any cwd — e.g. hosting Ratatoskr from its own repo).
+/// 4. CWD-relative candidates.
 pub fn find_kernel_dir() -> ShenResult<PathBuf> {
     if let Ok(dir) = std::env::var("SHEN_KERNEL_DIR") {
         let p = PathBuf::from(dir);
@@ -114,6 +116,19 @@ pub fn find_kernel_dir() -> ShenResult<PathBuf> {
         }
         if !dir.pop() {
             break;
+        }
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        let mut dir = exe;
+        dir.pop(); // strip the binary name
+        for _ in 0..12 {
+            let candidate = dir.join("kernel").join("klambda");
+            if candidate.join("core.kl").exists() {
+                return Ok(candidate);
+            }
+            if !dir.pop() {
+                break;
+            }
         }
     }
     let last = cwd.join("kernel").join("klambda");

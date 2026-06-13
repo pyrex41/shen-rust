@@ -28,6 +28,17 @@ cargo run --release --bin shen-rust -- --served
 
 # Run the upstream Shen kernel conformance suite (expect 134/0)
 cargo run --release --bin shen-rust -- --kernel-tests
+
+# Standard Shen launcher protocol (extension-launcher.kl), as in shen-cl:
+#   shen-rust eval [-q] [-l FILE] [-e EXPR] [-s KEY VALUE] [-r]
+#   shen-rust script FILE [ARGS...]
+#   shen-rust repl | --help | --version
+# e.g. host stage 1 of the Ratatoskr tree-shaker from its repo root:
+#   shen-rust eval -l ratatoskr.shen -e '(ratatoskr.shake ["tests/fib.shen"] "out")'
+# (note: omit -q for workloads that write files through `pr` — upstream
+#  *hush* semantics silence `pr` on every stream, unlike shen-cl whose
+#  native pr override ignores *hush* entirely)
+target/release/shen-rust eval -e "(+ 1 2)"
 ```
 
 Rustup users get the pinned toolchain from `rust-toolchain.toml`
