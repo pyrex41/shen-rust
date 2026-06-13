@@ -182,6 +182,36 @@ and the GC / value-representation / JIT ladder live in `PERFORMANCE.md`,
 ./scripts/gates.sh    # full CI: fmt+clippy, build, test, shen-check, audits, kernel-tests
 ```
 
+### Two test tiers (port vs. canonical)
+
+The suite is split into two distinct tiers, kept separate on purpose:
+
+- **Port-authored tests** — `cargo test --workspace`. Rust unit tests plus the
+  integration suites under `crates/shen-rust/tests/`. These are OURS: they
+  exercise the evaluator, primitives, I/O, error catchability, the
+  reader/eval robustness corpus, the stdlib, the bytecode-VM differential, and
+  the CLI launcher. The port-authored suites that mirror the shen-go test
+  layout, category for category, are:
+
+  | file | covers |
+  | --- | --- |
+  | `cli_launcher.rs` | spawns the release binary: `eval -e`/`-l`, `script`, `--version`/`--help`, piped-EOF clean exit (timeout-guarded), the `-q`/`*hush*` file-write divergence, adversarial input without a backtrace |
+  | `primitives_coverage.rs` | 50+ assertions over the native KL primitives via `Interp::eval` (arithmetic/float, cons/hd/tl, predicates, string ops, intern/value/set, absvector, hash, get-time) |
+  | `io_coverage.rs` | open/close, write→read round trip, read-byte EOF = −1, read-file, get-time |
+  | `error_robustness.rs` | the error-catchability contract on BOTH the tree-walker and the bytecode-VM path |
+  | `reader_fuzz.rs` | a deterministic seeded corpus of malformed input through reader+eval; asserts no panic, only catchable errors (no `rand`, no cargo-fuzz) |
+  | `library.rs` | booted-kernel stdlib functions (reverse/append/map/remove/element?/length/…) |
+
+- **Canonical kernel suite** — the `kernel-tests` gate (`scripts/kernel-tests.sh`).
+  This runs the VENDORED ShenOSKernel conformance suite (`kernel/tests/`,
+  134 tests) end to end through the binary and is NOT modified by the port.
+  It is the conformance bar; the port-authored tier is the regression net
+  around the parts the kernel suite doesn't reach (CLI, adversarial inputs,
+  the VM path, I/O edges).
+
+Coverage of the port-authored tier: `scripts/coverage.sh` (a `cargo-llvm-cov`
+wrapper that skips gracefully if the tool isn't installed).
+
 ## License
 
 [BSD-3-Clause](LICENSE) for the port code (© 2026 Reuben Brooks). The vendored
