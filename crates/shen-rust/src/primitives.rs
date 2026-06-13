@@ -90,6 +90,69 @@ pub fn register_hot_overrides(interp: &mut Interp) {
 
     interp.register_native("read-file-as-string", 1, hot_read_file_as_string);
     interp.register_aot_direct("read-file-as-string", hot_read_file_as_string);
+
+    // pr — print a string to a stream. The canonical kernel `pr` gates the
+    // *whole* write on `*hush*` (see kernel/klambda/writer.kl), so under
+    // `-q` / `(set *hush* true)` even a write to an explicitly-opened file
+    // stream is silently dropped, producing zero-byte files (issue #2).
+    // That gate is only meant to silence interactive console chatter, so we
+    // consult `*hush*` ONLY when the target is the standard output stream;
+    // writes to any other (file) stream always occur. See #2.
+    interp.register_native("pr", 2, hot_pr);
+    interp.register_aot_direct("pr", hot_pr);
+}
+
+/// pr — write the string `args[0]` to the output stream `args[1]`, honouring
+/// `*hush*` only for the standard output stream (issue #2). Returns the
+/// original string, matching the kernel contract.
+fn hot_pr(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
+    let s = match args[0].as_str() {
+        Some(s) => s.to_string(),
+        None => {
+            return Err(ShenError::new(format!(
+                "pr: arg 1 not a string: {:?}",
+                args[0]
+            )))
+        }
+    };
+    let target = match args[1].as_stream() {
+        Some(t) => t,
+        None => {
+            return Err(ShenError::new(format!(
+                "pr: arg 2 not a stream: {:?}",
+                args[1]
+            )))
+        }
+    };
+
+    // Suppress the write only when `*hush*` is set AND the target is the
+    // standard output stream. File (and other) streams always get written.
+    let hush_sym = interp.intern("*hush*");
+    let hush = matches!(
+        interp.env.get_global(hush_sym).and_then(|v| v.as_bool()),
+        Some(true)
+    );
+    if hush {
+        let stout_sym = interp.intern("*stoutput*");
+        let is_stdout = interp
+            .env
+            .get_global(stout_sym)
+            .and_then(|v| v.as_stream())
+            .is_some_and(|out| Rc::ptr_eq(&out, &target));
+        if is_stdout {
+            return Ok(args[0]);
+        }
+    }
+
+    let mut stream = target.borrow_mut();
+    match &mut *stream {
+        Stream::Out(w) => {
+            w.write_all(s.as_bytes())
+                .map_err(|e| ShenError::new(format!("pr: {e}")))?;
+        }
+        _ => return Err(ShenError::new("pr: not an output stream")),
+    }
+    Ok(args[0])
 }
 
 // --- hot-override bodies (DirectFn-compatible plain fns) ---
