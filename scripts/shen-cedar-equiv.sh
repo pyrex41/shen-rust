@@ -1,5 +1,5 @@
 #!/bin/bash
-# Gate 8: codegen-equivalence examples for shen-cedar-authz.
+# Gate 10: codegen-equivalence examples for shen-cedar-authz.
 #
 # Runs the `equiv` example, and the `reaches_equiv` example if present,
 # under shen-cedar-authz. Exits non-zero if any invoked example fails.

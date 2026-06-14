@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run all five backpressure gates in order. Mirror of `shen-ocaml`'s
+# Run all backpressure gates (0–10) in order. Mirror of `shen-ocaml`'s
 # Makefile + bin/ralph.sh gate sequence, adapted for cargo.
 set -euo pipefail
 
