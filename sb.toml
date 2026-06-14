@@ -26,6 +26,7 @@ build   = "cargo build --workspace"
 test    = "cargo test --workspace"
 shen    = "scripts/shen-check.sh"
 audit   = "scripts/tcb-audit.sh"
+equiv   = "scripts/shen-cedar-equiv.sh"
 run_all = "scripts/gates.sh"
 
 [tcb]

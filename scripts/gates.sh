@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run all five backpressure gates in order. Mirror of `shen-ocaml`'s
+# Run all backpressure gates (0–10) in order. Mirror of `shen-ocaml`'s
 # Makefile + bin/ralph.sh gate sequence, adapted for cargo.
 set -euo pipefail
 
@@ -38,6 +38,7 @@ run "Gate 6: kernel-aot-audit" scripts/kernel-aot-audit.sh
 run "Gate 7: kernel-tests (canonical)" scripts/kernel-tests.sh
 run "Gate 8: kernel-tests-debug" scripts/kernel-tests.sh --debug
 run "Gate 9: kernel-tests-debug-gc" scripts/kernel-tests.sh --debug-gc
+run "Gate 10: cedar-equiv"    scripts/shen-cedar-equiv.sh
 
 echo
 if [ ${#fail[@]} -eq 0 ]; then
