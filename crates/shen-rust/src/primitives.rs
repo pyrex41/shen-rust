@@ -439,8 +439,13 @@ fn register_core(interp: &mut Interp) {
     });
 
     // --- vectors (absvectors) ---
+    // Cap oversized requests so an absurd size raises a CATCHABLE Shen error
+    // instead of OOM-aborting the whole process (e.g. `(absvector 100000000000)`
+    // from the reader-fuzz corpus). 2^24 (~16.7M slots) is ~800x the largest
+    // vector the kernel itself allocates; mirrors shen-go and shen-cl (#3).
+    const MAX_ABSVECTOR: i64 = 1 << 24;
     interp.register_native("absvector", 1, |_, args| match args[0].as_int() {
-        Some(n) if n >= 0 => {
+        Some(n) if (0..=MAX_ABSVECTOR).contains(&n) => {
             let len = n as usize;
             let cells = vec![Value::sym(crate::symbol::SymId(0)); len];
             // Will be overwritten with an "uninitialized" sentinel in
@@ -449,6 +454,9 @@ fn register_core(interp: &mut Interp) {
             // WellKnown ordering — harmless for the kernel).
             Ok(Value::absvector(cells))
         }
+        Some(n) if n > MAX_ABSVECTOR => Err(ShenError::new(format!(
+            "absvector size {n} out of range (0..{MAX_ABSVECTOR})"
+        ))),
         _ => Err(ShenError::new(format!("absvector: bad arg: {:?}", args[0]))),
     });
     interp.register_native("<-address", 2, |_, args| {

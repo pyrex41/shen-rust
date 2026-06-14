@@ -248,6 +248,16 @@ fn absvector_out_of_range_errors() {
     // Reading past the end is a catchable error, not a panic.
     assert!(run(&mut i, "(<-address (absvector 2) 5)").is_err());
     assert!(run(&mut i, "(address-> (absvector 2) 5 1)").is_err());
+    // An absurd size is a catchable error (capped), not an OOM abort.
+    assert!(run(&mut i, "(absvector 100000000000)").is_err());
+    assert!(run(
+        &mut i,
+        "(trap-error (absvector 100000000000) (lambda E true))"
+    )
+    .is_ok());
+    // The cap boundary and legitimate sizes still succeed.
+    assert!(run(&mut i, "(absvector 16777216)").is_ok());
+    assert!(run(&mut i, "(absvector 8)").is_ok());
 }
 
 // ---------------------------------------------------------------------------
