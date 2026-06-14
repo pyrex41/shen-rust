@@ -3,15 +3,17 @@
 //! Mirror of shen-go's `cmd/shen/main_test.go`: spawn the real release
 //! binary and exercise the launcher protocol — `eval -e EXPR`, `eval -l
 //! FILE`, `script FILE`, `--version` / `--help`, piping EOF, the `-q`
-//! file-write divergence, and adversarial input.
+//! file-write behavior, and adversarial input.
+//!
+//!   * `-q` (which sets `*hush*`): `*hush*` only silences chatter on the
+//!     standard output stream. A `pr` to an explicitly-opened file stream is
+//!     always written, with or without `-q` — matching shen-cl/shen-go. We
+//!     assert the file IS written in BOTH cases (issue #2 fixed a prior bug
+//!     where `-q` dropped the write, producing zero-byte files).
 //!
 //! DIVERGENCES from shen-go, locked in with comments (the spec requires the
 //! port's CORRECT documented behavior, not faked parity):
 //!
-//!   * `-q` (which sets `*hush*`): on shen-rust `-q` SILENCES `pr` writes to
-//!     file streams (zero-byte files), whereas shen-cl/shen-go route `pr` to
-//!     files regardless. We assert the file IS written WITHOUT `-q`, and is
-//!     EMPTY (or the process still succeeds) WITH `-q`.
 //!   * Adversarial `eval -e`: shen-rust prints the error to stderr and the
 //!     launcher exits SUCCESS (it does not map an eval error to a nonzero
 //!     code the way shen-go does). We assert the error message is reported
@@ -235,12 +237,13 @@ fn piped_stdin_eof_exits_cleanly() {
     );
 }
 
-/// The `-q` / `*hush*` divergence, locked in as shen-rust's CORRECT
-/// documented behavior. WITHOUT `-q`, `pr` to a file stream writes the
-/// payload. WITH `-q`, `*hush*` silences `pr` to file streams (zero-byte
-/// file) — this is the cross-impl divergence the spec calls out.
+/// Regression for issue #2: `-q` (`*hush*`) must NOT silence `pr` writes to
+/// file streams. `*hush*` only suppresses chatter on the standard output
+/// stream; an explicitly-opened file stream is always written, with or
+/// without `-q` — matching shen-cl / shen-go. (Previously shen-rust dropped
+/// the write under `-q`, producing zero-byte files.)
 #[test]
-fn quiet_silences_pr_to_file_but_default_writes() {
+fn quiet_does_not_silence_pr_to_file() {
     let dir = std::env::temp_dir().join(format!("shen-rust-cli-hush-{}", std::process::id()));
     std::fs::create_dir_all(&dir).ok();
 
@@ -260,8 +263,8 @@ fn quiet_silences_pr_to_file_but_default_writes() {
         "without -q, pr must write the payload to the file"
     );
 
-    // --- WITH -q: *hush* silences the pr write (documented shen-rust
-    //     divergence). The process still succeeds; the file is empty. ---
+    // --- WITH -q: the file is STILL written (issue #2 regression). `*hush*`
+    //     only silences the standard output stream, never a file stream. ---
     let path_b = dir.join("out_q.txt");
     let expr_b = format!(
         r#"(let S (open "{}" out) (do (pr "payload" S) (close S)))"#,
@@ -270,12 +273,11 @@ fn quiet_silences_pr_to_file_but_default_writes() {
     let o = run(&["eval", "-q", "-e", &expr_b], None, TIMEOUT);
     assert_no_backtrace(&o, "eval -q");
     assert!(o.success, "eval -q failed:\n{}", o.combined);
-    let data_b = std::fs::read(&path_b).unwrap_or_default();
-    assert!(
-        data_b.is_empty(),
-        "shen-rust -q (*hush*) must silence pr to files; got {} bytes: {:?}",
-        data_b.len(),
-        String::from_utf8_lossy(&data_b)
+    let data_b = std::fs::read(&path_b).expect("output file should exist with -q (issue #2)");
+    assert_eq!(
+        String::from_utf8_lossy(&data_b),
+        "payload",
+        "with -q, *hush* must NOT silence pr to a file stream (issue #2)"
     );
 
     std::fs::remove_file(&path_a).ok();
