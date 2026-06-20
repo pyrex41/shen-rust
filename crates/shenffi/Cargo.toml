@@ -1,0 +1,15 @@
+[package]
+name = "shenffi"
+version.workspace = true
+edition.workspace = true
+
+# A thin C-ABI surface over shen-rust, so the interpreter can be embedded in
+# non-Rust hosts (Swift / iOS, etc.) as a static library or framework.
+#   - staticlib -> libshenffi.a   (link into an Xcode app / .xcframework)
+#   - cdylib    -> libshenffi.dylib (handy for desktop linking / testing)
+[lib]
+name = "shenffi"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[dependencies]
+shen-rust = { path = "../shen-rust" }
