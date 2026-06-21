@@ -1322,6 +1322,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "shenffi"
+version = "0.1.0"
+dependencies = [
+ "shen-rust",
+]
+
+[[package]]
 name = "shengen-rust"
 version = "0.1.0"
 
