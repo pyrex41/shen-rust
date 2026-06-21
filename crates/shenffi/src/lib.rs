@@ -120,11 +120,17 @@ pub extern "C" fn shen_boot_shaken(
     if kernel_kl.is_null() {
         return std::ptr::null_mut();
     }
-    let kernel = unsafe { CStr::from_ptr(kernel_kl) }.to_string_lossy().into_owned();
+    let kernel = unsafe { CStr::from_ptr(kernel_kl) }
+        .to_string_lossy()
+        .into_owned();
     let prog = if prog_kl.is_null() {
         None
     } else {
-        Some(unsafe { CStr::from_ptr(prog_kl) }.to_string_lossy().into_owned())
+        Some(
+            unsafe { CStr::from_ptr(prog_kl) }
+                .to_string_lossy()
+                .into_owned(),
+        )
     };
     match boot_shaken_inner(&kernel, prog.as_deref()) {
         Ok(interp) => Box::into_raw(Box::new(ShenCtx { interp })),
@@ -174,7 +180,9 @@ pub extern "C" fn shen_cas_reduce(ctx: *mut ShenCtx, src: *const c_char) -> *mut
         return std::ptr::null_mut();
     }
     let ctx = unsafe { &mut *ctx };
-    let input = unsafe { CStr::from_ptr(src) }.to_string_lossy().into_owned();
+    let input = unsafe { CStr::from_ptr(src) }
+        .to_string_lossy()
+        .into_owned();
     let out = match cas_reduce(&mut ctx.interp, &input) {
         Ok(s) => s,
         Err(e) => format!("error: {e}"),
@@ -205,14 +213,18 @@ fn cas_reduce(interp: &mut Interp, input: &str) -> Result<String, String> {
         .get_fn(reduce_sym)
         .cloned()
         .ok_or_else(|| "reduce is undefined".to_string())?;
-    let nf = interp.apply(reduce_fn, vec![ast]).map_err(|e| e.to_string())?;
+    let nf = interp
+        .apply(reduce_fn, vec![ast])
+        .map_err(|e| e.to_string())?;
 
     let pretty_fn = interp
         .env
         .get_fn(pretty_sym)
         .cloned()
         .ok_or_else(|| "pretty-expr is undefined".to_string())?;
-    let pretty = interp.apply(pretty_fn, vec![nf]).map_err(|e| e.to_string())?;
+    let pretty = interp
+        .apply(pretty_fn, vec![nf])
+        .map_err(|e| e.to_string())?;
 
     let app_fn = interp
         .env
@@ -229,6 +241,35 @@ fn cas_reduce(interp: &mut Interp, input: &str) -> Result<String, String> {
         .ok_or_else(|| "CAS result did not render to a string".to_string())
 }
 
+/// Safe Rust API over the embedded shen-cas — for Rust hosts (e.g. the iced
+/// desktop app) that link this crate as an `rlib` and don't want the C ABI's
+/// raw pointers. Mirrors `shen_cas_boot` / `shen_cas_reduce`.
+///
+/// Note: the CAS reducer is deeply recursive and tree-walked, so both `boot`
+/// and `reduce` should run on a thread with a large stack (~16 MB minimum; the
+/// default 8 MB overflows on boot). See the iced app's worker thread, or
+/// `ShenCAS.swift` on the Swift side, for the pattern.
+pub struct CasEngine {
+    interp: Interp,
+}
+
+impl CasEngine {
+    /// Boots the embedded shen-cas slice (shaken kernel + CAS program).
+    pub fn boot() -> Result<Self, String> {
+        boot_shaken_inner(CAS_KERNEL, Some(CAS_PROG)).map(|interp| CasEngine { interp })
+    }
+
+    /// Reduces one CAS expression (e.g. `"D[Sin[x],x]"`) to its rendered normal
+    /// form. Returns `"error: <message>"` on failure rather than erroring, so
+    /// callers can display the string directly.
+    pub fn reduce(&mut self, input: &str) -> String {
+        match cas_reduce(&mut self.interp, input) {
+            Ok(s) => s,
+            Err(e) => format!("error: {e}"),
+        }
+    }
+}
+
 /// Evaluates a Shen expression and returns its rendered value as a freshly
 /// allocated C string (release with `shen_string_free`). On error the string is
 /// `"error: <message>"`. Returns NULL only if the arguments are NULL.
@@ -242,7 +283,9 @@ pub extern "C" fn shen_eval(ctx: *mut ShenCtx, src: *const c_char) -> *mut c_cha
         return std::ptr::null_mut();
     }
     let ctx = unsafe { &mut *ctx };
-    let src = unsafe { CStr::from_ptr(src) }.to_string_lossy().into_owned();
+    let src = unsafe { CStr::from_ptr(src) }
+        .to_string_lossy()
+        .into_owned();
     let out = match eval_shen(&mut ctx.interp, &src) {
         Ok(s) => s,
         Err(e) => format!("error: {e}"),
@@ -300,14 +343,18 @@ fn eval_shen(interp: &mut Interp, src: &str) -> Result<String, String> {
         .get_fn(head_sym)
         .cloned()
         .ok_or_else(|| "head is undefined".to_string())?;
-    let first = interp.apply(head_fn, vec![forms]).map_err(|e| e.to_string())?;
+    let first = interp
+        .apply(head_fn, vec![forms])
+        .map_err(|e| e.to_string())?;
 
     let eval_fn = interp
         .env
         .get_fn(eval_sym)
         .cloned()
         .ok_or_else(|| "eval is undefined".to_string())?;
-    let result = interp.apply(eval_fn, vec![first]).map_err(|e| e.to_string())?;
+    let result = interp
+        .apply(eval_fn, vec![first])
+        .map_err(|e| e.to_string())?;
 
     let app_fn = interp
         .env
