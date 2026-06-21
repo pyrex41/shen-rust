@@ -14,6 +14,12 @@
 //! rendering the result to a string with `shen.app`. The returned C string is
 //! heap-allocated by Rust and must be released with `shen_string_free`.
 
+// These are C-ABI exports: the symbols are what matter, C callers can't express
+// Rust's `unsafe`, and each function documents its pointer contract in a
+// `# Safety` section. So we opt out of clippy's "mark the fn `unsafe`" lint at
+// the FFI boundary rather than changing every export's signature.
+#![allow(clippy::not_unsafe_ptr_arg_deref)]
+
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 use std::path::PathBuf;
