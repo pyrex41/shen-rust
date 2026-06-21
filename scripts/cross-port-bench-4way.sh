@@ -20,47 +20,41 @@ RUST_BIN="target/release/shen-rust"
 CL_BIN="../shen-cl/bin/sbcl/shen"
 LUA_DIR="../shen-lua"
 
-run_rust() { ( "$RUST_BIN" --kernel-tests ) ; }
-run_cl()   { "$CL_BIN" < /tmp/cl-in.shen ; }
-run_lua()  { ( cd "$LUA_DIR" && "$1" run-kernel-tests.lua ) ; }
-
 cat > /tmp/cl-in.shen <<EOF
 (cd "$PWD/kernel/tests")
 (load "runme.shen")
 (cl.exit)
 EOF
 
-bench() { # name cmd...
-  local name="$1"; shift
-  local min=99999
-  for i in $(seq 1 "$N"); do
-    local t
-    t=$( { /usr/bin/time -p "$@" >/dev/null 2>/dev/null; } 2>&1 | awk '/^real/{print $2}' ) || t=99999
-    awk -v a="$t" -v m="$min" 'BEGIN{exit !(a<m)}' && min=$t
-  done
-  printf "%-22s min=%ss\n" "$name" "$min"
-  echo "$min"
+# Time one shell command string, echoing its `real` seconds. The command's own
+# stdout+stderr are silenced *inside* an inner `sh -c`, so only /usr/bin/time's
+# report reaches the outer stderr -> the pipe -> awk. (Redirecting the program's
+# stderr at the outer level would also swallow time's own output, which writes
+# to fd 2 — that was the bug this structure avoids.)
+timeit() {
+  { /usr/bin/time -p sh -c "$1 >/dev/null 2>&1"; } 2>&1 | awk '/^real/{print $2}'
 }
 
+mn() { printf '%s\n' "$@" | sort -n | head -1; }
+
 echo "== 4-way kernel-tests, min-of-$N (interleaved) =="
-# Interleave: one round-robin pass per iteration keeps thermal state shared.
 declare -a R C LJ L
 for i in $(seq 1 "$N"); do
-  R[$i]=$(  { /usr/bin/time -p "$RUST_BIN" --kernel-tests >/dev/null 2>/dev/null; } 2>&1 | awk '/^real/{print $2}')
-  C[$i]=$(  { /usr/bin/time -p bash -c "\"$CL_BIN\" < /tmp/cl-in.shen" >/dev/null 2>/dev/null; } 2>&1 | awk '/^real/{print $2}')
+  R[$i]=$(timeit "'$RUST_BIN' --kernel-tests")
+  C[$i]=$(timeit "'$CL_BIN' < /tmp/cl-in.shen")
   if command -v luajit >/dev/null; then
-    LJ[$i]=$( { /usr/bin/time -p bash -c "cd \"$LUA_DIR\" && luajit run-kernel-tests.lua" >/dev/null 2>/dev/null; } 2>&1 | awk '/^real/{print $2}')
+    LJ[$i]=$(timeit "cd '$LUA_DIR' && luajit run-kernel-tests.lua")
   fi
   if command -v lua >/dev/null; then
-    L[$i]=$(  { /usr/bin/time -p bash -c "cd \"$LUA_DIR\" && lua run-kernel-tests.lua" >/dev/null 2>/dev/null; } 2>&1 | awk '/^real/{print $2}')
+    L[$i]=$(timeit "cd '$LUA_DIR' && lua run-kernel-tests.lua")
   fi
-  printf "round %d: rust=%s cl=%s luajit=%s lua=%s\n" "$i" "${R[$i]}" "${C[$i]}" "${LJ[$i]:-NA}" "${L[$i]:-NA}"
+  printf "round %d: rust=%s cl=%s luajit=%s lua=%s\n" \
+    "$i" "${R[$i]:-NA}" "${C[$i]:-NA}" "${LJ[$i]:-NA}" "${L[$i]:-NA}"
 done
 
-mn() { printf '%s\n' "$@" | sort -n | head -1; }
 rmin=$(mn "${R[@]}"); cmin=$(mn "${C[@]}")
 echo "---"
 printf "shen-cl   (SBCL)   : %ss   1.00x (ref)\n" "$cmin"
 awk -v r="$rmin" -v c="$cmin" 'BEGIN{printf "shen-rust (release): %ss   %.2fx\n", r, r/c}'
 if [ -n "${LJ[1]:-}" ]; then ljmin=$(mn "${LJ[@]}"); awk -v x="$ljmin" -v c="$cmin" 'BEGIN{printf "shen-lua (luajit)  : %ss   %.2fx\n", x, x/c}'; fi
-if [ -n "${L[1]:-}" ]; then lmin=$(mn "${L[@]}"); awk -v x="$lmin" -v c="$cmin" 'BEGIN{printf "shen-lua (PUC lua) : %ss   %.2fx\n", x, x/c}'; fi
+if [ -n "${L[1]:-}" ];  then lmin=$(mn "${L[@]}");  awk -v x="$lmin"  -v c="$cmin" 'BEGIN{printf "shen-lua (PUC lua) : %ss   %.2fx\n", x, x/c}'; fi
