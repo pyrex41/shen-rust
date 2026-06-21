@@ -26,6 +26,40 @@ interpreted-dispatch model, not a single hot spot — each remaining local
 lever measures ≤ ~8%. The tc-cache row is verdict memoization (off by
 default), not raw speed.
 
+## Cross-port: the wider field (rust vs cl vs lua)
+
+`scripts/cross-port-bench-4way.sh` extends the headline harness to the two
+Shen-Lua execution modes (LuaJIT and PUC Lua 5.4). Same upstream suite, same
+machine, interleaved min-of-N. Approximate (measured on a loaded box; the
+ordering and the rough multiples are the robust claim — re-run quiet for clean
+absolutes):
+
+| Port | engine | `--kernel-tests` (test exec) | vs shen-cl |
+|---|---|---:|---:|
+| shen-cl | SBCL (saved image) | ≈ 1.0 s | 1× |
+| **shen-rust** | release tree-walk | ≈ 2.5 s | **~2.5×** |
+| shen-lua | LuaJIT | ≈ 5.2 s | ~5× |
+| shen-lua | PUC Lua 5.4 | ≈ 11.8 s | ~12× |
+
+Fairness note: shen-rust (AOT kernel in the binary) and shen-cl (saved Lisp
+image) boot in ~0; shen-lua loads its kernel from a cache first
+(`load_kernel` ≈ 0.04 s LuaJIT / ≈ 0.39 s PUC, per `run-kernel-tests.lua`'s
+printed split) — small relative to the multi-second *execution*, so total
+wall-clock is a fair execution proxy. **shen-rust is ~2× faster than LuaJIT and
+~4.5× faster than PUC Lua here.**
+
+Why LuaJIT only reaches ~2.3× over PUC Lua (not the usual 5–20×): a Shen port
+allocates a fresh closure per `lambda` / `freeze` / partial application, which
+shen-lua emits as Lua `MKFUN(n, function(...) end)` (`compiler.lua:823/845`).
+That compiles to the `FNEW` bytecode, which LuaJIT's tracer **cannot compile**
+(NYI). On the suite, `luajit -jv` records **977 trace aborts on `FNEW`** and
+**579 on `UCLO`** (upvalue-close), and **456 traces blacklisted** — so the
+hottest closure-allocating paths permanently fall back to the interpreter. This
+is *not* a warm-up artifact (blacklisted traces never recompile no matter how
+long the process lives); the lever is in the port's codegen (extend shen-lua's
+existing freeze free-var hoisting — the `BIND(kbody[N], …)` scheme — to
+lambdas / hot loops to cut `FNEW`). See the LuaJIT-warm note for shen-lua.
+
 ## Warm / served: VM vs tree-walker
 
 `scripts/warm-bench.sh` (+ `benches/warm_typecheck.rs`) measures a load-once /

@@ -94,15 +94,26 @@ fn call_or_apply(interp: &mut Interp, f: Value, args: &[Value]) -> ShenResult<Va
 
 /// Match Shen's boolean semantics: `Bool(true)`, `Sym(true)` → true;
 /// `Bool(false)`, `Sym(false)` → false; anything else → error.
+#[inline]
 pub fn is_truthy(interp: &Interp, v: &Value) -> ShenResult<bool> {
+    // Hot path is a single tag decode; keep it tiny so this folds into the
+    // generated AOT `if` site. The non-boolean diagnostic is cold and outlined
+    // so its `format!` doesn't block inlining (it was the bulk of this leaf's
+    // self-time on the kernel-tests profile).
     if let Some(b) = v.as_bool() {
         return Ok(b);
     }
     match v.as_sym() {
         Some(s) if s == interp.well_known.k_true => Ok(true),
         Some(s) if s == interp.well_known.k_false => Ok(false),
-        _ => Err(ShenError::new(format!("aot: not a boolean: {v:?}"))),
+        _ => Err(not_a_boolean(v)),
     }
+}
+
+#[cold]
+#[inline(never)]
+fn not_a_boolean(v: &Value) -> ShenError {
+    ShenError::new(format!("aot: not a boolean: {v:?}"))
 }
 
 /// Wrap a Rust closure as a Shen closure value. Used for AOT-compiled lambdas.
@@ -117,7 +128,7 @@ pub fn is_truthy(interp: &Interp, v: &Value) -> ShenResult<bool> {
 /// and the move-captures hold copies of the same tagged words — the closure body
 /// is unchanged. Empty when the lambda captures nothing.
 pub fn make_aot_closure<F>(
-    name: &str,
+    name: &'static str,
     arity: usize,
     f: F,
     captures: Vec<Value>,
@@ -126,7 +137,10 @@ pub fn make_aot_closure<F>(
 where
     F: Fn(&mut Interp, &[Value]) -> ShenResult<Value> + 'static,
 {
-    let sym = interp.intern(name);
+    // `name` is always an AOT-emitted literal (`"<lambda>"`/`"<freeze>"`);
+    // route through the pointer-cached path so hot lambda allocation never
+    // re-probes the intern HashMap.
+    let sym = interp.intern_static(name);
     let closure = Closure {
         name: Some(sym),
         arity,
@@ -137,8 +151,8 @@ where
 }
 
 /// Look up a global. Used for `(value GLOBAL)` form.
-pub fn global_value(interp: &mut Interp, name: &str) -> ShenResult<Value> {
-    let sym = interp.intern(name);
+pub fn global_value(interp: &mut Interp, name: &'static str) -> ShenResult<Value> {
+    let sym = interp.intern_static(name);
     interp
         .env
         .get_global(sym)
@@ -147,8 +161,8 @@ pub fn global_value(interp: &mut Interp, name: &str) -> ShenResult<Value> {
 }
 
 /// Look up a function as a value (`(fn NAME)`).
-pub fn fn_value(interp: &mut Interp, name: &str) -> ShenResult<Value> {
-    let sym = interp.intern(name);
+pub fn fn_value(interp: &mut Interp, name: &'static str) -> ShenResult<Value> {
+    let sym = interp.intern_static(name);
     interp
         .env
         .get_fn(sym)

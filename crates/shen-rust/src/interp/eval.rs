@@ -664,8 +664,22 @@ impl Interp {
     /// Exhaustion is sticky — `remaining_steps` parks at `Some(0)` so a
     /// cancellation that slips past a `trap-error` handler re-fires on the
     /// handler's first step instead of letting evaluation resume.
-    #[inline]
+    #[inline(always)]
     pub(crate) fn charge_step(&mut self) -> ShenResult<()> {
+        // Default config sets neither budget — fold to one combined branch the
+        // caller's hot loop can predict-not-taken. Both Options are `None`, so
+        // this is a single `is_some` test pair with no body. The cold
+        // exhaustion/deadline machinery is outlined so it never bloats this
+        // into a real (un-inlined) call frame.
+        if self.remaining_steps.is_none() && self.deadline.is_none() {
+            return Ok(());
+        }
+        self.charge_step_limited()
+    }
+
+    #[cold]
+    #[inline(never)]
+    fn charge_step_limited(&mut self) -> ShenResult<()> {
         if let Some(n) = self.remaining_steps {
             if n == 0 {
                 return Err(ShenError::cancelled("cancelled: step budget exhausted"));
