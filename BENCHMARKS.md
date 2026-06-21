@@ -26,6 +26,56 @@ interpreted-dispatch model, not a single hot spot — each remaining local
 lever measures ≤ ~8%. The tc-cache row is verdict memoization (off by
 default), not raw speed.
 
+## Cross-port: the wider field (rust vs cl vs lua)
+
+`scripts/cross-port-bench-4way.sh` extends the headline harness to the two
+Shen-Lua execution modes (LuaJIT and PUC Lua 5.4). Same upstream suite, same
+machine, interleaved min-of-N, all four timed identically by external
+`/usr/bin/time` wall-clock.
+
+**These numbers have NOT been taken on a quiet machine — treat them as
+indicative, not authoritative, and re-run with `cross-port-bench-4way.sh` on an
+idle box before quoting.** What is firm (stable across load): **shen-cl is
+fastest** (~1.0 s, a saved SBCL image) and **PUC Lua is slowest** (~12–14 s, a
+pure interpreter). What is **not** yet resolved: the **shen-rust vs LuaJIT**
+ranking — they land close together in the ~2.5 s range and the order flips with
+machine load (rust's release tree-walk vs LuaJIT's trace JIT). An earlier draft
+of this section claimed "rust ~2× faster than LuaJIT"; that was an
+apples-to-oranges error — it compared rust's *internal eval timer* against a
+*contended* LuaJIT wall-time. Under the consistent harness they are roughly
+comparable. Do not repeat the 2× claim without a clean measurement.
+
+| Port | engine | indicative wall (loaded box) | status |
+|---|---|---:|---|
+| shen-cl | SBCL (saved image) | ≈ 1.0 s | firm: fastest |
+| **shen-rust** | release tree-walk | ≈ 2.5 s | ~tied with LuaJIT |
+| shen-lua | LuaJIT | ≈ 2.5 s | ~tied with rust |
+| shen-lua | PUC Lua 5.4 | ≈ 12–14 s | firm: slowest |
+
+Fairness note: shen-rust (AOT kernel in the binary) and shen-cl (saved Lisp
+image) boot in ~0; shen-lua loads its kernel from a cache first
+(`load_kernel` ≈ 0.04 s LuaJIT / ≈ 0.39 s PUC, per `run-kernel-tests.lua`'s
+printed split) — small relative to the multi-second *execution*, so total
+wall-clock is a fair execution proxy. (The Lua driver prints
+`Counters: passed=0 failed=0` at the end — a counter-name readout bug in the
+driver, not skipped work; the suite genuinely runs and self-reports
+`pass rate ... 100%` per test.)
+
+The interesting LuaJIT finding is independent of the wall-clock ranking: a big
+chunk of the suite never JIT-compiles at all, which is why LuaJIT only ties
+shen-rust's non-JIT tree-walker and lands in the low end of its usual range over
+PUC Lua (~5×) rather than pulling decisively ahead. The cause: a Shen port
+allocates a fresh closure per `lambda` / `freeze` / partial application, which
+shen-lua emits as Lua `MKFUN(n, function(...) end)` (`compiler.lua:823/845`).
+That compiles to the `FNEW` bytecode, which LuaJIT's tracer **cannot compile**
+(NYI). On the suite, `luajit -jv` records **977 trace aborts on `FNEW`** and
+**579 on `UCLO`** (upvalue-close), and **456 traces blacklisted** — so the
+hottest closure-allocating paths permanently fall back to the interpreter. This
+is *not* a warm-up artifact (blacklisted traces never recompile no matter how
+long the process lives); the lever is in the port's codegen (extend shen-lua's
+existing freeze free-var hoisting — the `BIND(kbody[N], …)` scheme — to
+lambdas / hot loops to cut `FNEW`). See the LuaJIT-warm note for shen-lua.
+
 ## Warm / served: VM vs tree-walker
 
 `scripts/warm-bench.sh` (+ `benches/warm_typecheck.rs`) measures a load-once /

@@ -1,0 +1,14 @@
+[package]
+name = "shencalc-iced"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "ShenCalc — a native cross-platform symbolic calculator GUI (iced) over the shen-cas engine."
+
+[[bin]]
+name = "shencalc-iced"
+path = "src/main.rs"
+
+[dependencies]
+shenffi = { path = "../shenffi" }
+iced = "0.14"
