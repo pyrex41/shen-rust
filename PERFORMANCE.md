@@ -47,6 +47,23 @@ The living, detailed record is in `design/`:
    filtered closure-capture caching measured −3.5% — the whole-scope memcpy
    in `capture_used` beats per-creation lookups even with the free-var walk
    amortized.
+5. **Hot-leaf inline / cold-outline round, 2026-06-20** (~6% less CPU work,
+   paired user-CPU min-of-13, B<A in ~9/11 runs — measured on a *loaded*
+   machine where wall-clock was unusable, so user-CPU time was the
+   contention-robust proxy): three per-step leaves that a fresh `--kernel-tests`
+   leaf profile flagged as un-inlined call frames, each because a *cold* error
+   path (`format!` / `ShenError::cancelled` string-building) bloated an
+   otherwise tiny hot body and blocked LLVM from folding it into its AOT call
+   sites. Fixed by splitting each into a tiny `#[inline]` hot path + a
+   `#[cold] #[inline(never)]` error constructor: **`is_truthy`** (the AOT `if`
+   predicate, 55→7 self-samples), **`charge_step`** (per-step budget check,
+   45→0 — fully inlined into `eval_in`), and routing **`make_aot_closure` /
+   `global_value` / `fn_value`** through the existing pointer-cached
+   `intern_static` (they took `&str` and re-probed the intern HashMap on every
+   AOT lambda / `value` / `fn` evaluation; the AOT call-target path already used
+   the cache). 134/0 across tree-walk / VM / GC / served, clippy/fmt clean. The
+   work didn't vanish — it CSE'd into `eval_in` and the call sites — but the
+   per-step call/return overhead and cold-blob bloat did.
 
 ## Why the remaining ~3.0× is structural
 
