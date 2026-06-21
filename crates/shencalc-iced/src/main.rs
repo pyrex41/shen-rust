@@ -11,6 +11,8 @@
 //! with a large stack (the default 8 MB overflows on boot). The UI thread talks
 //! to that worker over channels and stays responsive.
 
+mod pretty;
+
 use std::sync::mpsc;
 use std::thread;
 
@@ -242,7 +244,9 @@ fn worker(req_rx: mpsc::Receiver<Job>, ready_tx: oneshot::Sender<Result<(), Stri
     };
     // `recv` blocks until a job arrives; the loop ends when every Sender drops.
     while let Ok(job) = req_rx.recv() {
-        let result = engine.reduce(&job.input);
+        // Reduce to the raw normal form, then humanise it (cos(x), 3·x²) — the
+        // same split the Swift apps use (CAS reduce + MathPretty at display).
+        let result = pretty::render(&engine.reduce(&job.input));
         let _ = job.reply.send(result);
     }
 }
@@ -270,7 +274,8 @@ fn run_selftest() {
                 "2^10",
             ];
             for c in cases {
-                println!("CASE {c}  =>  {}", engine.reduce(c));
+                let raw = engine.reduce(c);
+                println!("CASE {c}  =>  raw={raw}  pretty={}", pretty::render(&raw));
             }
             println!("=== ICED SELFTEST DONE ===");
             true
