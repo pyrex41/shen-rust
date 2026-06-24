@@ -92,16 +92,6 @@ pub extern "C" fn shen_boot_embedded() -> *mut ShenCtx {
     }
 }
 
-// --- shen-cas: a tree-shaken computer-algebra system embedded in the binary ---
-//
-// Produced by `ratatoskr shake` over the flattened shen-cas sources: a minimal
-// kernel slice (only what the CAS reaches) plus the CAS compiled to KLambda.
-// Demonstrates the full pipeline: Shen program -> ratatoskr tree-shake -> Rust
-// static lib -> Swift. No Shen-level `eval` needed; we call the CAS's own
-// functions (`parse-expr-string` -> `reduce` -> `pretty-expr`) directly.
-const CAS_KERNEL: &str = include_str!("../cas/cas-kernel.kl");
-const CAS_PROG: &str = include_str!("../cas/cas-all.kl");
-
 /// Boots any Ratatoskr-shaken program: a shaken `kernel.kl` slice plus an
 /// optional program `.kl`. Pass NULL `prog_kl` for kernel-only.
 ///
@@ -155,119 +145,6 @@ fn boot_shaken_inner(kernel: &str, prog: Option<&str>) -> Result<Interp, String>
         r?;
     }
     Ok(interp)
-}
-
-/// Boots the embedded shen-cas slice (shaken kernel + CAS), tree-walked.
-#[no_mangle]
-pub extern "C" fn shen_cas_boot() -> *mut ShenCtx {
-    match boot_shaken_inner(CAS_KERNEL, Some(CAS_PROG)) {
-        Ok(interp) => Box::into_raw(Box::new(ShenCtx { interp })),
-        Err(e) => {
-            eprintln!("shen_cas_boot error: {e}");
-            std::ptr::null_mut()
-        }
-    }
-}
-
-/// Parses, reduces, and pretty-prints one CAS expression (e.g. "D[Sin[x],x]").
-/// Returns the normal form rendered as a string ("error: …" on failure).
-///
-/// # Safety
-/// `ctx` must be a `shen_cas_boot` handle and `src` a valid C string.
-#[no_mangle]
-pub extern "C" fn shen_cas_reduce(ctx: *mut ShenCtx, src: *const c_char) -> *mut c_char {
-    if ctx.is_null() || src.is_null() {
-        return std::ptr::null_mut();
-    }
-    let ctx = unsafe { &mut *ctx };
-    let input = unsafe { CStr::from_ptr(src) }
-        .to_string_lossy()
-        .into_owned();
-    let out = match cas_reduce(&mut ctx.interp, &input) {
-        Ok(s) => s,
-        Err(e) => format!("error: {e}"),
-    };
-    CString::new(out)
-        .unwrap_or_else(|_| CString::new("").unwrap())
-        .into_raw()
-}
-
-fn cas_reduce(interp: &mut Interp, input: &str) -> Result<String, String> {
-    let parse_sym = interp.intern("parse-expr-string");
-    let reduce_sym = interp.intern("reduce");
-    let pretty_sym = interp.intern("pretty-expr");
-    let app_sym = interp.intern("shen.app");
-    let mode = Value::sym(interp.intern("shen.s"));
-
-    let parse_fn = interp
-        .env
-        .get_fn(parse_sym)
-        .cloned()
-        .ok_or_else(|| "parse-expr-string is undefined".to_string())?;
-    let ast = interp
-        .apply(parse_fn, vec![Value::str(input)])
-        .map_err(|e| e.to_string())?;
-
-    let reduce_fn = interp
-        .env
-        .get_fn(reduce_sym)
-        .cloned()
-        .ok_or_else(|| "reduce is undefined".to_string())?;
-    let nf = interp
-        .apply(reduce_fn, vec![ast])
-        .map_err(|e| e.to_string())?;
-
-    let pretty_fn = interp
-        .env
-        .get_fn(pretty_sym)
-        .cloned()
-        .ok_or_else(|| "pretty-expr is undefined".to_string())?;
-    let pretty = interp
-        .apply(pretty_fn, vec![nf])
-        .map_err(|e| e.to_string())?;
-
-    let app_fn = interp
-        .env
-        .get_fn(app_sym)
-        .cloned()
-        .ok_or_else(|| "shen.app is undefined".to_string())?;
-    let rendered = interp
-        .apply(app_fn, vec![pretty, Value::str(""), mode])
-        .map_err(|e| e.to_string())?;
-
-    rendered
-        .as_str()
-        .map(|s| s.to_string())
-        .ok_or_else(|| "CAS result did not render to a string".to_string())
-}
-
-/// Safe Rust API over the embedded shen-cas — for Rust hosts (e.g. the iced
-/// desktop app) that link this crate as an `rlib` and don't want the C ABI's
-/// raw pointers. Mirrors `shen_cas_boot` / `shen_cas_reduce`.
-///
-/// Note: the CAS reducer is deeply recursive and tree-walked, so both `boot`
-/// and `reduce` should run on a thread with a large stack (~16 MB minimum; the
-/// default 8 MB overflows on boot). See the iced app's worker thread, or
-/// `ShenCAS.swift` on the Swift side, for the pattern.
-pub struct CasEngine {
-    interp: Interp,
-}
-
-impl CasEngine {
-    /// Boots the embedded shen-cas slice (shaken kernel + CAS program).
-    pub fn boot() -> Result<Self, String> {
-        boot_shaken_inner(CAS_KERNEL, Some(CAS_PROG)).map(|interp| CasEngine { interp })
-    }
-
-    /// Reduces one CAS expression (e.g. `"D[Sin[x],x]"`) to its rendered normal
-    /// form. Returns `"error: <message>"` on failure rather than erroring, so
-    /// callers can display the string directly.
-    pub fn reduce(&mut self, input: &str) -> String {
-        match cas_reduce(&mut self.interp, input) {
-            Ok(s) => s,
-            Err(e) => format!("error: {e}"),
-        }
-    }
 }
 
 /// Evaluates a Shen expression and returns its rendered value as a freshly

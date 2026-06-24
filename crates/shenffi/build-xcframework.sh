@@ -4,8 +4,7 @@
 # add the bridging header (shenffi.h) + ShenRust.swift, and you're done.
 #
 # The macOS slice (aarch64-apple-darwin) lets a native macOS target embed the
-# same CAS — and, unlike the iOS simulator, MLX/Metal runs there, so the
-# on-device model is exercisable on an Apple-silicon Mac.
+# same generic Shen interpreter as the iOS slices.
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."          # workspace root (shen-rust/)

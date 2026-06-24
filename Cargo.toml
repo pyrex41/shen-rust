@@ -6,7 +6,6 @@ members = [
     "crates/klcompile",
     "crates/ratatoskr-build",
     "crates/shenffi",
-    "crates/shencalc-iced",
     "bin/shen-rust",
     "examples/shen-cedar-authz",
 ]

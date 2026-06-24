@@ -28,16 +28,7 @@ char *shen_eval(ShenCtx *ctx, const char *src);
  * shen_free(). */
 ShenCtx *shen_boot_shaken(const char *kernel_kl, const char *prog_kl);
 
-/* --- shen-cas: embedded, tree-shaken computer algebra system --- */
-
-/* Boot the embedded shen-cas slice. Free with shen_free(). */
-ShenCtx *shen_cas_boot(void);
-
-/* Parse + reduce + pretty-print a CAS expression, e.g. "D[Sin[x],x]" -> "[Cos x]".
- * Returns a heap string; release with shen_string_free(). */
-char *shen_cas_reduce(ShenCtx *ctx, const char *src);
-
-/* Free a string returned by shen_eval() / shen_cas_reduce(). */
+/* Free a string returned by shen_eval(). */
 void shen_string_free(char *s);
 
 /* Free a handle returned by shen_boot(). */

@@ -57,38 +57,18 @@ desktop, not on a sandboxed device. Two device-friendly options:
    filesystem dependency. (Exposing that through the C ABI is a small addition;
    the current `shen_boot` takes a directory path.)
 
-## Embedding a tree-shaken Shen program (shen-cas)
+## Embedding a tree-shaken Shen program
 
-The `cas/` directory holds a worked example: the **shen-cas computer algebra
-system**, tree-shaken by [ratatoskr](../../ratatoskr) and embedded in the binary.
+`shen_boot_shaken(kernel_kl, prog_kl)` boots an arbitrary Ratatoskr-shaken slice
+— a minimal `kernel.kl` (only the kernel functions the program reaches) plus an
+optional program `.kl` — straight from in-memory source, no filesystem access.
+This is how an app embeds a specific Shen program without the full kernel.
 
-Pipeline:
-1. Flatten shen-cas's modules into one `.shen` (strip its `(load …)` directives).
-2. `ratatoskr shake cas-all.shen out/` → `kernel.kl` (only the kernel functions
-   the CAS reaches — 298 KB vs the 749 KB full kernel) + `cas-all.kl`.
-3. `include_str!` both into the crate; `shen_cas_boot` boots the slice via
-   `boot_from_kl_source` (kernel + `shen.initialise`) then loads the CAS program.
-4. `shen_cas_reduce` calls the CAS's own `parse-expr-string → reduce →
-   pretty-expr` — no Shen-level `eval` required, so eval-stripping is fine.
-
-```c
-ShenCtx *shen_cas_boot(void);
-char    *shen_cas_reduce(ShenCtx *ctx, const char *expr);  // "D[Sin[x],x]" -> "[Cos x]"
-```
-
-Verified Swift → Rust → CAS results (`swift/cas-demo.swift`):
-
-```
-D[Sin[x],x]  =>  [Cos x]
-D[x^3,x]     =>  [Times [Power x 2] 3]
-D[Exp[x],x]  =>  [Exp x]
-6/4          =>  [3 / 2]
-```
-
-> The CAS reducer is deeply recursive and runs tree-walked, so call the FFI from
-> a thread with a large stack (the demo uses a 512 MB `Thread`; the shen-rust CLI
-> does the same). This is the same reason an app should call Shen off the main
-> thread.
+For a worked end-to-end example (the **shen-cas** computer-algebra system shaken
+by [ratatoskr](../../ratatoskr), wrapped as a `CasEngine` + a `shen_cas_*` C ABI,
+and driven from both an iced GUI and SwiftUI), see the **`cas-engine` crate in
+the [shen-calc](../../../shen-calc) repo** — the app that consumes it. shenffi
+itself stays program-agnostic.
 
 ## Status
 
