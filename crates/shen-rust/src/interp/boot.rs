@@ -40,10 +40,12 @@ use crate::value::{Stream, Value};
 /// upstream loads it as precompiled `backend.lsp` (the CL compiler), and
 /// it is dead weight for a Rust port. See `kernel/klambda/PROVENANCE.md`.
 ///
-/// `stlib.kl` (the standard library) and the community extensions are
-/// retained and loaded on top: upstream now ships StLib as separate
-/// lazy Shen sources rather than a kernel `.kl`, but the port's
-/// conformance suite and Ratatoskr stage-1 launcher still need them.
+/// The standard library is no longer a kernel `.kl`. Upstream ships it as
+/// separate Shen sources under `Lib/StLib`; this port vendors them under
+/// `kernel/stlib/` and loads them after the kernel via `load_stlib`
+/// (running upstream's `install.shen`), retiring the old community
+/// `stlib.kl` overlay. The community extensions are still loaded on top:
+/// the conformance suite and Ratatoskr stage-1 launcher need them.
 const KERNEL_FILES: &[&str] = &[
     "sys.kl",
     "writer.kl",
@@ -59,7 +61,6 @@ const KERNEL_FILES: &[&str] = &[
     "t-star.kl",
     "yacc.kl",
     "types.kl",
-    "stlib.kl",
     "extension-features.kl",
     "extension-expand-dynamic.kl",
     "extension-launcher.kl",
@@ -214,7 +215,92 @@ pub fn boot_with_kernel(interp: &mut Interp, kernel_dir: &Path) -> ShenResult<()
     // land over the AOT registrations above. See `interp::tc_cache`.
     crate::interp::tc_cache::install_from_env(interp, kernel_dir);
 
+    // Load the standard library from the vendored `Lib/StLib` Shen
+    // sources (replacing the old community `stlib.kl` overlay). Done last,
+    // over the fully-installed kernel, so `load`/`tc`/`define` are live —
+    // going through the real `load` path is what registers correct
+    // arities (the overlay left them at -1, so `(fn filter)` failed).
+    load_stlib(interp, kernel_dir)?;
+
     Ok(())
+}
+
+/// Load the standard library by running upstream's `install.shen` over the
+/// vendored `kernel/stlib/` sources. Sibling of `kernel/klambda/`
+/// (`kernel_dir` is `.../kernel/klambda`). A no-op when the directory is
+/// absent — shaken/embedded boots that don't ship StLib on disk just skip
+/// it.
+///
+/// `install.shen` drives the load with **relative** `(load "Maths/…")`
+/// paths, and `shen-rust`'s file I/O resolves relative paths against the
+/// process cwd (its `cd` only sets `*home-directory*`). Mutating the
+/// process cwd is not an option: `Interp` is single-threaded but multiple
+/// interpreters can boot concurrently (the test harness does), and cwd is
+/// process-global — a chdir in one boot corrupts another's relative loads.
+/// So instead we materialise a temp copy of `install.shen` with every
+/// `(load "REL")` rewritten to an absolute path under the StLib dir, and
+/// load that by absolute path. No cwd mutation, fully re-entrant.
+///
+/// `*hush*` (a per-interpreter global) is set for the duration so the
+/// per-file "…loaded" / type-signature chatter stays off the boot path
+/// (file writes, if any, are unaffected).
+fn load_stlib(interp: &mut Interp, kernel_dir: &Path) -> ShenResult<()> {
+    let Some(stlib_dir) = kernel_dir.parent().map(|p| p.join("stlib")) else {
+        return Ok(());
+    };
+    let install = stlib_dir.join("install.shen");
+    if !install.exists() {
+        return Ok(());
+    }
+    let stlib_abs = stlib_dir
+        .canonicalize()
+        .map_err(|e| ShenError::new(format!("stlib: canonicalize {stlib_dir:?}: {e}")))?;
+    let base = stlib_abs.to_string_lossy();
+
+    // Rewrite `(load "REL")` -> `(load "<stlib>/REL")` so the whole install
+    // sequence resolves without touching the process cwd (re-entrant).
+    // install.shen is otherwise run verbatim — including its per-module
+    // `(tc +/-)` toggles — matching the shen-cl reference. (The type-checked
+    // load recurses deeply; the boot thread and `RUST_MIN_STACK` provide the
+    // stack. See `.cargo/config.toml` and `bin/shen-rust/src/main.rs`.)
+    let src = fs::read_to_string(&install)
+        .map_err(|e| ShenError::new(format!("read {install:?}: {e}")))?;
+    let rewritten = src.replace("(load \"", &format!("(load \"{base}/"));
+
+    // Unique temp path per boot (pid + monotonic counter): concurrent boots
+    // must not share a file.
+    static SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let n = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let tmp = std::env::temp_dir().join(format!(
+        "shen-rust-stlib-install-{}-{}.shen",
+        std::process::id(),
+        n
+    ));
+    fs::write(&tmp, rewritten).map_err(|e| ShenError::new(format!("write {tmp:?}: {e}")))?;
+
+    let load_sym = interp.intern("load");
+    let Some(load_fn) = interp.env.get_fn(load_sym).cloned() else {
+        let _ = fs::remove_file(&tmp);
+        return Err(ShenError::new("load not defined; cannot install stlib"));
+    };
+    let hush = interp.intern("*hush*");
+    let prev_hush = interp.env.get_global(hush).cloned();
+
+    interp.env.set_global(hush, Value::bool(true));
+    let result = interp
+        .apply(
+            load_fn,
+            vec![Value::str(Rc::from(tmp.to_string_lossy().as_ref()))],
+        )
+        .map(|_| ())
+        .map_err(|e| ShenError::new(format!("stlib install.shen: {e}")));
+
+    match prev_hush {
+        Some(v) => interp.env.set_global(hush, v),
+        None => interp.env.set_global(hush, Value::bool(false)),
+    }
+    let _ = fs::remove_file(&tmp);
+    result
 }
 
 /// Boot-from-subset (Ratatoskr stage 2): bring up an interpreter from a

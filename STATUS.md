@@ -108,8 +108,9 @@ model, not a single hot spot. On served workloads the story inverts: VM
 
 ## Known limitations
 
-- Boot loads + AOT-installs 18 kernel files every startup (~sub-second release);
-  shen-cl uses pre-compiled FASLs.
+- Boot loads + AOT-installs 17 kernel files every startup, then loads the
+  standard library from the `kernel/stlib/` Shen sources (~sub-second
+  release); shen-cl uses pre-compiled FASLs.
 - GC collection is opt-in (`SHEN_RUST_GC=1`) and requires aarch64
   macOS/Linux (the conservative stack scan is unimplemented elsewhere —
   refused with a warning, heap stays grow-only). Hosts embedding the engine

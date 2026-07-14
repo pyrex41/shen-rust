@@ -103,9 +103,14 @@ fn append_concatenates() {
 fn map_applies_to_each() {
     let mut i = fresh_booted();
     // Define a named unary function and map it (Shen's `map` wants a
-    // function value; a defined name curries cleanly).
-    eval(&mut i, "(define sq X -> (* X X))");
-    let v = eval(&mut i, "(map (function sq) (cons 1 (cons 2 (cons 3 ()))))");
+    // function value; a defined name curries cleanly). Uses a port-local
+    // name — `sq` is now a real StLib function (Maths/maths.shen), and the
+    // kernel refuses to redefine a system function.
+    eval(&mut i, "(define my-square X -> (* X X))");
+    let v = eval(
+        &mut i,
+        "(map (function my-square) (cons 1 (cons 2 (cons 3 ()))))",
+    );
     assert_eq!(ints(&v), vec![1, 4, 9]);
 }
 
@@ -182,4 +187,47 @@ fn reverse_of_nested_lists() {
     // Second element is the inner list (1 2 3).
     let inner = *v.tail().unwrap().head().unwrap();
     assert_eq!(ints(&inner), vec![1, 2, 3]);
+}
+
+#[test]
+fn stdlib_loaded_from_source_has_real_arities() {
+    // Regression for the retired community `stlib.kl` overlay: it installed
+    // the stdlib as pre-compiled KLambda defuns, bypassing the kernel's
+    // `load`/`define` path, so functions like `filter` ended up with the
+    // "unknown" arity -1. That broke `(fn filter)` and top-level
+    // `(filter ...)` ("fn: filter is undefined"). The S41.2-refresh port
+    // loads StLib from the `Lib/StLib` Shen sources through the real `load`,
+    // which registers correct arities. See kernel/stlib/PROVENANCE.md.
+    let mut i = fresh_booted();
+
+    // `filter` has a known (non -1) arity now.
+    let arity = eval(&mut i, "(arity filter)")
+        .as_int()
+        .expect("arity is int");
+    assert!(
+        arity >= 0,
+        "filter arity should be >= 0 (was -1 with the overlay), got {arity}"
+    );
+
+    // `(fn filter)` resolves to a closure instead of raising "undefined".
+    let f = eval(&mut i, "(fn filter)");
+    assert!(
+        f.as_int().is_none() && !f.is_nil(),
+        "(fn filter) should be a closure, got {f:?}"
+    );
+
+    // And filter actually filters (predicate keeps elements > 2).
+    let v = eval(
+        &mut i,
+        "(filter (lambda X (> X 2)) (cons 1 (cons 2 (cons 3 (cons 4 ())))))",
+    );
+    assert_eq!(ints(&v), vec![3, 4]);
+
+    // A package-internal (non-exported) stdlib fn is namespaced, not global:
+    // `reduce` lives in `(package list ...)` and is reachable as `list.reduce`.
+    let r = eval(
+        &mut i,
+        "(list.reduce (lambda X (lambda Acc (+ X Acc))) 0 (cons 1 (cons 2 (cons 3 ()))))",
+    );
+    assert_eq!(r.as_int(), Some(6));
 }
