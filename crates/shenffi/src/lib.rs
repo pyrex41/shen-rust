@@ -33,32 +33,30 @@ pub struct ShenCtx {
     interp: Interp,
 }
 
-/// The ShenOSKernel-41.2 `.kl` sources, embedded into the binary at compile
-/// time in shen-rust's load order. Lets `shen_boot_embedded` bring up the full
-/// kernel with **no filesystem access** — the iOS-friendly path (no bundled
-/// resources, no sandbox path juggling).
+/// The Shen kernel `.kl` sources, embedded into the binary at compile time in
+/// shen-rust's boot order (must match `interp::boot::KERNEL_FILES`). Lets
+/// `shen_boot_embedded` bring up the full kernel with **no filesystem
+/// access** — the iOS-friendly path (no bundled resources, no sandbox path
+/// juggling). See `kernel/klambda/PROVENANCE.md` for the S41.2 refresh set.
 const KERNEL_PARTS: &[&str] = &[
-    include_str!("../../../kernel/klambda/core.kl"),
-    include_str!("../../../kernel/klambda/toplevel.kl"),
     include_str!("../../../kernel/klambda/sys.kl"),
-    include_str!("../../../kernel/klambda/reader.kl"),
-    include_str!("../../../kernel/klambda/prolog.kl"),
-    include_str!("../../../kernel/klambda/load.kl"),
     include_str!("../../../kernel/klambda/writer.kl"),
-    include_str!("../../../kernel/klambda/macros.kl"),
+    include_str!("../../../kernel/klambda/core.kl"),
+    include_str!("../../../kernel/klambda/reader.kl"),
     include_str!("../../../kernel/klambda/declarations.kl"),
-    include_str!("../../../kernel/klambda/types.kl"),
-    include_str!("../../../kernel/klambda/t-star.kl"),
+    include_str!("../../../kernel/klambda/toplevel.kl"),
+    include_str!("../../../kernel/klambda/macros.kl"),
+    include_str!("../../../kernel/klambda/load.kl"),
+    include_str!("../../../kernel/klambda/prolog.kl"),
     include_str!("../../../kernel/klambda/sequent.kl"),
     include_str!("../../../kernel/klambda/track.kl"),
-    include_str!("../../../kernel/klambda/dict.kl"),
-    include_str!("../../../kernel/klambda/compiler.kl"),
+    include_str!("../../../kernel/klambda/t-star.kl"),
+    include_str!("../../../kernel/klambda/yacc.kl"),
+    include_str!("../../../kernel/klambda/types.kl"),
     include_str!("../../../kernel/klambda/stlib.kl"),
-    include_str!("../../../kernel/klambda/init.kl"),
     include_str!("../../../kernel/klambda/extension-features.kl"),
     include_str!("../../../kernel/klambda/extension-expand-dynamic.kl"),
     include_str!("../../../kernel/klambda/extension-launcher.kl"),
-    include_str!("../../../kernel/klambda/yacc.kl"),
 ];
 
 /// Boots a Shen kernel and returns an owning handle, or NULL on failure.

@@ -5,7 +5,7 @@
 
 (defun shen.syntax-error-message (V123 V124 V125) (cond ((= () V125) "
 ") ((= V123 V124) "...etc 
-") ((cons? V125) (cn (shen.app (hd V125) " " shen.s) (shen.syntax-error-message V123 (+ V124 1) (tl V125)))) (true (shen.f-error shen.syntax-error-message))))
+") ((cons? V125) (cn (shen.app (hd V125) " " shen.s) (shen.syntax-error-message V123 (+ V124 1) (tl V125)))) (true (simple-error "partial function shen.syntax-error-message"))))
 
 (defun shen.parse-failure? (V126) (= V126 (fail)))
 
@@ -80,21 +80,21 @@
 
 (defun shen.conscode (V349 V350 V351 V352 V353) (let W354 (gensym Remainder) (let W355 (gensym Hd) (let W356 (gensym Tl) (cons if (cons (cons shen.ccons? (cons V350 ())) (cons (cons let (cons W355 (cons (cons head (cons V350 ())) (cons W356 (cons (cons tail (cons V350 ())) (cons (shen.yacc-syntax V349 W355 (append (shen.decons V351) (cons <end> ())) (cons shen.processed (cons (shen.yacc-syntax V349 W356 V352 V353) ()))) ())))))) (cons (cons shen.parse-failure ()) ()))))))))
 
-(defun shen.ccons? (V365) (cond ((and (cons? V365) (cons? (hd V365))) true) (true false)))
+(defun shen.ccons? (V367) (cond ((and (cons? V367) (cons? (hd V367))) true) ((and (cons? V367) (= () (hd V367))) true) (true false)))
 
-(defun shen.decons (V366) (cond ((and (cons? V366) (and (= cons (hd V366)) (and (cons? (tl V366)) (and (cons? (tl (tl V366))) (= () (tl (tl (tl V366)))))))) (cons (hd (tl V366)) (shen.decons (hd (tl (tl V366)))))) (true V366)))
+(defun shen.decons (V368) (cond ((and (cons? V368) (and (= cons (hd V368)) (and (cons? (tl V368)) (and (cons? (tl (tl V368))) (= () (tl (tl (tl V368)))))))) (cons (hd (tl V368)) (shen.decons (hd (tl (tl V368)))))) (true V368)))
 
-(defun shen.comb (V367 V368) (cons V367 (cons V368 ())))
+(defun shen.comb (V369 V370) (cons V369 (cons V370 ())))
 
-(defun shen.yacc-semantics (V373 V374 V375) (cond ((and (cons? V375) (and (= shen.processed (hd V375)) (and (cons? (tl V375)) (= () (tl (tl V375)))))) (hd (tl V375))) (true (let W376 (shen.process-yacc-semantics V375) (let W377 (shen.use-type-info V373 W376) (cons shen.comb (cons V374 (cons W377 ()))))))))
+(defun shen.yacc-semantics (V375 V376 V377) (cond ((and (cons? V377) (and (= shen.processed (hd V377)) (and (cons? (tl V377)) (= () (tl (tl V377)))))) (hd (tl V377))) (true (let W378 (shen.process-yacc-semantics V377) (let W379 (shen.use-type-info V375 W378) (cons shen.comb (cons V376 (cons W379 ()))))))))
 
-(defun shen.use-type-info (V381 V382) (cond ((and (cons? V381) (and (= { (hd V381)) (and (cons? (tl V381)) (and (cons? (hd (tl V381))) (and (= list (hd (hd (tl V381)))) (and (cons? (tl (hd (tl V381)))) (and (= () (tl (tl (hd (tl V381))))) (and (cons? (tl (tl V381))) (and (= --> (hd (tl (tl V381)))) (and (cons? (tl (tl (tl V381)))) (and (cons? (hd (tl (tl (tl V381))))) (and (= str (hd (hd (tl (tl (tl V381)))))) (and (cons? (tl (hd (tl (tl (tl V381)))))) (and (cons? (hd (tl (hd (tl (tl (tl V381))))))) (and (= list (hd (hd (tl (hd (tl (tl (tl V381)))))))) (and (cons? (tl (hd (tl (hd (tl (tl (tl V381)))))))) (and (= () (tl (tl (hd (tl (hd (tl (tl (tl V381))))))))) (and (cons? (tl (tl (hd (tl (tl (tl V381))))))) (and (= () (tl (tl (tl (hd (tl (tl (tl V381)))))))) (and (cons? (tl (tl (tl (tl V381))))) (and (= } (hd (tl (tl (tl (tl V381)))))) (and (= () (tl (tl (tl (tl (tl V381)))))) (and (= (hd (tl (hd (tl V381)))) (hd (tl (hd (tl (hd (tl (tl (tl V381))))))))) (shen.monomorphic? (hd (tl (tl (hd (tl (tl (tl V381))))))))))))))))))))))))))))))) (cons type (cons V382 (tl (tl (hd (tl (tl (tl V381))))))))) (true V382)))
+(defun shen.use-type-info (V383 V384) (cond ((and (cons? V383) (and (= { (hd V383)) (and (cons? (tl V383)) (and (cons? (hd (tl V383))) (and (= list (hd (hd (tl V383)))) (and (cons? (tl (hd (tl V383)))) (and (= () (tl (tl (hd (tl V383))))) (and (cons? (tl (tl V383))) (and (= --> (hd (tl (tl V383)))) (and (cons? (tl (tl (tl V383)))) (and (cons? (hd (tl (tl (tl V383))))) (and (= str (hd (hd (tl (tl (tl V383)))))) (and (cons? (tl (hd (tl (tl (tl V383)))))) (and (cons? (hd (tl (hd (tl (tl (tl V383))))))) (and (= list (hd (hd (tl (hd (tl (tl (tl V383)))))))) (and (cons? (tl (hd (tl (hd (tl (tl (tl V383)))))))) (and (= () (tl (tl (hd (tl (hd (tl (tl (tl V383))))))))) (and (cons? (tl (tl (hd (tl (tl (tl V383))))))) (and (= () (tl (tl (tl (hd (tl (tl (tl V383)))))))) (and (cons? (tl (tl (tl (tl V383))))) (and (= } (hd (tl (tl (tl (tl V383)))))) (and (= () (tl (tl (tl (tl (tl V383)))))) (and (= (hd (tl (hd (tl V383)))) (hd (tl (hd (tl (hd (tl (tl (tl V383))))))))) (shen.monomorphic? (hd (tl (tl (hd (tl (tl (tl V383))))))))))))))))))))))))))))))) (cons type (cons V384 (tl (tl (hd (tl (tl (tl V383))))))))) (true V384)))
 
-(defun shen.monomorphic? (V385) (cond ((variable? V385) false) ((cons? V385) (and (shen.monomorphic? (hd V385)) (shen.monomorphic? (tl V385)))) (true true)))
+(defun shen.monomorphic? (V387) (cond ((variable? V387) false) ((cons? V387) (and (shen.monomorphic? (hd V387)) (shen.monomorphic? (tl V387)))) (true true)))
 
-(defun shen.process-yacc-semantics (V386) (cond ((and (cons? V386) (and (= protect (hd V386)) (and (cons? (tl V386)) (and (= () (tl (tl V386))) (shen.non-terminal? (hd (tl V386))))))) (hd (tl V386))) ((cons? V386) (map (lambda Z387 (shen.process-yacc-semantics Z387)) V386)) ((shen.non-terminal? V386) (concat Action V386)) (true V386)))
+(defun shen.process-yacc-semantics (V388) (cond ((and (cons? V388) (and (= protect (hd V388)) (and (cons? (tl V388)) (and (= () (tl (tl V388))) (shen.non-terminal? (hd (tl V388))))))) (hd (tl V388))) ((cons? V388) (map (lambda Z389 (shen.process-yacc-semantics Z389)) V388)) ((shen.non-terminal? V388) (concat Action V388)) (true V388)))
 
-(defun shen.<-out (V390) (cond ((and (cons? V390) (and (cons? (tl V390)) (= () (tl (tl V390))))) (hd (tl V390))) (true (hd (tl V390)))))
+(defun shen.<-out (V390) (hd (tl V390)))
 
 (defun shen.in-> (V391) (hd V391))
 

@@ -1,11 +1,20 @@
-//! Kernel boot: load all 21 KL files, set port metadata, run
+//! Kernel boot: load all KL files, set port metadata, run
 //! `shen.initialise`, then publish primitive arity / lambda-form on the
 //! kernel's property vector so `(fn NAME)` resolves correctly.
 //!
-//! The fixed file order matches `shen-ocaml/src/interp/boot.ml`. Per the
-//! 41.x spec, order does not strictly matter (the files only `defun` —
-//! they have no top-level effects). The fixed order makes errors easier
-//! to compare against other ports.
+//! The kernel-file order follows upstream `install.lsp` (the reference
+//! SBCL port's *runtime* loader) for the S41.2 (2026-07-11 refresh) set,
+//! then the retained standard-library overlay and community extensions.
+//!
+//! Order matters here: unlike the old community kernel (defun-only `.kl`
+//! whose load order was cosmetic), the refreshed `declarations.kl` and
+//! `types.kl` carry top-level executable forms. `declarations.kl` runs
+//! `(set shen.*prolog-memory* …)` + `shen.initialise-arity-table`, and
+//! `types.kl`'s 161 `(declare …)` forms invoke the type checker
+//! (`shen.prolog-vector` from `macros.kl`, the prolog memory global). So
+//! `declarations` and `macros` must precede `types`, which loads last —
+//! exactly the `install.lsp` order (NOT the `Sources/make.shen`
+//! bootstrap-generation order, where `types` precedes both).
 
 use std::cell::RefCell;
 use std::fs;
@@ -17,30 +26,43 @@ use crate::interp::eval::Interp;
 use crate::kl::parser::parse_all;
 use crate::value::{Stream, Value};
 
-/// File names in the order shen-ocaml loads them. Vendored under
-/// `kernel/klambda/`.
+/// File names in boot order. Vendored under `kernel/klambda/`.
+///
+/// The first 14 are Mark Tarver's refreshed S41.2 kernel, in the
+/// `install.lsp` runtime load order. `dict.kl`, `compiler.kl`, and
+/// `init.kl` from the community ShenOSKernel-41.2 are gone: `put`/`get`
+/// now use pointer-list property vectors (`sys.kl`), `compiler.kl` was a
+/// shen-cl artifact, and `init.kl`'s content (incl. `shen.initialise`)
+/// moved into `declarations.kl`/`toplevel.kl`.
+///
+/// `backend.kl` (the new `cl.*` KLambda→Common-Lisp backend) is vendored
+/// and AOT-generated for audit completeness but deliberately NOT booted:
+/// upstream loads it as precompiled `backend.lsp` (the CL compiler), and
+/// it is dead weight for a Rust port. See `kernel/klambda/PROVENANCE.md`.
+///
+/// `stlib.kl` (the standard library) and the community extensions are
+/// retained and loaded on top: upstream now ships StLib as separate
+/// lazy Shen sources rather than a kernel `.kl`, but the port's
+/// conformance suite and Ratatoskr stage-1 launcher still need them.
 const KERNEL_FILES: &[&str] = &[
-    "core.kl",
-    "toplevel.kl",
     "sys.kl",
-    "reader.kl",
-    "prolog.kl",
-    "load.kl",
     "writer.kl",
-    "macros.kl",
+    "core.kl",
+    "reader.kl",
     "declarations.kl",
-    "types.kl",
-    "t-star.kl",
+    "toplevel.kl",
+    "macros.kl",
+    "load.kl",
+    "prolog.kl",
     "sequent.kl",
     "track.kl",
-    "dict.kl",
-    "compiler.kl",
+    "t-star.kl",
+    "yacc.kl",
+    "types.kl",
     "stlib.kl",
-    "init.kl",
     "extension-features.kl",
     "extension-expand-dynamic.kl",
     "extension-launcher.kl",
-    "yacc.kl",
 ];
 
 /// Names + arities of native primitives whose `arity` and `shen.lambda-form`
@@ -376,13 +398,21 @@ fn load_kl_file(interp: &mut Interp, path: &Path) -> ShenResult<()> {
     Ok(())
 }
 
+/// Run the kernel's post-load initialisation.
+///
+/// The community ShenOSKernel-41.2 exposed a single `shen.initialise`
+/// (from `init.kl`) that boot called once after loading. The Tarver
+/// S41.2 refresh dropped that function: `declarations.kl` now performs
+/// all of it via top-level forms evaluated *during* file load — it sets
+/// `*property-vector*`, runs `shen.initialise-arity-table`, and builds
+/// the lambda table (`shen.build-lambda-table`). So when `shen.initialise`
+/// is absent the kernel is already initialised and this is a no-op; we
+/// still call it when present so shaken/legacy kernels keep working.
 fn run_shen_initialise(interp: &mut Interp) -> ShenResult<()> {
     let sym = interp.intern("shen.initialise");
-    let f = interp
-        .env
-        .get_fn(sym)
-        .cloned()
-        .ok_or_else(|| ShenError::new("shen.initialise not defined after kernel load"))?;
+    let Some(f) = interp.env.get_fn(sym).cloned() else {
+        return Ok(());
+    };
     interp
         .apply(f, vec![])
         .map_err(|e| ShenError::new(format!("shen.initialise: {e}")))?;

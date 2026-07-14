@@ -2,8 +2,9 @@
 
 ## Current state
 
-A working port of the Shen language to Rust. It boots the upstream
-**ShenOSKernel-41.2** and passes the full conformance suite — **134 / 134**
+A working port of the Shen language to Rust. It boots Mark Tarver's
+**Shen S41.2 (2026-07-11 refresh)** kernel (see
+`kernel/klambda/PROVENANCE.md`) and passes the full conformance suite — **134 / 134**
 kernel tests (`scripts/kernel-tests.sh`) — in every execution mode. All gates
 green (`scripts/gates.sh`): shengen-codegen, fmt+clippy, build, test
 (unit + integration suites), shen-check, tcb-audit, kernel-aot-audit,
@@ -107,7 +108,7 @@ model, not a single hot spot. On served workloads the story inverts: VM
 
 ## Known limitations
 
-- Boot loads + AOT-installs 21 kernel files every startup (~sub-second release);
+- Boot loads + AOT-installs 18 kernel files every startup (~sub-second release);
   shen-cl uses pre-compiled FASLs.
 - GC collection is opt-in (`SHEN_RUST_GC=1`) and requires aarch64
   macOS/Linux (the conservative stack scan is unimplemented elsewhere —

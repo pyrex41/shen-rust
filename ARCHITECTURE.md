@@ -56,7 +56,7 @@ against the tree-walker, all 134/0):
    explicit **trampoline** for tail calls (Rust has no guaranteed TCO and the
    kernel is heavily tail-recursive). `let`/`lambda` push/pop a scope stack
    rather than cloning locals.
-2. **AOT kernel** (`aot/`, `klcompile`) — the 21 kernel files are compiled to
+2. **AOT kernel** (`aot/`, `klcompile`) — the kernel files are compiled to
    Rust at build time: self-tail-calls become loops, `if`/`let`/`cond` and ~18
    primitives are inlined, the rest route through `rt::apply_*`. Installed over
    the tree-walked defuns at boot, preserving function-cell late binding.
