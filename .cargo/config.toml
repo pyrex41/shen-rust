@@ -1,0 +1,8 @@
+# Booting the kernel now loads the standard library from the Lib/StLib Shen
+# sources (kernel/stlib/), whose type-checked load recurses well past the
+# 2 MB default stack of cargo's test threads. The `shen-rust` binary already
+# boots on a >=64 MB thread (bin/shen-rust/src/main.rs); this sets the same
+# floor for every thread cargo spawns (tests, doctests) so `cargo test` and a
+# bare `cargo run` behave without a hand-set RUST_MIN_STACK.
+[env]
+RUST_MIN_STACK = "268435456"

@@ -30,7 +30,6 @@ pub mod macros;
 pub mod prolog;
 pub mod reader;
 pub mod sequent;
-pub mod stlib;
 pub mod sys;
 pub mod t_star;
 pub mod toplevel;
@@ -61,7 +60,6 @@ pub fn install_all(interp: &mut Interp) {
     t_star::install(interp);
     yacc::install(interp);
     types::install(interp);
-    stlib::install(interp);
     extension_features::install(interp);
     extension_expand_dynamic::install(interp);
     extension_launcher::install(interp);

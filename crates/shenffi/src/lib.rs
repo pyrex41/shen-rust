@@ -35,9 +35,14 @@ pub struct ShenCtx {
 
 /// The Shen kernel `.kl` sources, embedded into the binary at compile time in
 /// shen-rust's boot order (must match `interp::boot::KERNEL_FILES`). Lets
-/// `shen_boot_embedded` bring up the full kernel with **no filesystem
-/// access** — the iOS-friendly path (no bundled resources, no sandbox path
-/// juggling). See `kernel/klambda/PROVENANCE.md` for the S41.2 refresh set.
+/// `shen_boot_embedded` bring up the kernel with **no filesystem access** —
+/// the iOS-friendly path (no bundled resources, no sandbox path juggling).
+/// See `kernel/klambda/PROVENANCE.md` for the S41.2 refresh set.
+///
+/// NOTE: the standard library is no longer a kernel `.kl` (it loads from the
+/// vendored `kernel/stlib/` Shen sources via `boot::load_stlib`, which needs a
+/// filesystem). So this no-fs embedded boot brings up the kernel WITHOUT the
+/// stdlib; embedding the StLib sources for the no-fs path is follow-up work.
 const KERNEL_PARTS: &[&str] = &[
     include_str!("../../../kernel/klambda/sys.kl"),
     include_str!("../../../kernel/klambda/writer.kl"),
@@ -53,7 +58,6 @@ const KERNEL_PARTS: &[&str] = &[
     include_str!("../../../kernel/klambda/t-star.kl"),
     include_str!("../../../kernel/klambda/yacc.kl"),
     include_str!("../../../kernel/klambda/types.kl"),
-    include_str!("../../../kernel/klambda/stlib.kl"),
     include_str!("../../../kernel/klambda/extension-features.kl"),
     include_str!("../../../kernel/klambda/extension-expand-dynamic.kl"),
     include_str!("../../../kernel/klambda/extension-launcher.kl"),

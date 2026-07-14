@@ -135,16 +135,16 @@ pub struct CompileReport {
 }
 
 /// Kernel defuns whose source is so large (deeply nested cons literals)
-/// that LLVM optimization takes minutes per release build. They run
-/// once at boot, so AOT gives no speedup — leave them tree-walked.
-/// This is the KERNEL invocation's policy (see `CompileOptions::kernel`),
-/// not a property of the compiler.
-pub const KERNEL_SLOW_DEFUNS: &[&str] = &[
-    "stlib.initialise-sources",
-    "stlib.initialise-types",
-    "stlib.initialise-environment",
-    "stlib.initialise-arities",
-];
+/// that LLVM optimization takes minutes per release build, so the kernel
+/// AOT invocation leaves them tree-walked. This list is the KERNEL
+/// invocation's policy (see `CompileOptions::kernel`), not a property of
+/// the compiler.
+///
+/// Empty since the S41.2 refresh: the only members were the four
+/// `stlib.initialise-*` defuns in the community `stlib.kl`, which is
+/// retired — the standard library now loads from the `Lib/StLib` Shen
+/// sources at boot (`kernel/stlib/`) and is not part of the kernel AOT set.
+pub const KERNEL_SLOW_DEFUNS: &[&str] = &[];
 
 /// Compile KL source text to a Rust module. Pure: no filesystem access.
 /// One `Codegen` per call, so `__tN` numbering matches the historical
@@ -1110,9 +1110,10 @@ mod tests {
         p
     }
 
-    /// Pin the kernel skip set: with the kernel options, the only
-    /// force-skipped defuns across all kernel .kl files are exactly the
-    /// legacy four. A budget heuristic must never silently change this —
+    /// Pin the kernel skip set: with the kernel options, no defun across
+    /// the kernel .kl files is force-skipped (empty since the S41.2 refresh
+    /// retired `stlib.kl`, whose four `stlib.initialise-*` defuns were the
+    /// only members). A budget heuristic must never silently change this —
     /// the kernel AOT bytes are frozen behind Gate 6.
     #[test]
     fn kernel_skip_set_is_exactly_the_legacy_four() {

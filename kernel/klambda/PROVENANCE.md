@@ -68,18 +68,15 @@ order). Order is load-bearing now: `declarations.kl` and `macros.kl` must
 precede `types.kl` (whose 161 top-level `(declare …)` forms invoke the
 type checker), and `types.kl` loads last.
 
-## Standard library overlay — `stlib.kl` (retained, community 41.2)
-
-- SHA-256: `a39047000027a1754f66a4ccf5c822f95d7adb7fd3c7e5df3860e554605df43f`
+## Standard library — now loaded from source (`stlib.kl` retired)
 
 Tarver's refresh no longer ships the standard library as a kernel `.kl`;
-it lives under `Lib/StLib/` as separately-loaded Shen sources. To keep the
-conformance suite and the Ratatoskr stage-1 launcher working without first
-porting the StLib source-load path, the community `ShenOSKernel-41.2`
-`stlib.kl` (348 defuns, no references to any removed kernel symbol) is
-**retained and loaded on top** of the refreshed kernel. It is *not* part
-of Tarver's S41.2 kernel. Migrating to the upstream `Lib/StLib` sources is
-tracked as follow-up work.
+it lives under `Lib/StLib/` as separately-loaded Shen sources. This port
+now follows upstream: the community `ShenOSKernel-41.2` `stlib.kl` overlay
+has been **removed**, and the stdlib loads from the vendored S-lineage
+sources under `../stlib/` at boot (`boot::load_stlib` runs upstream's
+`install.shen`). See `../stlib/PROVENANCE.md`. This also fixes the
+arity `-1` quirk the pre-compiled overlay caused (`(fn filter)` failing).
 
 ## Extensions (retained, community additions)
 
