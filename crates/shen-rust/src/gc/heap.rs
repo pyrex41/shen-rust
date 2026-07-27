@@ -209,7 +209,35 @@ impl Heap {
     /// scan is unsupported it compiles out, request-mode enable refuses, and
     /// this is precise-only, which is what the miri tests exercise).
     pub fn collect_at_safepoint(&mut self, precise: &[Gc]) {
-        self.collect_inner(precise, &[], true);
+        self.collect_inner(precise, &[], true, false);
+        self.live_at_last_collect = self.last_live;
+        self.next_trigger = self.last_live.max(self.min_trigger);
+        self.gc_pending = false;
+    }
+
+    /// [`Heap::collect_at_safepoint`], restricted for **mid-run** safepoints
+    /// (the VM dispatch loop, GC Step 4's script-workload extension): every
+    /// payload-bearing node (`Vec`/`Blob`/`Error`/`Closure`/`Opaque`) is
+    /// unconditionally retained — seeded as a mark root — and only pure-word
+    /// nodes (`Cons`/`Float`) are eligible for sweep.
+    ///
+    /// Why: at a mid-run safepoint, suspended interpreter frames legally hold
+    /// *derived* pointers into node payloads — `&Closure`/`&ClosureKind`
+    /// borrows across the in-place dispatch fast paths, bridged `&str`s —
+    /// whose base `Value` word the compiler is free to have discarded from
+    /// its frame. The conservative scan only recognises tagged head-of-node
+    /// words (the §6g "no interior pointers" invariant), so such a node could
+    /// be swept while a payload borrow is live. `Cons`/`Float` payloads are
+    /// bare words: the audited interpreter/primitive surface never holds a
+    /// `&Value` into them across a re-entry (every `head()`/`tail()` result
+    /// is copied out immediately), so sweeping them cannot dangle a borrow.
+    ///
+    /// The cost is bounded over-retention of dead closures/vectors/strings
+    /// until the next depth-0 safepoint (which sweeps every kind). On the
+    /// list-dominated workloads this exists for (software bigint/SHA — cons
+    /// garbage), retained kinds are a rounding error of the footprint.
+    pub fn collect_at_safepoint_retaining(&mut self, precise: &[Gc]) {
+        self.collect_inner(precise, &[], true, true);
         self.live_at_last_collect = self.last_live;
         self.next_trigger = self.last_live.max(self.min_trigger);
         self.gc_pending = false;
@@ -429,17 +457,27 @@ impl Heap {
     /// blob bytes / opaque `Drop`) and resets the node to `Free` — and clear
     /// marks on survivors. Free nodes are unmarked, so they correctly stay free.
     pub fn collect(&mut self, roots: &[Gc]) {
-        self.collect_inner(roots, &[], false);
+        self.collect_inner(roots, &[], false, false);
     }
 
     /// [`Heap::collect`] with a second root slice (in-flight alloc operands).
     fn collect2(&mut self, roots: &[Gc], extra: &[Gc]) {
-        self.collect_inner(roots, extra, false);
+        self.collect_inner(roots, extra, false, false);
     }
 
     /// The full mark-sweep: mark from the conservative native-stack scan (if
     /// requested and supported), then from both precise slices, trace, sweep.
-    fn collect_inner(&mut self, roots: &[Gc], extra: &[Gc], scan_stack: bool) {
+    /// With `retain_payload_kinds` (mid-run safepoints — see
+    /// [`Heap::collect_at_safepoint_retaining`]), every non-`Free` node whose
+    /// payload is a separate Rust allocation is seeded as a mark root, so
+    /// only `Cons`/`Float` nodes can be reclaimed.
+    fn collect_inner(
+        &mut self,
+        roots: &[Gc],
+        extra: &[Gc],
+        scan_stack: bool,
+        retain_payload_kinds: bool,
+    ) {
         if self.sweep_incomplete {
             // A previous sweep unwound mid-loop (a payload Drop panicked and
             // the host caught the unwind): mark bits are stale, so another
@@ -460,6 +498,27 @@ impl Heap {
         }
         // ---- mark ----
         self.mark_stack.clear();
+        if retain_payload_kinds {
+            // Seed every payload-bearing node as a root (mark + enqueue so
+            // its outgoing `Value` edges are traced too). Indexed loop: the
+            // `all` read and the `mark_stack` push are disjoint field
+            // borrows only with no iterator borrow held across the push.
+            for i in 0..self.all.len() {
+                let p = self.all[i];
+                // SAFETY: every `p` in `all` is a live, owned node address.
+                unsafe {
+                    match (*p).kind {
+                        Kind::Vec | Kind::Blob | Kind::Error | Kind::Closure | Kind::Opaque => {
+                            if !(*p).mark {
+                                (*p).mark = true;
+                                self.mark_stack.push(p);
+                            }
+                        }
+                        Kind::Cons | Kind::Float | Kind::Free => {}
+                    }
+                }
+            }
+        }
         if scan_stack {
             self.scan_native_roots();
         }

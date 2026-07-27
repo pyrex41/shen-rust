@@ -282,6 +282,23 @@ pub(crate) fn gc_collect_at_safepoint(precise: &[Value]) -> (u64, usize, usize) 
     })
 }
 
+/// Run a **mid-run** safepoint collection (the VM dispatch-loop safepoint):
+/// like [`gc_collect_at_safepoint`], but payload-bearing node kinds are
+/// unconditionally retained and only `Cons`/`Float` nodes are swept — see
+/// [`Heap::collect_at_safepoint_retaining`] for the derived-pointer rationale.
+/// The caller (`vm::exec`) is responsible for the hazard gating (activation
+/// state fully enumerable) before calling this.
+pub(crate) fn gc_collect_retaining_at_safepoint(precise: &[Value]) -> (u64, usize, usize) {
+    with_heap_mut(|h| {
+        // SAFETY: as in `gc_collect_at_safepoint` — bulk `Value` → `Gc` cast
+        // of two `#[repr(transparent)]` u64 wrappers with shared encodings.
+        let gcs: &[Gc] =
+            unsafe { std::slice::from_raw_parts(precise.as_ptr().cast::<Gc>(), precise.len()) };
+        h.collect_at_safepoint_retaining(gcs);
+        (h.collections(), h.last_live(), h.node_count())
+    })
+}
+
 /// `(collections, last_live, node_count)` of this thread's heap — for stats
 /// reporting and the GC stress/boundedness harnesses.
 pub(crate) fn gc_heap_stats() -> (u64, usize, usize) {

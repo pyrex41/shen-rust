@@ -36,6 +36,80 @@ use crate::vm::opcode::Op;
 // The single value stack: locals + operands for every live frame.
 type Stack = Vec<Value>;
 
+/// Ops between mid-run GC pending-flag polls. Collection work is O(heap) and
+/// the pending flag is raised at most once per heap block grow, so a coarse
+/// period loses nothing; it keeps the poll (a TLS heap read) off the per-op
+/// path.
+const GC_CHECK_PERIOD: u32 = 1024;
+
+/// The GC Step-4 **mid-run** safepoint: run a deferred collection from inside
+/// the VM dispatch loop, where a `script`/`eval` workload actually lives —
+/// the depth-0 funnel safepoint is unreachable for the entire run of a
+/// single-toplevel-form script (see PERFORMANCE.md "GC for script
+/// workloads").
+///
+/// Soundness is by refusal (fail-closed): collection runs only when every
+/// malloc-backed `Value` container on the thread is enumerable right here —
+///
+/// * `exec_depth() == 1`: no suspended outer `exec` whose stack/frames we
+///   can't see; *this* activation's `stack`/`frames`/`cur_upvals`/constant
+///   pools are passed in and rooted precisely.
+/// * `tw_hazards() == 0`: no live owned scope, spilled arg buffer, or
+///   materialised lambda scope anywhere in suspended tree-walker frames
+///   (each such container arms a hazard guard for exactly its lifetime).
+/// * `live_interps() == 1`: same refusal as the depth-0 safepoint — only one
+///   `Interp`'s containers are enumerable.
+///
+/// Everything else live is either in `Interp`'s own tables
+/// ([`Interp::gc_roots`]), immediate `Value` words in native frames/registers
+/// (the §6g conservative scan), or inside retained node kinds — the
+/// collection sweeps only `Cons`/`Float` nodes precisely so that payload
+/// borrows held by suspended frames (`&Closure` across in-place dispatch,
+/// bridged `&str`s) can never dangle. See
+/// `Heap::collect_at_safepoint_retaining` for the full rationale.
+#[cold]
+fn maybe_collect_mid_run(
+    interp: &mut Interp,
+    stack: &[Value],
+    frames: &[Frame],
+    cur_upvals: &[Value],
+    cur_bf: &Rc<BytecodeFn>,
+) {
+    use crate::interp::eval;
+    if !crate::value::gc_request_pending()
+        || eval::exec_depth() != 1
+        || eval::tw_hazards() != 0
+        || eval::live_interps() != 1
+    {
+        return;
+    }
+    let t0 = std::time::Instant::now();
+    let mut roots = interp.gc_roots();
+    roots.extend_from_slice(stack);
+    roots.extend_from_slice(cur_upvals);
+    Interp::push_bytecode_roots(cur_bf, &mut roots);
+    for fr in frames {
+        // A suspended frame's locals/operands live in `stack` (already
+        // rooted); its captured upvals and its function's constant pool are
+        // reachable only through the frame itself. `fr.bf` is an `Rc` — the
+        // BytecodeFn allocation is refcounted, not a heap node — but its
+        // consts are `Value`s whose nodes must be kept: the closure node
+        // that carried this function may itself be unreachable by now.
+        roots.extend_from_slice(&fr.upvals);
+        Interp::push_bytecode_roots(&fr.bf, &mut roots);
+    }
+    let (n, live, nodes) = crate::value::gc_collect_retaining_at_safepoint(&roots);
+    static STATS: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    if *STATS.get_or_init(|| std::env::var("SHEN_RUST_GC_STATS").is_ok()) {
+        eprintln!(
+            "shen-rust gc: vm mid-run collection #{n}: live {live} / {nodes} \
+             nodes, {} precise roots, {:.2?}",
+            roots.len(),
+            t0.elapsed()
+        );
+    }
+}
+
 /// A suspended caller. The *current* frame's state is kept in local
 /// variables of `exec` for speed; `frames` holds the callers waiting for
 /// it to return.
@@ -75,6 +149,13 @@ pub fn exec(
     // is a malloc'd `Vec<Value>` the conservative scan cannot see — see
     // `eval::engine_guard`.
     let _gc = crate::interp::eval::engine_guard();
+    // GC mid-run safepoint bookkeeping: count this activation (the safepoint
+    // below refuses unless it is the ONLY one — a suspended outer exec's
+    // stack/frames are locals we cannot enumerate), and hoist the
+    // process-lifetime "is the GC even on?" test out of the dispatch loop.
+    let _exec_depth = crate::interp::eval::exec_depth_guard();
+    let gc_active = crate::value::gc_request_active();
+    let mut gc_countdown: u32 = GC_CHECK_PERIOD;
 
     // Frame 0 lives at base 0. Args become locals[0..arity); the rest of
     // the locals slots are Nil. Operands push above `floor`.
@@ -95,6 +176,22 @@ pub fn exec(
         // Call-heavy bytecode tree is cancelable mid-run, exactly like the
         // tree-walked trampoline in `eval_in`.
         interp.charge_step()?;
+
+        // GC mid-run safepoint (the script-workload extension of GC Step 4):
+        // the loop top is the one point where this activation's complete
+        // `Value` state is enumerable — locals/operands in `stack`, suspended
+        // callers in `frames`, `cur_upvals`, and the constant pools. Checked
+        // every GC_CHECK_PERIOD ops; `maybe_collect_mid_run` then applies the
+        // hazard gates (pending? sole exec? zero tree-walk hazards? sole
+        // Interp?) and collects with Cons/Float-only sweep. GC-off cost: one
+        // register-bool test per op.
+        if gc_active {
+            gc_countdown -= 1;
+            if gc_countdown == 0 {
+                gc_countdown = GC_CHECK_PERIOD;
+                maybe_collect_mid_run(interp, &stack, &frames, &cur_upvals, &cur_bf);
+            }
+        }
 
         let op = cur_bf
             .code

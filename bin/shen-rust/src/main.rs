@@ -77,6 +77,23 @@ fn main() -> ExitCode {
             "eval" | "script" | "repl" | "--help" | "--version"
         )
     }) {
+        // Engine selection for the launcher's batch entrypoints: `script`
+        // and `eval` run *loaded* user code, where the bytecode VM's
+        // per-body compile cost amortizes and wins 30–40% wall on real
+        // workloads (measured on urdr's SHA/bigint suites; see
+        // PERFORMANCE.md "Engine selection for launcher entrypoints").
+        // Default the VM on for these two entry words only — the bare
+        // REPL and `--kernel-tests` keep the tree-walker so the one-shot
+        // cross-port ratio is untouched. `SHEN_RUST_VM=0` opts back out;
+        // any explicit `SHEN_RUST_VM` setting wins over this default.
+        // Must run before the worker thread spawns / any closure is built.
+        if args
+            .get(1)
+            .is_some_and(|a| matches!(a.as_str(), "script" | "eval"))
+            && std::env::var_os("SHEN_RUST_VM").is_none()
+        {
+            shen_rust::interp::eval::enable_vm();
+        }
         // Same deep-recursion story as --kernel-tests: loaded user code
         // (e.g. the Ratatoskr shaker walking the kernel call graph)
         // recurses through non-self-tail-call frames well past the
@@ -125,6 +142,28 @@ fn run_repl() -> ExitCode {
 /// into this binary's own REPL loop on the already-booted interpreter.
 fn run_launcher(args: &[String]) -> ExitCode {
     let mut interp = Interp::new();
+    // GC × engine interaction, made loud instead of silent: a `script`/`eval`
+    // run hands the whole workload to ONE `apply` below, so the interpreter's
+    // activation depth never returns to 0 and the GC Step-4 depth-0 safepoint
+    // is unreachable for the entire run. Mid-run collection exists only in the
+    // bytecode VM's dispatch loop (the hazard-gated safepoint; see
+    // PERFORMANCE.md "GC for script workloads"). On the tree-walker,
+    // SHEN_RUST_GC therefore cannot reclaim anything until the script ends —
+    // warn so the flag is never a silent no-op.
+    if args
+        .get(1)
+        .is_some_and(|a| matches!(a.as_str(), "script" | "eval"))
+        && shen_rust::interp::eval::gc_active()
+        && !shen_rust::interp::eval::vm_active()
+    {
+        eprintln!(
+            "shen-rust: SHEN_RUST_GC is active but the tree-walk engine has no \
+             mid-run safepoint: a `script`/`eval` run cannot collect before it \
+             finishes (the heap only grows). Leave SHEN_RUST_VM unset (VM is \
+             the default for script/eval) or set SHEN_RUST_VM=1 so mid-run \
+             collection can fire in the bytecode dispatch loop."
+        );
+    }
     if let Err(e) = boot(&mut interp) {
         eprintln!("shen-rust: kernel boot failed: {e}");
         return ExitCode::from(2);

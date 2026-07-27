@@ -70,6 +70,13 @@ impl Scope<'_> {
     fn make_mut(&mut self) -> &mut Locals {
         if let Scope::Borrowed(s) = self {
             *self = Scope::Owned(s.to_vec());
+            // GC hazard accounting: an owned scope is a malloc-backed
+            // `Value` container invisible to the mid-run root enumeration
+            // (see TW_HAZARDS). Counted once per promotion; the matching
+            // decrement is Scope's Drop.
+            if crate::value::gc_request_active() {
+                tw_hazard_inc();
+            }
         }
         match self {
             Scope::Owned(v) => v,
@@ -90,6 +97,10 @@ impl Scope<'_> {
             }
             Scope::Borrowed(_) => {
                 *self = Scope::Owned(Vec::with_capacity(captured.len() + params.len()));
+                // See make_mut: one hazard per Borrowed→Owned promotion.
+                if crate::value::gc_request_active() {
+                    tw_hazard_inc();
+                }
                 match self {
                     Scope::Owned(v) => v,
                     Scope::Borrowed(_) => unreachable!(),
@@ -98,6 +109,21 @@ impl Scope<'_> {
         };
         buf.extend(captured.iter().cloned());
         buf.extend(params.iter().copied().zip(args));
+    }
+}
+
+impl Drop for Scope<'_> {
+    /// Balance the promotion-time hazard increment (see [`TW_HAZARDS`],
+    /// `make_mut` / `enter_frame`). `GC_ACTIVE` is a process-start switch
+    /// set before the first evaluation (`Interp::maybe_enable_gc` refuses
+    /// mid-activation enables), so increment and decrement always agree on
+    /// whether counting is on. GC-off cost: a discriminant test — only
+    /// promoted (already-allocating) scopes pay the TLS load.
+    #[inline]
+    fn drop(&mut self) {
+        if matches!(self, Scope::Owned(_)) && crate::value::gc_request_active() {
+            tw_hazard_dec();
+        }
     }
 }
 
@@ -118,6 +144,114 @@ thread_local! {
     /// (warn-once) when more than one `Interp` is alive (e.g. the
     /// differential oracles, which run two engines side by side).
     static LIVE_INTERPS: std::cell::Cell<u32> = const { std::cell::Cell::new(0) };
+
+    /// Count of *malloc-backed* containers of `Value`s currently live in
+    /// interpreter frames on this thread: owned scopes ([`Scope::Owned`]),
+    /// spilled [`ArgVec`]s held across a re-entrant dispatch, the
+    /// over-application `extra` vectors, and [`Interp::call_strict`]'s
+    /// materialised lambda locals. These are exactly the `Value` holders the
+    /// hybrid root story cannot see — heap-buffer contents are invisible to
+    /// the conservative native-stack scan, and they are not enumerable from
+    /// `Interp` fields. The VM's hazard-gated mid-run safepoint
+    /// (`vm::exec::maybe_collect_mid_run`) REFUSES to collect unless this is
+    /// 0, so soundness is by construction: any frame state the collector
+    /// cannot enumerate blocks collection rather than being missed.
+    /// Maintained only while request-mode GC is active (all counting sites
+    /// are behind a `gc_request_active()` check); the GC-off default path
+    /// pays at most a TLS load + predicted branch per site.
+    static TW_HAZARDS: std::cell::Cell<u32> = const { std::cell::Cell::new(0) };
+
+    /// Live `vm::exec::exec` activations on this thread (maintained only
+    /// while request-mode GC is active, like [`TW_HAZARDS`]). The VM mid-run
+    /// safepoint requires exactly 1 — its own: a suspended *outer* exec's
+    /// value stack / frame stack are `Vec` locals the inner activation
+    /// cannot enumerate, so nested activations refuse.
+    static EXEC_DEPTH: std::cell::Cell<u32> = const { std::cell::Cell::new(0) };
+}
+
+/// Current tree-walker hazard count (see [`TW_HAZARDS`]).
+#[inline]
+pub(crate) fn tw_hazards() -> u32 {
+    TW_HAZARDS.with(|c| c.get())
+}
+
+#[inline]
+fn tw_hazard_inc() {
+    TW_HAZARDS.with(|c| c.set(c.get() + 1));
+}
+
+#[inline]
+fn tw_hazard_dec() {
+    TW_HAZARDS.with(|c| c.set(c.get() - 1));
+}
+
+/// Current VM exec activation depth (see [`EXEC_DEPTH`]).
+#[inline]
+pub(crate) fn exec_depth() -> u32 {
+    EXEC_DEPTH.with(|c| c.get())
+}
+
+/// Live `Interp` count on this thread (see [`LIVE_INTERPS`]).
+#[inline]
+pub(crate) fn live_interps() -> u32 {
+    LIVE_INTERPS.with(|c| c.get())
+}
+
+/// RAII exec-activation guard for `vm::exec::exec` (see [`EXEC_DEPTH`]).
+/// Counts only while request-mode GC is active; a no-op (one TLS load +
+/// predicted branch) otherwise.
+pub(crate) struct ExecDepthGuard(bool);
+
+#[inline]
+pub(crate) fn exec_depth_guard() -> ExecDepthGuard {
+    if crate::value::gc_request_active() {
+        EXEC_DEPTH.with(|c| c.set(c.get() + 1));
+        ExecDepthGuard(true)
+    } else {
+        ExecDepthGuard(false)
+    }
+}
+
+impl Drop for ExecDepthGuard {
+    #[inline]
+    fn drop(&mut self) {
+        if self.0 {
+            EXEC_DEPTH.with(|c| c.set(c.get() - 1));
+        }
+    }
+}
+
+/// RAII hazard-count guard (see [`TW_HAZARDS`]). `arm(heap_backed)` counts
+/// one hazard for the guard's lifetime iff `heap_backed` is true and
+/// request-mode GC is active. Callers pass the *is this container actually
+/// on the malloc heap?* predicate (`SmallVec::spilled()`, `!vec.is_empty()`)
+/// so inline/empty buffers — whose contents the conservative stack scan
+/// already covers — don't block collection.
+///
+/// Moving the guarded container out (into a callee that has its own
+/// accounting) while the guard is still armed is fine: the count can only be
+/// too HIGH, and an over-count refuses collection — the sound direction.
+pub(crate) struct HazardGuard(bool);
+
+impl HazardGuard {
+    #[inline]
+    pub(crate) fn arm(heap_backed: bool) -> HazardGuard {
+        if heap_backed && crate::value::gc_request_active() {
+            tw_hazard_inc();
+            HazardGuard(true)
+        } else {
+            HazardGuard(false)
+        }
+    }
+}
+
+impl Drop for HazardGuard {
+    #[inline]
+    fn drop(&mut self) {
+        if self.0 {
+            tw_hazard_dec();
+        }
+    }
 }
 
 /// RAII activation-depth guard (see [`GC_DEPTH`]). Decrement-only on drop —
@@ -793,6 +927,11 @@ impl Interp {
 
     fn eval_args(&mut self, args: &[KlExpr], locals: &[(SymId, Value)]) -> ShenResult<ArgVec> {
         let mut out = ArgVec::with_capacity(args.len());
+        // GC hazard accounting (see TW_HAZARDS): >inline-cap arities spill
+        // `out` to the malloc heap up front (`with_capacity` pre-sizes, so
+        // pushes never re-spill); its contents are then invisible to the
+        // mid-run root enumeration while the remaining args evaluate.
+        let _hazard = HazardGuard::arm(out.spilled());
         for a in args {
             out.push(self.eval_in(a, locals)?);
         }
@@ -838,18 +977,30 @@ impl Interp {
         if total_args.len() == closure.arity {
             match &closure.kind {
                 ClosureKind::Native(f, _captures) => {
+                    // Spilled `total_args` is live across the native call, which
+                    // can re-enter the evaluator (see TW_HAZARDS).
+                    let _hazard = HazardGuard::arm(total_args.spilled());
                     // Call in-place: `f` borrows `closure.kind` (a pinned heap
                     // node), disjoint from `self`; no `Rc::clone` on this path.
                     let v = f(self, &total_args)?;
                     return Ok(StepOutcome::Done(v));
                 }
                 ClosureKind::Lambda(body) => {
+                    // `enter_frame` moves `total_args` into the owned scope
+                    // (which has its own hazard via Scope promotion); arming
+                    // here only covers the brief move window (no re-entry).
+                    let _hazard = HazardGuard::arm(total_args.spilled());
                     let body = Rc::clone(body);
                     scope.enter_frame(&body.captured, &body.params, total_args);
                     *current = body.body.clone();
                     return Ok(StepOutcome::Continue);
                 }
                 ClosureKind::Bytecode(bf, upvals) => {
+                    // Do NOT hold a spilled-ArgVec hazard across `exec`: args
+                    // are copied into the VM stack on entry and that stack is
+                    // precisely rooted by the mid-run safepoint. Arming here
+                    // would refuse collection for the whole activation
+                    // whenever entry arity > 4 — wrong for script workloads.
                     let v = crate::vm::exec::exec(self, bf, upvals, &total_args)?;
                     return Ok(StepOutcome::Done(v));
                 }
@@ -857,6 +1008,7 @@ impl Interp {
                 ClosureKind::Jit(jc, captures) => {
                     // `jc`/`captures` borrow the pinned closure node, disjoint
                     // from `self` — same in-place dispatch as the `Native` arm.
+                    let _hazard = HazardGuard::arm(total_args.spilled());
                     let v = crate::jit::call_jit(self, jc, captures, &total_args)?;
                     return Ok(StepOutcome::Done(v));
                 }
@@ -865,7 +1017,9 @@ impl Interp {
 
         // Over-application: invoke with the first `arity` args, then apply
         // the result to the rest.
+        let _hazard = HazardGuard::arm(total_args.spilled());
         let extra: Vec<_> = total_args.drain(closure.arity..).collect();
+        let _hazard_extra = HazardGuard::arm(!extra.is_empty());
         let first = self.call_strict(closure, total_args)?;
         let v = self.apply(first, extra)?;
         Ok(StepOutcome::Done(v))
@@ -875,17 +1029,32 @@ impl Interp {
     /// the over-application path).
     fn call_strict(&mut self, closure: &Closure, args: ArgVec) -> ShenResult<Value> {
         match &closure.kind {
-            ClosureKind::Native(f, _captures) => f(self, &args),
+            ClosureKind::Native(f, _captures) => {
+                // Spilled `args` live across a native call that can re-enter.
+                let _hazard = HazardGuard::arm(args.spilled());
+                f(self, &args)
+            }
             ClosureKind::Lambda(body) => {
+                let _hazard = HazardGuard::arm(args.spilled());
                 let mut locals: Locals = body.captured.clone();
                 for (p, a) in body.params.iter().zip(args) {
                     locals.push((*p, a));
                 }
+                // The materialised lambda scope is a malloc `Vec` live for
+                // the whole body evaluation.
+                let _hazard_locals = HazardGuard::arm(!locals.is_empty());
                 self.eval_in(&body.body, &locals)
             }
-            ClosureKind::Bytecode(bf, upvals) => crate::vm::exec::exec(self, bf, upvals, &args),
+            ClosureKind::Bytecode(bf, upvals) => {
+                // No ArgVec hazard across `exec` — see the Bytecode arm of
+                // the exact-arity dispatch above for the rationale.
+                crate::vm::exec::exec(self, bf, upvals, &args)
+            }
             #[cfg(feature = "jit")]
-            ClosureKind::Jit(jc, captures) => crate::jit::call_jit(self, jc, captures, &args),
+            ClosureKind::Jit(jc, captures) => {
+                let _hazard = HazardGuard::arm(args.spilled());
+                crate::jit::call_jit(self, jc, captures, &args)
+            }
         }
     }
 
@@ -935,6 +1104,9 @@ impl Interp {
         }
 
         let extra: Vec<_> = total.drain(closure.arity..).collect();
+        // GC hazard accounting (see TW_HAZARDS): `extra` is a malloc `Vec`
+        // live across the first call. (`total` is covered by call_strict.)
+        let _hazard_extra = HazardGuard::arm(!extra.is_empty());
         let first = self.call_strict(closure, total)?;
         self.apply_inner(first, extra)
     }
@@ -993,7 +1165,7 @@ impl Interp {
     /// tc-cache's in-flight entries, and the host pin list. Plain field
     /// walks — must stay free of `Value` heap accessors (it runs immediately
     /// before the collector takes the heap exclusively).
-    fn gc_roots(&self) -> Vec<Value> {
+    pub(crate) fn gc_roots(&self) -> Vec<Value> {
         let mut out = Vec::with_capacity(8192);
         self.env.push_gc_roots(&mut out);
         for cc in self.closure_cache.values() {
@@ -1009,7 +1181,7 @@ impl Interp {
     /// Push a `BytecodeFn`'s constant pool (recursing into nested compiled
     /// functions) — a cached `BytecodeFn` can outlive every closure sharing
     /// it, so the closure-node edges alone don't keep these alive.
-    fn push_bytecode_roots(bf: &crate::vm::bytecode::BytecodeFn, out: &mut Vec<Value>) {
+    pub(crate) fn push_bytecode_roots(bf: &crate::vm::bytecode::BytecodeFn, out: &mut Vec<Value>) {
         out.extend_from_slice(&bf.consts);
         for nested in &bf.fn_consts {
             Self::push_bytecode_roots(nested, out);
@@ -1528,7 +1700,26 @@ pub fn enable_vm() {
 }
 
 fn vm_enabled() -> bool {
-    *VM_ENABLED.get_or_init(|| std::env::var_os("SHEN_RUST_VM").is_some())
+    // `SHEN_RUST_VM=0` (or empty) is an explicit opt-OUT: the launcher's
+    // `script`/`eval` entrypoints default the VM on (see `bin/shen-rust`),
+    // and users need a way to force the tree-walker back for comparison.
+    // Any other set value is an opt-in, as before.
+    *VM_ENABLED.get_or_init(|| {
+        std::env::var_os("SHEN_RUST_VM").is_some_and(|v| !v.is_empty() && v != "0")
+    })
+}
+
+/// Whether the bytecode VM has been selected for this process (via
+/// `SHEN_RUST_VM`, [`enable_vm`], or a VM-default entrypoint). Public so the
+/// binary's launcher can report engine/GC interaction (see `run_launcher`).
+pub fn vm_active() -> bool {
+    vm_enabled()
+}
+
+/// Whether request-mode GC (`SHEN_RUST_GC`) is active on this thread. Public
+/// mirror for the binary's launcher diagnostics.
+pub fn gc_active() -> bool {
+    crate::value::gc_request_active()
 }
 
 fn clone_kind(kind: &ClosureKind) -> ClosureKind {
