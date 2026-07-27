@@ -10,6 +10,7 @@ description = "Shen language port hosted in Rust with first-class AWS Cedar inte
 [dependencies]
 cedar-policy = { workspace = true }
 smallvec = "1"
+sha2 = "0.10"
 
 # Cranelift JIT (GC ladder rung 3, productionization stage J1). Optional and
 # off by default so non-JIT builds stay lean and gates are bisectable; enabled

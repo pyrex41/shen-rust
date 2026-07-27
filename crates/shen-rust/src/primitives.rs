@@ -21,6 +21,8 @@ use crate::value::{shen_eq, Stream, Value};
 pub fn register_all(interp: &mut Interp) {
     register_core(interp);
     crate::cedar::primitives::register_all(interp);
+    // Host extensions (shen.x) are installed in register_hot_overrides after
+    // kernel boot so globals survive boot side-effects.
 }
 
 /// Override kernel-level Shen functions with native Rust implementations
@@ -100,6 +102,8 @@ pub fn register_hot_overrides(interp: &mut Interp) {
     // writes to any other (file) stream always occur. See #2.
     interp.register_native("pr", 2, hot_pr);
     interp.register_aot_direct("pr", hot_pr);
+
+    register_shenx(interp);
 }
 
 /// pr — write the string `args[0]` to the output stream `args[1]`, honouring
@@ -637,6 +641,48 @@ fn register_core(interp: &mut Interp) {
             ))),
         }
     });
+
+}
+
+/// Optional [shen-extensions](https://github.com/pyrex41/shen-extensions) host
+/// SHA-256 (`sha2` crate). Disable with `SHEN_X_SHA256=pure`.
+/// Call from [`register_hot_overrides`] after kernel boot.
+pub fn register_shenx(interp: &mut Interp) {
+    if std::env::var_os("SHEN_X_SHA256").as_deref() == Some(std::ffi::OsStr::new("pure")) {
+        return;
+    }
+    use sha2::{Digest, Sha256};
+
+    interp.register_native("shen.x.sha256-octets-host", 1, |_, args| {
+        let mut bytes = Vec::new();
+        let mut cur = args[0].clone();
+        while !cur.is_nil() {
+            let (h, t) = match (cur.head(), cur.tail()) {
+                (Some(h), Some(t)) => (h.clone(), t.clone()),
+                _ => {
+                    return Err(ShenError::new(
+                        "shen.x.sha256-octets-host: expected list of bytes 0..255",
+                    ))
+                }
+            };
+            let n = h.as_int().ok_or_else(|| {
+                ShenError::new("shen.x.sha256-octets-host: expected list of bytes 0..255")
+            })?;
+            if !(0..=255).contains(&n) {
+                return Err(ShenError::new(
+                    "shen.x.sha256-octets-host: expected list of bytes 0..255",
+                ));
+            }
+            bytes.push(n as u8);
+            cur = t;
+        }
+        let digest = Sha256::digest(&bytes);
+        Ok(bytes_to_list(&digest))
+    });
+
+    let backend = interp.symbols.intern("shen.x.*sha256-backend*");
+    let host = interp.symbols.intern("host");
+    interp.env.set_global(backend, Value::sym(host));
 }
 
 // --- helpers ---
