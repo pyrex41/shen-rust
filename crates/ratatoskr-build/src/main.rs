@@ -340,6 +340,9 @@ fn generate_main(manifest: &Manifest, users: &[UserModule]) -> String {
         "    boot::boot_from_kl_source(&mut interp, KERNEL_KL, Some(kernel_aot::install))\n\
          \x20       .map_err(|e| format!(\"boot: {e}\"))?;\n",
     );
+    // shen.x host extensions (SHA-256 via sha2) are installed by
+    // register_hot_overrides inside boot_from_kl_source. User code that
+    // calls shen.x.sha256-octets then prefers host over pure.
     for u in users {
         out.push_str(&format!("    {}::install(&mut interp);\n", u.module));
     }

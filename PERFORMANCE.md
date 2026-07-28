@@ -120,6 +120,71 @@ poison-on-sweep; miri covers the precise-collect path. Ship posture:
 (hard refusal elsewhere), mutually exclusive with the JIT (Cranelift frame
 roots unverified), refused on multi-`Interp` threads.
 
+## Engine selection for launcher entrypoints
+
+`script` and `eval` (the kernel launcher's batch entry words) **default the
+bytecode VM on**. Loaded user code amortizes the per-body compile cost; on
+urdr's pure-Shen SHA/bigint suites the VM was measured ~30–40% faster wall
+than the tree-walker while preserving exact-golden digests. The bare REPL and
+`--kernel-tests` keep the tree-walker so the one-shot cross-port ratio is
+untouched. Override with `SHEN_RUST_VM=0` (force tree-walk) or any other set
+value / `enable_vm()` (force VM).
+
+## GC for script workloads (mid-run VM safepoint)
+
+A `script`/`eval` run hands the whole workload to **one** `Interp::apply`
+(the launcher's `launch-shen`), so activation depth never returns to 0 until
+the script ends — the depth-0 funnel safepoint from Step 4 is unreachable for
+the entire run, and with only that path `SHEN_RUST_GC=1` was a silent
+grow-only mode (issue #11: multi-GB RSS on urdr replay/prng).
+
+**Fix (shipped on `perf/urdr-workload`)**: the VM dispatch loop polls a
+hazard-gated **mid-run** safepoint every 1024 ops. Collection fires only when:
+
+1. `gc_pending` is raised (same heap-doubling request as Step 4),
+2. this is the sole `exec` activation on the thread (`exec_depth == 1`),
+3. no tree-walker malloc-backed `Value` containers are live (`tw_hazards == 0`
+   — owned scopes, spilled arg buffers, materialised lambda locals),
+4. only one `Interp` is live on the thread.
+
+Roots: `Interp::gc_roots` + this activation's value stack, frame upvals, and
+bytecode constant pools, plus the §6g conservative scan. Sweep is
+**Cons/Float-only**: payload-bearing kinds (Vec/Blob/Error/Closure/Opaque)
+are retained for the mid-run pass so derived payload borrows in suspended
+frames (`&Closure`, bridged `&str`) cannot dangle — the depth-0 safepoint
+still sweeps every kind when a funnel finally exits. On list-dominated
+workloads (software bigint/SHA) retained kinds are a rounding error of the
+footprint.
+
+On the tree-walker, mid-run collection does not exist: with `SHEN_RUST_GC`
+and `SHEN_RUST_VM=0` the launcher prints a loud warning rather than silently
+growing. `tests/gc_vm_safepoint.rs` is the single-activation boundedness
+oracle; `tests/gc_stress.rs` remains the served depth-0 oracle.
+
+`SHEN_RUST_GC_STATS=1` logs both depth-0 and mid-run collections.
+
+Measured on urdr (macOS aarch64, 2026-07-27, release `shen-rust`, ALL PASS):
+
+| suite | config | wall | max RSS |
+|---|---|---:|---:|
+| prng | VM default, GC off | 8.25s | 1.21 GB |
+| prng | VM default + `SHEN_RUST_GC=1` | **6.73s** | **698 MB** |
+| prng | tree-walk (`SHEN_RUST_VM=0`) | 16.6s | 1.23 GB |
+| prng | tree-walk + GC | 19.0s | 1.17 GB (grow-only; warn) |
+| world | VM default, GC off | 6.13s | 788 MB |
+| world | VM default + GC | **4.98s** | **344 MB** |
+
+Mid-run collections fire (visible with `SHEN_RUST_GC_STATS=1`). RSS is
+reduced, not fully flat on SHA-heavy prng: payload kinds (strings/blobs/
+closures) are retained mid-run by design, so blob-heavy churn still grows
+until a depth-0 exit. Cons/Float reclamation is what the safepoint can
+safely do inside a long activation.
+
+Honest wall-clock note: this does **not** by itself close the ~20–26×
+pure-Shen SHA gap vs shen-cl (CL prng ≈0.76s). The next structural lever for
+batch urdr code is an AOT overlay of the hot loaded files (same machinery as
+the served authz overlay), not more safepoint tuning.
+
 ## What's left
 
 - **JIT Win-A W2 for served: parked on measurement** — the JIT cannot see
@@ -129,6 +194,10 @@ roots unverified), refused on multi-`Interp` threads.
   AOT baseline.
 - **x86_64 conservative scan** — a `rbx/rbp/r12–r15` register spill would
   extend `SHEN_RUST_GC` beyond aarch64; mechanical, unfunded.
+- **AOT overlay of urdr prng/SHA** — if script wall remains ~10–20× CL after
+  VM+GC, compile the known hot `.shen` files offline (same
+  `scripts/codegen-shen-aot.sh` path as served authz). Not started; needs a
+  measured kill-gate against the VM+GC baseline.
 
 ## Reproducing
 
