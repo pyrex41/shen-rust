@@ -176,6 +176,21 @@ fn str_renders_atoms() {
     assert_eq!(string(&mut i, "(str foo)"), "foo");
 }
 
+#[test]
+fn str_renders_non_finite_floats_lowercase() {
+    let mut i = Interp::new();
+    // Build the non-finite values by *arithmetic*, never by literal, so this
+    // pins the renderer rather than the reader's literal handling (shen-go
+    // has a literal-parsing defect in exactly this area).
+    let inf = "(* (/ 1.0 1e-300) (/ 1.0 1e-300))";
+    assert_eq!(string(&mut i, &format!("(str {inf})")), "inf");
+    assert_eq!(string(&mut i, &format!("(str (- 0.0 {inf}))")), "-inf");
+    // NaN is spelled lowercase `nan`, matching `inf`/`-inf` here and the
+    // cross-port convention (shen-go and shen-lua both print `nan`). Rust's
+    // own `Display` for f64 would spell it `NaN` — that was the bug.
+    assert_eq!(string(&mut i, &format!("(str (- {inf} {inf}))")), "nan");
+}
+
 // ---------------------------------------------------------------------------
 // symbols: intern / value / set (global value cell round trip).
 // ---------------------------------------------------------------------------
