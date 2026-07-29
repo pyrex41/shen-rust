@@ -53,7 +53,7 @@ impl Hasher for FnvHasher {
 type BuildFnv = BuildHasherDefault<FnvHasher>;
 
 /// Slot count of the direct-mapped `&'static str`-pointer cache. Power of
-/// two; 8192 × 16 B = 128 KB per `Interner`. The kernel has a few thousand
+/// two; 8192 × 24 B = 192 KB per `Interner`. The kernel has a few thousand
 /// distinct AOT callee names, so collisions (two literals mapping to one
 /// slot) are rare and only cost a re-intern through `by_name`.
 const PTR_CACHE_SLOTS: usize = 8192;
@@ -76,8 +76,11 @@ pub struct Interner {
     /// loser re-interns through `by_name` — correct because `intern` is
     /// idempotent. Per-`Interner` (never process-global), so it stays
     /// correct even when several interpreters with different id assignments
-    /// coexist.
-    by_ptr: Box<[(usize, SymId)]>,
+    /// coexist. Keyed by `(addr, len)`, not addr alone: a `&'static str` that
+    /// is a *prefix slice* of another literal shares its start address, so the
+    /// length disambiguates them (today's callers pass whole literals, but the
+    /// helper is `pub`, so this keeps it sound for any static-str caller).
+    by_ptr: Box<[(usize, usize, SymId)]>,
 }
 
 impl Default for Interner {
@@ -85,7 +88,7 @@ impl Default for Interner {
         Interner {
             names: Vec::new(),
             by_name: HashMap::default(),
-            by_ptr: vec![(0, SymId(0)); PTR_CACHE_SLOTS].into_boxed_slice(),
+            by_ptr: vec![(0, 0, SymId(0)); PTR_CACHE_SLOTS].into_boxed_slice(),
         }
     }
 }
@@ -114,16 +117,17 @@ impl Interner {
     #[inline]
     pub fn intern_static(&mut self, name: &'static str) -> SymId {
         let key = name.as_ptr() as usize;
+        let len = name.len();
         // Literals are ≥1-byte aligned with addresses spread across rodata;
         // fold a high-bit window in so neighbours in one object file don't
         // contend for adjacent-slot runs.
         let idx = ((key >> 3) ^ (key >> 16)) & (PTR_CACHE_SLOTS - 1);
-        let (k, id) = self.by_ptr[idx];
-        if k == key {
+        let (k, l, id) = self.by_ptr[idx];
+        if k == key && l == len {
             return id;
         }
         let id = self.intern(name);
-        self.by_ptr[idx] = (key, id);
+        self.by_ptr[idx] = (key, len, id);
         id
     }
 
