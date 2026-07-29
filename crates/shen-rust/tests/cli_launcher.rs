@@ -151,6 +151,30 @@ fn eval_e_prints_value() {
     );
 }
 
+/// End-to-end spelling of the non-finite floats through the real binary.
+/// The values are built by *arithmetic*, never by literal, so a reader
+/// defect can't fake a pass. NaN is lowercase `nan`, matching `inf`/`-inf`
+/// and the other ports; Rust's `Display` would spell it `NaN`.
+#[test]
+fn eval_e_prints_non_finite_floats_lowercase() {
+    const INF: &str = "(* (/ 1.0 1e-300) (/ 1.0 1e-300))";
+    for (expr, want) in [
+        (INF.to_string(), "inf"),
+        (format!("(- 0.0 {INF})"), "-inf"),
+        (format!("(- {INF} {INF})"), "nan"),
+    ] {
+        let o = run(&["eval", "-e", &expr], None, TIMEOUT);
+        assert_no_backtrace(&o, "eval -e non-finite");
+        assert!(o.success, "eval -e exited nonzero:\n{}", o.combined);
+        assert_eq!(
+            o.stdout.trim(),
+            want,
+            "expected {want:?} for {expr}, got:\n{}",
+            o.stdout
+        );
+    }
+}
+
 #[test]
 fn eval_l_loads_file_then_evaluates() {
     // Define a 0-arg function in a loaded file, then call it via -e.

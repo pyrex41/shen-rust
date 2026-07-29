@@ -606,7 +606,15 @@ fn render(interp: &Interp, v: &Value) -> String {
 /// `4000` (which is what Rust's default `{x}` format produces). The
 /// kernel test suite compares results with `=`, and several tests
 /// expect float results like `4000.0` for `(* 5000 .8)`.
+///
+/// NaN renders as lowercase `nan`. Rust's `Display` spells the infinities
+/// lowercase (`inf` / `-inf`) but NaN as `NaN`; the cross-port convention
+/// is all-lowercase, and shen-go / shen-lua both print `nan`. Keep this in
+/// sync with the `str` primitive's copy in `crates/shen-rust/src/primitives.rs`.
 fn format_float(x: f64) -> String {
+    if x.is_nan() {
+        return "nan".to_string();
+    }
     if x.is_finite() && x == x.trunc() && x.abs() < 1e16 {
         format!("{x:.1}")
     } else {

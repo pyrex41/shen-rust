@@ -797,7 +797,15 @@ fn value_to_str(interp: &Interp, v: &Value) -> String {
 /// point. `format!("{x}")` on `4000.0` yields `"4000"`, which matches
 /// the int display and breaks any test comparing `(* 5000 .8)` against
 /// `4000.0`. Match shen-cl's behavior of always printing the decimal.
+///
+/// NaN renders as lowercase `nan`. Rust's `Display` spells the infinities
+/// lowercase (`inf` / `-inf`) but NaN as `NaN`; the cross-port convention
+/// is all-lowercase, and shen-go / shen-lua both print `nan`. Keep this in
+/// sync with the REPL renderer's copy in `bin/shen-rust/src/main.rs`.
 fn format_float(x: f64) -> String {
+    if x.is_nan() {
+        return "nan".to_string();
+    }
     if x.is_finite() && x == x.trunc() && x.abs() < 1e16 {
         format!("{x:.1}")
     } else {
