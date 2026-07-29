@@ -159,7 +159,7 @@ fn eval_e_prints_value() {
 fn eval_e_prints_non_finite_floats_lowercase() {
     const INF: &str = "(* (/ 1.0 1e-300) (/ 1.0 1e-300))";
     for (expr, want) in [
-        (format!("{INF}"), "inf"),
+        (INF.to_string(), "inf"),
         (format!("(- 0.0 {INF})"), "-inf"),
         (format!("(- {INF} {INF})"), "nan"),
     ] {
