@@ -1718,9 +1718,8 @@ fn vm_enabled() -> bool {
     // `script`/`eval` entrypoints default the VM on (see `bin/shen-rust`),
     // and users need a way to force the tree-walker back for comparison.
     // Any other set value is an opt-in, as before.
-    *VM_ENABLED.get_or_init(|| {
-        std::env::var_os("SHEN_RUST_VM").is_some_and(|v| !v.is_empty() && v != "0")
-    })
+    *VM_ENABLED
+        .get_or_init(|| std::env::var_os("SHEN_RUST_VM").is_some_and(|v| !v.is_empty() && v != "0"))
 }
 
 /// Whether the bytecode VM has been selected for this process (via

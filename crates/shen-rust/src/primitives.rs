@@ -641,7 +641,6 @@ fn register_core(interp: &mut Interp) {
             ))),
         }
     });
-
 }
 
 /// Optional [shen-extensions](https://github.com/pyrex41/shen-extensions) host

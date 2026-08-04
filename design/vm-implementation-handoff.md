@@ -2,7 +2,7 @@
 
 **Date**: 2026-05-28
 **Branch**: `main`
-**Plan of record**: `/Users/reuben/.claude/plans/abundant-splashing-orbit.md`
+**Plan of record**: the local implementation plan used during this handoff.
 (also summarized in `PERFORMANCE.md` → "Roadmap to sub-2s")
 **Companion design doc**: `design/runtime-execution-strategy.md`
 
@@ -155,7 +155,7 @@ to make the VM beat the tree-walker independent of Phase 3.
 
 1. **Commit the two uncommitted features** (split as in §2). Get back to
    a clean tree.
-2. **Phase 3 — tagged `Value(u64)`** (`/Users/reuben/.claude/plans/...`
+2. **Phase 3 — tagged `Value(u64)`** (see the implementation plan for details)
    and `PERFORMANCE.md`). Biggest remaining lever: attacks the #1 profile
    leaf (`drop_in_place<Value>` ~800 samples) AND makes the VM's frames
    cheap. Generated AOT kernel code is insulated via `rt::` helpers, so
