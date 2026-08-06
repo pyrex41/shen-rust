@@ -111,6 +111,16 @@ pub struct Heap {
     sweep_incomplete: bool,
     /// Reused mark-phase work stack (avoids a per-collection allocation).
     mark_stack: Vec<*mut Node>,
+    /// Live-node bitmap: one bit per node slot (indexed by [`Node::slot`]),
+    /// set on allocation and cleared on sweep. A set bit means "this slot
+    /// currently holds a live, allocated node". Consulted only by
+    /// [`Heap::is_live_heap_ptr`] — the conservative scan's membership +
+    /// liveness test — so a candidate root word is validated with one bitmap
+    /// load instead of a node-memory read of the `Kind::Free` header (the
+    /// scan never touches node cache lines for misses). Overhead: 1 bit per
+    /// 24-byte node ≈ 0.5% of the node storage; maintenance is one masked
+    /// store per alloc and per sweep-free.
+    live_bits: Vec<u64>,
     collections: u64,
     peak_live: usize,
 }
@@ -134,6 +144,7 @@ impl Heap {
             min_trigger: 0,
             sweep_incomplete: false,
             mark_stack: Vec::new(),
+            live_bits: Vec::new(),
             collections: 0,
             peak_live: 0,
         }
@@ -170,6 +181,7 @@ impl Heap {
             min_trigger: 0,
             sweep_incomplete: false,
             mark_stack: Vec::new(),
+            live_bits: Vec::new(),
             collections: 0,
             peak_live: 0,
         }
@@ -399,7 +411,11 @@ impl Heap {
                 self.grow();
             }
         }
-        self.free.pop().unwrap()
+        let p = self.free.pop().unwrap();
+        // SAFETY: `p` is a node we own; `slot` was written at grow time.
+        let slot = unsafe { (*p).slot } as usize;
+        self.live_bits[slot >> 6] |= 1 << (slot & 63);
+        p
     }
 
     /// Grow the heap by one block, appending its nodes to the free-list and
@@ -437,13 +453,24 @@ impl Heap {
 
         self.all.reserve(BLOCK_SIZE);
         self.free.reserve(BLOCK_SIZE);
+        let slot_base = self.all.len();
+        debug_assert!(
+            slot_base + BLOCK_SIZE <= u32::MAX as usize,
+            "node slot index overflows the u32 header field"
+        );
         for i in 0..BLOCK_SIZE {
             // SAFETY: `i < BLOCK_SIZE`, so `base.add(i)` is in-bounds of the
             // block allocation and shares its (leaked) provenance.
             let p = unsafe { base.add(i) };
+            // SAFETY: fresh node we own; stamp its permanent slot index.
+            unsafe { (*p).slot = (slot_base + i) as u32 };
             self.all.push(p);
             self.free.push(p);
         }
+        // One live bit per new slot, initially clear (all slots start free).
+        // BLOCK_SIZE is a multiple of 64, so blocks never share a bitmap word.
+        self.live_bits
+            .resize((slot_base + BLOCK_SIZE).div_ceil(64), 0);
         self.blocks.push(raw);
     }
 
@@ -548,6 +575,11 @@ impl Heap {
                 } else {
                     // Reclaim: free any owned resource (Vec buffer, blob bytes,
                     // opaque `Drop`) and return the slot to the free-list.
+                    // Clear the live bit FIRST: if the payload Drop panics,
+                    // the poisoned (grow-only) heap must not present the
+                    // half-freed node as live to a later conservative query.
+                    let slot = (*p).slot as usize;
+                    self.live_bits[slot >> 6] &= !(1 << (slot & 63));
                     Self::free_resource(p);
                     self.free.push(p);
                 }
@@ -675,11 +707,12 @@ impl Heap {
     ))]
     fn mark_conservative(&mut self, w: u64) {
         let g = Gc::from_bits(w);
-        if !g.is_ptr() || !self.is_heap_ptr(g.addr()) {
-            return;
-        }
-        // SAFETY: `is_heap_ptr` verified `w` names the head of a node we own.
-        if unsafe { (*g.node_ptr()).kind } == Kind::Free {
+        // One combined membership + liveness test: the live bitmap answers
+        // "head of a node we own AND currently allocated" without reading the
+        // node header, so stale words naming freed slots are filtered here
+        // (without the bitmap they would pin recycled slots off the
+        // free-list for a cycle).
+        if !g.is_ptr() || !self.is_live_heap_ptr(g.addr()) {
             return;
         }
         self.mark_edge(g);
@@ -771,6 +804,31 @@ impl Heap {
             let (base, end) = self.ranges[idx];
             if addr >= base && addr < end && (addr - base) % stride == 0 {
                 return true;
+            }
+        }
+        false
+    }
+
+    /// [`Heap::is_heap_ptr`] strengthened by the live-node bitmap: does
+    /// `addr` name the head of a node we own that is **currently allocated**
+    /// (its live bit set — i.e. not on the free-list)? This is the
+    /// conservative scan's whole validity test in one query: a stale word
+    /// naming a swept slot, an interior/unaligned address, and a foreign
+    /// address all answer `false`, and the node's own memory is never read.
+    pub fn is_live_heap_ptr(&self, addr: usize) -> bool {
+        let stride = std::mem::size_of::<Node>();
+        let page = addr >> PAGE_BITS;
+        let Some(blocks) = self.pages.get(&page) else {
+            return false;
+        };
+        for &idx in blocks {
+            let (base, end) = self.ranges[idx];
+            if addr >= base && addr < end {
+                if (addr - base) % stride != 0 {
+                    return false;
+                }
+                let slot = idx * BLOCK_SIZE + (addr - base) / stride;
+                return (self.live_bits[slot >> 6] >> (slot & 63)) & 1 == 1;
             }
         }
         false
@@ -1421,6 +1479,70 @@ mod tests {
         );
         // A wildly out-of-range address is not ours.
         assert!(!heap.is_heap_ptr(0xdead_beef));
+    }
+
+    #[test]
+    fn live_bitmap_tracks_alloc_and_sweep() {
+        let mut heap = Heap::new(usize::MAX); // explicit collects only
+        let roots = [Gc::nil()];
+        let live = heap.alloc_cons(Gc::fixnum(1), Gc::nil(), &roots);
+        let dead = heap.alloc_cons(Gc::fixnum(2), Gc::nil(), &roots);
+        let (a_live, a_dead) = (live.node_ptr() as usize, dead.node_ptr() as usize);
+
+        // Both allocated: membership and liveness agree.
+        assert!(heap.is_live_heap_ptr(a_live));
+        assert!(heap.is_live_heap_ptr(a_dead));
+        // Interior/unaligned/foreign addresses are never live.
+        assert!(!heap.is_live_heap_ptr(a_live + 1));
+        assert!(!heap.is_live_heap_ptr(a_live + Heap::node_size() / 2));
+        assert!(!heap.is_live_heap_ptr(0xdead_beef));
+        // A never-allocated slot in the same block (the free-list pops from
+        // the block's high end, so the next slot DOWN is still free): a node
+        // head, but not live.
+        let free_slot = a_live.min(a_dead) - Heap::node_size();
+        assert!(
+            heap.is_heap_ptr(free_slot),
+            "same-block free slot is a head"
+        );
+        assert!(
+            !heap.is_live_heap_ptr(free_slot),
+            "free slot must not be live"
+        );
+
+        // Sweep `dead`: its slot stays a recognized head but loses its bit —
+        // the conservative scan would now reject a stale word naming it.
+        heap.collect(&[live]);
+        assert!(heap.is_live_heap_ptr(a_live), "rooted node must stay live");
+        assert!(heap.is_heap_ptr(a_dead), "slot membership survives sweep");
+        assert!(
+            !heap.is_live_heap_ptr(a_dead),
+            "swept slot must clear its bit"
+        );
+
+        // Reallocation re-arms the recycled slot's bit.
+        let reused = heap.alloc_cons(Gc::fixnum(3), Gc::nil(), &[live]);
+        assert!(heap.is_live_heap_ptr(reused.node_ptr() as usize));
+    }
+
+    #[test]
+    fn live_bitmap_spans_blocks() {
+        // Slot indexing must stay correct past the first block (the addr →
+        // slot reconstruction uses the block's range, not the first block's).
+        let mut heap = Heap::new(usize::MAX);
+        let mut roots = vec![Gc::nil()];
+        let head = build_list(&mut heap, 3 * BLOCK_SIZE as i64, &mut roots, 0);
+        assert!(heap.node_count() >= 3 * BLOCK_SIZE);
+        // Every cons of the list — spread across all three blocks — is live.
+        let mut xs = head;
+        while xs.is_ptr() {
+            assert!(heap.is_live_heap_ptr(xs.node_ptr() as usize));
+            xs = heap.cons_tail(xs);
+        }
+        // Drop the list: every slot's bit clears.
+        roots[0] = Gc::nil();
+        heap.collect(&roots);
+        assert!(!heap.is_live_heap_ptr(head.node_ptr() as usize));
+        assert_eq!(heap.free_count(), heap.node_count());
     }
 
     #[test]
