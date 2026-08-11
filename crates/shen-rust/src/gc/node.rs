@@ -87,8 +87,14 @@ pub(super) struct Node {
     pub(super) kind: Kind,
     /// Reachability mark, set during the mark phase and cleared on sweep.
     pub(super) mark: bool,
-    // (6 bytes of implicit `repr(C)` padding to the 8-byte alignment of the
-    //  payload words — left unnamed so it isn't a "never read" field.)
+    // (2 bytes of implicit `repr(C)` padding to the 4-byte alignment of
+    //  `slot` — left unnamed so it isn't a "never read" field.)
+    /// This node's global slot index (`block_idx * BLOCK_SIZE + offset`),
+    /// written once when the block is grown and never changed. Lets the
+    /// alloc/sweep paths maintain the heap's live-node bitmap in O(1) —
+    /// a direct bit index, no address arithmetic or block lookup — using
+    /// header bytes that were previously padding (the node stays 24 bytes).
+    pub(super) slot: u32,
     /// First payload word — see the per-[`Kind`] table.
     pub(super) a: u64,
     /// Second payload word — see the per-[`Kind`] table.
@@ -101,6 +107,7 @@ impl Node {
         Node {
             kind: Kind::Free,
             mark: false,
+            slot: 0,
             a: 0,
             b: 0,
         }
