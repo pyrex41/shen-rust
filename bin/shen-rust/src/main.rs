@@ -95,7 +95,7 @@ fn main() -> ExitCode {
             shen_rust::interp::eval::enable_vm();
         }
         // Same deep-recursion story as --kernel-tests: loaded user code
-        // (e.g. the Ratatoskr shaker walking the kernel call graph)
+        // (e.g. the Yggdrasil shaker walking the kernel call graph)
         // recurses through non-self-tail-call frames well past the
         // default 8 MB. Give the launcher thread 1 GB.
         let handle = std::thread::Builder::new()

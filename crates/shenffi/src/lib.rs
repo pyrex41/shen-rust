@@ -102,15 +102,15 @@ pub extern "C" fn shen_boot_embedded() -> *mut ShenCtx {
 
 // --- shen-cas: a tree-shaken computer-algebra system embedded in the binary ---
 //
-// Produced by `ratatoskr shake` over the flattened shen-cas sources: a minimal
+// Produced by `yggdrasil shake` over the flattened shen-cas sources: a minimal
 // kernel slice (only what the CAS reaches) plus the CAS compiled to KLambda.
-// Demonstrates the full pipeline: Shen program -> ratatoskr tree-shake -> Rust
+// Demonstrates the full pipeline: Shen program -> yggdrasil tree-shake -> Rust
 // static lib -> Swift. No Shen-level `eval` needed; we call the CAS's own
 // functions (`parse-expr-string` -> `reduce` -> `pretty-expr`) directly.
 const CAS_KERNEL: &str = include_str!("../cas/cas-kernel.kl");
 const CAS_PROG: &str = include_str!("../cas/cas-all.kl");
 
-/// Boots any Ratatoskr-shaken program: a shaken `kernel.kl` slice plus an
+/// Boots any Yggdrasil-shaken program: a shaken `kernel.kl` slice plus an
 /// optional program `.kl`. Pass NULL `prog_kl` for kernel-only.
 ///
 /// Follows the builder contract — boot the kernel and run `(shen.initialise)`

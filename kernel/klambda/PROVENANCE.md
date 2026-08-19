@@ -83,7 +83,7 @@ arity `-1` quirk the pre-compiled overlay caused (`(fn filter)` failing).
 `extension-features.kl`, `extension-expand-dynamic.kl`, and
 `extension-launcher.kl` are community additions (not upstream Tarver
 files), retained and booted on top of the kernel. `extension-launcher.kl`
-provides the Ratatoskr stage-1 launcher CLI. They reference no removed
+provides the Yggdrasil stage-1 launcher CLI. They reference no removed
 kernel symbol (`extension-launcher` only reads the `*hush*` global, still
 present). `extension-programmable-pattern-matching.kl` is vendored +
 AOT-generated for audit completeness but not booted.

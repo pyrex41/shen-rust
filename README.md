@@ -33,8 +33,8 @@ cargo run --release --bin shen-rust -- --kernel-tests
 #   shen-rust eval [-q] [-l FILE] [-e EXPR] [-s KEY VALUE] [-r]
 #   shen-rust script FILE [ARGS...]
 #   shen-rust repl | --help | --version
-# e.g. host stage 1 of the Ratatoskr tree-shaker from its repo root:
-#   shen-rust eval -l ratatoskr.shen -e '(ratatoskr.shake ["tests/fib.shen"] "out")'
+# e.g. host stage 1 of the Yggdrasil tree-shaker from its repo root:
+#   shen-rust eval -l yggdrasil.shen -e '(yggdrasil.shake ["tests/fib.shen"] "out")'
 # (note: omit -q for workloads that write files through `pr` — upstream
 #  *hush* semantics silence `pr` on every stream, unlike shen-cl whose
 #  native pr override ignores *hush* entirely)

@@ -52,7 +52,7 @@ desktop, not on a sandboxed device. Two device-friendly options:
 
 1. **Bundle the `.kl` kernel** as an app resource and pass its directory path to
    `shen_boot(path)`.
-2. **Embed a shaken `kernel.kl`** (produced by [ratatoskr](../../ratatoskr)) and
+2. **Embed a shaken `kernel.kl`** (produced by [Yggdrasil](https://github.com/pyrex41/yggdrasil)) and
    boot from the in-memory source via shen-rust's `boot_from_kl_source` — no
    filesystem dependency. (Exposing that through the C ABI is a small addition;
    the current `shen_boot` takes a directory path.)
@@ -60,11 +60,11 @@ desktop, not on a sandboxed device. Two device-friendly options:
 ## Embedding a tree-shaken Shen program (shen-cas)
 
 The `cas/` directory holds a worked example: the **shen-cas computer algebra
-system**, tree-shaken by [ratatoskr](../../ratatoskr) and embedded in the binary.
+system**, tree-shaken by [Yggdrasil](https://github.com/pyrex41/yggdrasil) and embedded in the binary.
 
 Pipeline:
 1. Flatten shen-cas's modules into one `.shen` (strip its `(load …)` directives).
-2. `ratatoskr shake cas-all.shen out/` → `kernel.kl` (only the kernel functions
+2. `yggdrasil shake cas-all.shen out/` → `kernel.kl` (only the kernel functions
    the CAS reaches — 298 KB vs the 749 KB full kernel) + `cas-all.kl`.
 3. `include_str!` both into the crate; `shen_cas_boot` boots the slice via
    `boot_from_kl_source` (kernel + `shen.initialise`) then loads the CAS program.

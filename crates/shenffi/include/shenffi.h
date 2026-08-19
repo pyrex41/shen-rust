@@ -22,7 +22,7 @@ ShenCtx *shen_boot_embedded(void);
  * result, or "error: <message>"). Release it with shen_string_free(). */
 char *shen_eval(ShenCtx *ctx, const char *src);
 
-/* Boot any Ratatoskr-shaken program from a shaken kernel.kl slice + optional
+/* Boot any Yggdrasil-shaken program from a shaken kernel.kl slice + optional
  * program .kl (pass NULL prog_kl for kernel-only). The program is loaded with
  * *hush* set, so its load-time stdout chatter is suppressed. Free with
  * shen_free(). */
