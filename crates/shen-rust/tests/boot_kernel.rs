@@ -88,6 +88,32 @@ fn cons_hd_post_boot() {
 }
 
 #[test]
+fn shen_batteries_features_query_reports_sha_host() {
+    let mut interp = fresh_booted();
+    let value = eval(&mut interp, "(shen.x.features.current)");
+    let pure = std::env::var("SHEN_X_SHA256").ok().as_deref() == Some("pure");
+    if pure {
+        assert!(value.is_nil(), "pure SHA mode must advertise no host feature: {value:?}");
+    } else {
+        let feature = value
+            .head()
+            .and_then(|v| v.as_sym())
+            .map(|s| interp.resolve(s).to_string());
+        assert_eq!(feature.as_deref(), Some("shen.x/sha256-host"));
+        assert!(value.tail().is_some_and(|tail| tail.is_nil()));
+
+        // AOT-generated Batteries code uses the direct table. Verify the
+        // feature query is installed there as well as in the live closure
+        // namespace.
+        let sym = interp.intern("shen.x.features.current");
+        let direct = interp.get_aot_direct(sym).expect("AOT feature query");
+        let direct_value = direct(&mut interp, &[]).expect("feature query succeeds");
+        assert_eq!(direct_value.head().and_then(|v| v.as_sym()).map(|s| interp.resolve(s).to_string()),
+                   Some("shen.x/sha256-host".to_string()));
+    }
+}
+
+#[test]
 fn defun_and_call_post_boot() {
     let mut interp = fresh_booted();
     eval(&mut interp, "(defun double (X) (* X 2))");
