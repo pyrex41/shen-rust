@@ -647,6 +647,16 @@ fn register_core(interp: &mut Interp) {
 /// SHA-256 (`sha2` crate). Disable with `SHEN_X_SHA256=pure`.
 /// Call from [`register_hot_overrides`] after kernel boot.
 pub fn register_shenx(interp: &mut Interp) {
+    // Shen Batteries' `library.current-features` probes this primitive to
+    // determine which optional host capabilities the port provides.  Keep
+    // the query installed even when the SHA backend is explicitly disabled;
+    // in pure mode it simply reports an empty feature set.
+    interp.register_native("shen.x.features.current", 0, shenx_current_features);
+    // Keep the AOT direct-dispatch table coherent with the live closure
+    // registration.  A Batteries module may itself be AOT compiled and call
+    // this query from generated code.
+    interp.register_aot_direct("shen.x.features.current", shenx_current_features);
+
     if std::env::var_os("SHEN_X_SHA256").as_deref() == Some(std::ffi::OsStr::new("pure")) {
         return;
     }
@@ -682,6 +692,20 @@ pub fn register_shenx(interp: &mut Interp) {
     let backend = interp.symbols.intern("shen.x.*sha256-backend*");
     let host = interp.symbols.intern("host");
     interp.env.set_global(backend, Value::sym(host));
+}
+
+/// Return host capabilities using the feature names understood by Shen
+/// Batteries.  This is deliberately a native function rather than a global:
+/// Batteries calls it after boot and treats a missing/erroring query as an
+/// empty feature set.  The Rust port currently ships only the SHA host
+/// implementation; its presence is gated by `SHEN_X_SHA256=pure` in the same
+/// way as the extension itself.
+fn shenx_current_features(interp: &mut Interp, _args: &[Value]) -> ShenResult<Value> {
+    if std::env::var_os("SHEN_X_SHA256").as_deref() == Some(std::ffi::OsStr::new("pure")) {
+        return Ok(Value::nil());
+    }
+    let feature = interp.symbols.intern("shen.x/sha256-host");
+    Ok(Value::cons(Value::sym(feature), Value::nil()))
 }
 
 // --- helpers ---
