@@ -358,11 +358,13 @@ fn register_core(interp: &mut Interp) {
     interp.register_native("pos", 2, |_, args| {
         match (args[0].as_str(), args[1].as_int()) {
             (Some(s), Some(n)) => {
-                if n < 0 || (n as usize) >= s.len() {
+                if n < 0 {
                     return Err(ShenError::new("pos: index out of range"));
                 }
-                let byte = s.as_bytes()[n as usize];
-                Ok(Value::str(String::from(byte as char)))
+                s.chars()
+                    .nth(n as usize)
+                    .map(|c| Value::str(c.to_string()))
+                    .ok_or_else(|| ShenError::new("pos: index out of range"))
             }
             _ => Err(ShenError::new(format!(
                 "pos: bad args: {:?}, {:?}",
@@ -375,12 +377,12 @@ fn register_core(interp: &mut Interp) {
             if s.is_empty() {
                 return Err(ShenError::new("tlstr: empty string"));
             }
-            // Operate on bytes — matches shen-cl semantics where Shen
-            // strings are byte strings.
-            let rest = &s.as_bytes()[1..];
-            let rest_str = std::str::from_utf8(rest)
-                .map_err(|_| ShenError::new("tlstr: produced non-UTF-8 result"))?;
-            Ok(Value::str(rest_str))
+            let first_len = s
+                .chars()
+                .next()
+                .expect("non-empty string has a first character")
+                .len_utf8();
+            Ok(Value::str(&s[first_len..]))
         }
         None => Err(ShenError::new(format!(
             "tlstr: not a string: {:?}",
@@ -400,11 +402,10 @@ fn register_core(interp: &mut Interp) {
     });
     interp.register_native("string->n", 1, |_, args| match args[0].as_str() {
         Some(s) => {
-            let b = s.as_bytes();
-            if b.is_empty() {
-                return Err(ShenError::new("string->n: empty string"));
-            }
-            Ok(Value::int(b[0] as i64))
+            s.chars()
+                .next()
+                .map(|c| Value::int(c as i64))
+                .ok_or_else(|| ShenError::new("string->n: empty string"))
         }
         None => Err(ShenError::new(format!(
             "string->n: not a string: {:?}",
