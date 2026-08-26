@@ -154,6 +154,11 @@ fn string_ops() {
     assert_eq!(string(&mut i, r#"(cn "foo" "bar")"#), "foobar");
     assert_eq!(string(&mut i, r#"(tlstr "hello")"#), "ello");
     assert_eq!(string(&mut i, r#"(pos "hello" 1)"#), "e");
+    assert_eq!(string(&mut i, r#"(tlstr "😀é")"#), "é");
+    assert_eq!(string(&mut i, r#"(pos "a😀é" 1)"#), "😀");
+    assert_eq!(string(&mut i, r#"(pos "a😀é" 2)"#), "é");
+    assert_eq!(int(&mut i, r#"(string->n "😀")"#), 0x1f600);
+    assert_eq!(string(&mut i, r#"(n->string (string->n "😀"))"#), "😀");
     // Round trip string->n . n->string.
     assert_eq!(string(&mut i, r#"(n->string (string->n "Z"))"#), "Z");
 }
