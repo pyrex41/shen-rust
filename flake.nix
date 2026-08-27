@@ -10,16 +10,23 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        tools = [
+          pkgs.rustc
+          pkgs.cargo
+          pkgs.rustfmt
+          pkgs.clippy
+          pkgs.rust-analyzer
+          pkgs.pkg-config
+        ];
       in {
+        packages.toolchain = pkgs.buildEnv {
+          name = "shen-rust-toolchain";
+          paths = tools;
+        };
+        packages.default = self.packages.${system}.toolchain;
+
         devShells.default = pkgs.mkShell {
-          buildInputs = [
-            pkgs.rustc
-            pkgs.cargo
-            pkgs.rustfmt
-            pkgs.clippy
-            pkgs.rust-analyzer
-            pkgs.pkg-config
-          ];
+          packages = tools;
 
           shellHook = ''
             echo "shen-rust dev shell"
