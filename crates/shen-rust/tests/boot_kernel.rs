@@ -1,4 +1,4 @@
-//! Phase 2 integration test: boot the full ShenOSKernel-41.2 and verify a
+//! Phase 2 integration test: boot the full Shen S42 kernel and verify a
 //! handful of expressions evaluate correctly via the kernel's own eval
 //! pipeline (not raw `eval-kl`).
 //!
@@ -39,7 +39,7 @@ fn eval(interp: &mut Interp, src: &str) -> Value {
 #[test]
 fn kernel_boots_clean() {
     // Just running boot is the test — it has to load every kernel file
-    // (incl. the S41.2-refresh self-initialising declarations.kl) without
+    // (incl. the S42 self-initialising declarations.kl) without
     // raising.
     let _ = fresh_booted();
 }
@@ -49,7 +49,7 @@ fn version_global_is_set() {
     let mut interp = fresh_booted();
     let v = eval(&mut interp, "(value *version*)");
     if let Some(s) = v.as_str() {
-        assert_eq!(s, "41.2");
+        assert_eq!(s, "42");
     } else {
         panic!("expected string, got {v:?}");
     }

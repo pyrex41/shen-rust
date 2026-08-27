@@ -14,7 +14,7 @@ These resources provide complete Shen environments for programming.
 
 ---
 
-[![Current Release](https://img.shields.io/badge/release-41.2-blue.svg)](https://github.com/Shen-Language/shen-sources/releases)
+[![Current Release](https://img.shields.io/badge/release-42-blue.svg)](https://github.com/Shen-Language/shen-sources/releases)
 
 # Shen Sources
 

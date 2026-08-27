@@ -43,12 +43,12 @@ pub mod yacc;
 /// tree-walked versions while leaving property-vector setup intact.
 ///
 /// Order mirrors `interp::boot::KERNEL_FILES` (upstream `install.lsp`
-/// runtime order for the Tarver S41.2 refresh, then the stdlib overlay
+/// runtime order for the Tarver S42 refresh, then the standard library
 /// and extensions). `backend` is intentionally absent — see above.
 pub fn install_all(interp: &mut Interp) {
     sys::install(interp);
     writer::install(interp);
-    core::install(interp);
+    // S42 core.kl contains no defuns; source loading still handles its forms.
     reader::install(interp);
     declarations::install(interp);
     toplevel::install(interp);

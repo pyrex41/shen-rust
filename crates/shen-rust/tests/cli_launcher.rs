@@ -221,10 +221,10 @@ fn version_prints_and_exits_zero() {
     let o = run(&["--version"], None, TIMEOUT);
     assert_no_backtrace(&o, "--version");
     assert!(o.success, "--version exited nonzero:\n{}", o.combined);
-    // shen-rust reports the kernel version 41.x in the version line.
+    // shen-rust reports the kernel version 42 in the version line.
     assert!(
-        o.combined.contains("41."),
-        "expected a 41.x version string, got:\n{}",
+        o.combined.contains("42"),
+        "expected a 42 version string, got:\n{}",
         o.combined
     );
 }
