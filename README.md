@@ -217,3 +217,22 @@ wrapper that skips gracefully if the tool isn't installed).
 [BSD-3-Clause](LICENSE) for the port code (© 2026 Reuben Brooks). The vendored
 Shen kernel under `kernel/` is © 2010–2022 Mark Tarver and retains its own
 BSD-3-Clause license (`kernel/LICENSE.txt`).
+## Optional Nix environment
+
+Nix is optional; the normal shen-rust build and launcher commands continue to work
+with tools installed by any method. For a pinned development toolchain:
+
+```sh
+nix develop
+```
+
+The flake also exports `packages.toolchain` for composition by
+[Bifrost](https://github.com/pyrex41/bifrost):
+
+```sh
+nix shell .#toolchain
+```
+
+If direnv is installed, `direnv allow` opts this checkout into the same dev
+shell automatically. Nothing activates until that explicit authorization, and
+Nix is never required at runtime.
