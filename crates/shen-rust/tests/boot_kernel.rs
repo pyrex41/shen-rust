@@ -93,7 +93,10 @@ fn shen_batteries_features_query_reports_sha_host() {
     let value = eval(&mut interp, "(shen.x.features.current)");
     let pure = std::env::var("SHEN_X_SHA256").ok().as_deref() == Some("pure");
     if pure {
-        assert!(value.is_nil(), "pure SHA mode must advertise no host feature: {value:?}");
+        assert!(
+            value.is_nil(),
+            "pure SHA mode must advertise no host feature: {value:?}"
+        );
     } else {
         let feature = value
             .head()
@@ -108,8 +111,13 @@ fn shen_batteries_features_query_reports_sha_host() {
         let sym = interp.intern("shen.x.features.current");
         let direct = interp.get_aot_direct(sym).expect("AOT feature query");
         let direct_value = direct(&mut interp, &[]).expect("feature query succeeds");
-        assert_eq!(direct_value.head().and_then(|v| v.as_sym()).map(|s| interp.resolve(s).to_string()),
-                   Some("shen.x/sha256-host".to_string()));
+        assert_eq!(
+            direct_value
+                .head()
+                .and_then(|v| v.as_sym())
+                .map(|s| interp.resolve(s).to_string()),
+            Some("shen.x/sha256-host".to_string())
+        );
     }
 }
 

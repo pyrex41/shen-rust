@@ -401,12 +401,11 @@ fn register_core(interp: &mut Interp) {
         ))),
     });
     interp.register_native("string->n", 1, |_, args| match args[0].as_str() {
-        Some(s) => {
-            s.chars()
-                .next()
-                .map(|c| Value::int(c as i64))
-                .ok_or_else(|| ShenError::new("string->n: empty string"))
-        }
+        Some(s) => s
+            .chars()
+            .next()
+            .map(|c| Value::int(c as i64))
+            .ok_or_else(|| ShenError::new("string->n: empty string")),
         None => Err(ShenError::new(format!(
             "string->n: not a string: {:?}",
             args[0]
