@@ -48,7 +48,7 @@ pub mod yacc;
 pub fn install_all(interp: &mut Interp) {
     sys::install(interp);
     writer::install(interp);
-    core::install(interp);
+    // S42 core.kl contains no defuns; source loading still handles its forms.
     reader::install(interp);
     declarations::install(interp);
     toplevel::install(interp);
