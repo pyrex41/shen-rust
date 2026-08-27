@@ -39,7 +39,7 @@ fn eval(interp: &mut Interp, src: &str) -> Value {
 #[test]
 fn kernel_boots_clean() {
     // Just running boot is the test — it has to load every kernel file
-    // (incl. the S41.2-refresh self-initialising declarations.kl) without
+    // (incl. the S42 self-initialising declarations.kl) without
     // raising.
     let _ = fresh_booted();
 }
