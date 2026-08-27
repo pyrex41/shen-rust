@@ -3,7 +3,7 @@
 //! kernel's property vector so `(fn NAME)` resolves correctly.
 //!
 //! The kernel-file order follows upstream `install.lsp` (the reference
-//! SBCL port's *runtime* loader) for the S41.2 (2026-07-11 refresh) set,
+//! SBCL port's *runtime* loader) for the S42 (2026-08-25 refresh) set,
 //! then the retained standard-library overlay and community extensions.
 //!
 //! Order matters here: unlike the old community kernel (defun-only `.kl`
@@ -28,9 +28,9 @@ use crate::value::{Stream, Value};
 
 /// File names in boot order. Vendored under `kernel/klambda/`.
 ///
-/// The first 14 are Mark Tarver's refreshed S41.2 kernel, in the
+/// The first 14 are Mark Tarver's refreshed S42 kernel, in the
 /// `install.lsp` runtime load order. `dict.kl`, `compiler.kl`, and
-/// `init.kl` from the community ShenOSKernel-41.2 are gone: `put`/`get`
+/// `init.kl` from the community Shen kernel are gone: `put`/`get`
 /// now use pointer-list property vectors (`sys.kl`), `compiler.kl` was a
 /// shen-cl artifact, and `init.kl`'s content (incl. `shen.initialise`)
 /// moved into `declarations.kl`/`toplevel.kl`.
@@ -425,7 +425,7 @@ fn set_standard_streams(interp: &mut Interp) {
 /// `*porters*` identify this port.
 fn set_port_metadata(interp: &mut Interp) {
     let pairs: &[(&str, &str)] = &[
-        ("*version*", "41.2"),
+        ("*version*", "42"),
         ("*language*", "Rust"),
         ("*implementation*", "shen-rust"),
         ("*release*", "0.1.0"),
@@ -486,9 +486,9 @@ fn load_kl_file(interp: &mut Interp, path: &Path) -> ShenResult<()> {
 
 /// Run the kernel's post-load initialisation.
 ///
-/// The community ShenOSKernel-41.2 exposed a single `shen.initialise`
+/// The community Shen kernel exposed a single `shen.initialise`
 /// (from `init.kl`) that boot called once after loading. The Tarver
-/// S41.2 refresh dropped that function: `declarations.kl` now performs
+/// S42 refresh dropped that function: `declarations.kl` now performs
 /// all of it via top-level forms evaluated *during* file load — it sets
 /// `*property-vector*`, runs `shen.initialise-arity-table`, and builds
 /// the lambda table (`shen.build-lambda-table`). So when `shen.initialise`

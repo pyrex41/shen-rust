@@ -140,7 +140,7 @@ pub struct CompileReport {
 /// invocation's policy (see `CompileOptions::kernel`), not a property of
 /// the compiler.
 ///
-/// Empty since the S41.2 refresh: the only members were the four
+/// Empty since the S42 refresh: the only members were the four
 /// `stlib.initialise-*` defuns in the community `stlib.kl`, which is
 /// retired — the standard library now loads from the `Lib/StLib` Shen
 /// sources at boot (`kernel/stlib/`) and is not part of the kernel AOT set.
@@ -1111,7 +1111,7 @@ mod tests {
     }
 
     /// Pin the kernel skip set: with the kernel options, no defun across
-    /// the kernel .kl files is force-skipped (empty since the S41.2 refresh
+    /// the kernel .kl files is force-skipped (empty since the S42 refresh
     /// retired `stlib.kl`, whose four `stlib.initialise-*` defuns were the
     /// only members). A budget heuristic must never silently change this —
     /// the kernel AOT bytes are frozen behind Gate 6.
