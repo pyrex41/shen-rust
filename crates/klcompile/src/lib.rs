@@ -1165,6 +1165,36 @@ mod tests {
         assert!(report.skipped[0].starts_with("big: body too large"));
     }
 
+    /// `install_all` must call `core::install` when `core.rs` has
+    /// `pub fn install` / `core.kl` has defuns. 9f81b64 skipped the call
+    /// after an empty first S42 codegen; 839cca1 left the skip after
+    /// regenerating a real module.
+    #[test]
+    fn core_kl_defuns_require_install_all_to_call_core() {
+        let root = workspace_root();
+        let core_kl =
+            std::fs::read_to_string(root.join("kernel/klambda/core.kl")).expect("core.kl");
+        let core_rs = std::fs::read_to_string(root.join("crates/shen-rust/src/aot/kernel/core.rs"))
+            .expect("core.rs");
+        let mod_rs = std::fs::read_to_string(root.join("crates/shen-rust/src/aot/kernel/mod.rs"))
+            .expect("mod.rs");
+        let defun_count = core_kl.lines().filter(|l| l.starts_with("(defun ")).count();
+        assert!(
+            defun_count >= 50,
+            "core.kl should have ~60 defuns, found {defun_count}"
+        );
+        assert!(
+            core_rs.contains("pub fn install("),
+            "core.rs must expose pub fn install when core.kl has defuns"
+        );
+        assert!(
+            mod_rs
+                .lines()
+                .any(|l| l.trim_start().starts_with("core::install(")),
+            "install_all omits core::install while core.rs has pub fn install"
+        );
+    }
+
     /// External config emits shen_rust:: imports and a plain `//` header
     /// (no inner attrs — host file owns lints in include!-style use).
     #[test]

@@ -45,10 +45,12 @@ pub mod yacc;
 /// Order mirrors `interp::boot::KERNEL_FILES` (upstream `install.lsp`
 /// runtime order for the Tarver S42 refresh, then the standard library
 /// and extensions). `backend` is intentionally absent — see above.
+/// `core` must be called whenever `core.rs` exposes `pub fn install`
+/// (`core.kl` has ~60 defuns; Gate 6 rejects omitting it).
 pub fn install_all(interp: &mut Interp) {
     sys::install(interp);
     writer::install(interp);
-    // S42 core.kl contains no defuns; source loading still handles its forms.
+    core::install(interp);
     reader::install(interp);
     declarations::install(interp);
     toplevel::install(interp);

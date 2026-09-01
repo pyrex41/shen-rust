@@ -195,9 +195,9 @@ fn stdlib_loaded_from_source_has_real_arities() {
     // the stdlib as pre-compiled KLambda defuns, bypassing the kernel's
     // `load`/`define` path, so functions like `filter` ended up with the
     // "unknown" arity -1. That broke `(fn filter)` and top-level
-    // `(filter ...)` ("fn: filter is undefined"). The S41.2-refresh port
-    // loads StLib from the `Lib/StLib` Shen sources through the real `load`,
-    // which registers correct arities. See kernel/stlib/PROVENANCE.md.
+    // `(filter ...)` ("fn: filter is undefined"). The S42 port loads StLib
+    // from the `Lib/StLib` Shen sources through the real `load`, which
+    // registers correct arities. See kernel/stlib/PROVENANCE.md.
     let mut i = fresh_booted();
 
     // `filter` has a known (non -1) arity now.

@@ -43,9 +43,9 @@ fn parses_every_kernel_file() {
         total_forms += forms.len();
     }
 
-    // The S41.2-refresh klambda set is ~900 top-level forms (the standard
-    // library moved out to kernel/stlib/ Shen sources, so it is no longer
-    // counted here); exact number changes between releases. We just want a
+    // The S42 klambda set is ~900 top-level forms (the standard library
+    // lives in kernel/stlib/ Shen sources, so it is no longer counted
+    // here); exact number changes between releases. We just want a
     // sanity floor that a real content-loss regression would trip.
     assert!(
         total_forms > 500,

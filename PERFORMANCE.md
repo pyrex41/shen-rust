@@ -3,12 +3,23 @@
 ## Current state
 
 On the full `--kernel-tests` suite, against the reference `shen-cl` (SBCL)
-interpreter, `shen-rust` is **~3.0× slower** (≈3.0s vs ≈1.0s wall, paired
+interpreter, `shen-rust` on **S41.2** was **~3.0× slower** (≈3.0s vs ≈1.0s wall, paired
 interleaved min-of-5, 2026-06-10) — down from **~17×** at first conformance.
 With a warm tc-cache (verdict memoization, off by default) it runs **at
 parity**. Measure head-to-head with `scripts/cross-port-bench.sh`
 (interleaved; the machine has ~5–12% thermal variance, so trust min-of-N,
-not single runs).
+not single runs). Those 3.0s figures are **S41.2 history**, not S42.
+
+**S42 (2026-09-01 retime).** Kernel is **Shen S42**, `*version*` 42, provenance
+`s42-pristine-20260825`. PR #21 (`42c2f16`) reported `--kernel-tests` ≈ **~8s**
+(134/0) with **core AOT skipped**: the first S42 `core.rs` codegen was empty, so
+`9f81b64` omitted `core::install` (41.2 had installed core). `839cca1`
+regenerated `core.rs` (~11k lines, `pub fn install`) but left the skip.
+`core.kl` has ~60 defuns (`shen->kl`, `define`, `linearise`, …); AOT install is
+restored. This machine's release retime (`./target/release/shen-rust --kernel-tests`,
+`/usr/bin/time -p` wall, min-of-3, 2026-09-01): **≈ 7.9 s** (7.89 / 8.39 / 9.43 s;
+internal suite `run time` ≈ 6.4 s), **passed: 134, failed: 0**. That is the same
+band as PR #21's ~8s, **not** the June S41.2 ≈3s path — do not quote 3s for S42.
 
 The bytecode VM is **~2.3× faster than the tree-walker on warm / served
 workloads** (`scripts/warm-bench.sh`), which is why it ships behind `--served`

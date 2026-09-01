@@ -17,8 +17,9 @@ Re-verify the whole tour at any time with
 
 ## Build and conformance
 
-One workspace, plain cargo. The build AOT-compiles the entire vendored
-ShenOSKernel-41.2 (21 KLambda files) to Rust via `crates/klcompile`.
+One workspace, plain cargo. The build AOT-compiles the vendored **Shen S42**
+kernel (15 canonical KLambda files plus port extensions; provenance
+`s42-pristine-20260825`) to Rust via `crates/klcompile`.
 
 ```bash
 cargo build --release --quiet --bin shen-rust && echo build ok
@@ -53,7 +54,7 @@ printf '(define fact 0 -> 1 N -> (* N (fact (- N 1))))\n(fact 20)\n(map (* 2) [1
 ```output
 shen-rust booting kernel… ready.
 
-Shen 41.2, ©2021–2026 Mark Tarver  (shen-rust 0.1.0, Rust)
+Shen 42, ©2021–2026 Mark Tarver  (shen-rust 0.1.0, Rust)
 
 (0-) (fn fact)
 (0-) 2432902008176640000
@@ -183,10 +184,12 @@ RESULT: PASS
 ## Performance and verification
 
 Measured against the reference `shen-cl` (SBCL) port, paired and interleaved
-on the same machine: ~3× off bare on a one-shot kernel-tests run (down from
-17× at first conformance), at parity with a warm typecheck cache, and ahead on
-served workloads (VM ~2.3×, AOT overlay ~3× over that). Every number — and
-every experiment that *failed* — is documented in `PERFORMANCE.md` and
+on the same machine: **S41.2** was ~3× off bare on a one-shot kernel-tests run
+(down from 17× at first conformance), at parity with a warm typecheck cache,
+and ahead on served workloads (VM ~2.3×, AOT overlay ~3× over that). S42 PR #21
+was ~8s with core AOT skipped; a 2026-09-01 retime with core restored is ≈ 7.9 s
+(min-of-3, 134/0) — those 3.0s numbers are not S42. Every number —
+and every experiment that *failed* — is documented in `PERFORMANCE.md` and
 `BENCHMARKS.md`, reproducible from `scripts/` and `benches/`.
 
 The repo holds itself to ten CI gates (`scripts/gates.sh`): fmt+clippy,
