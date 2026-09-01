@@ -3,7 +3,7 @@
 ## Current state
 
 A working port of the Shen language to Rust. It boots Mark Tarver's
-**Shen S41.2 (2026-07-11 refresh)** kernel (see
+**Shen S42** kernel (`*version*` 42, provenance `s42-pristine-20260825`; see
 `kernel/klambda/PROVENANCE.md`) and passes the full conformance suite — **134 / 134**
 kernel tests (`scripts/kernel-tests.sh`) — in every execution mode. All gates
 green (`scripts/gates.sh`): shengen-codegen, fmt+clippy, build, test
@@ -46,12 +46,14 @@ What's in the tree today:
   types; `specs/core.shen`.
 
 Performance vs the reference `shen-cl` (SBCL) on one-shot `--kernel-tests`:
-**~3.0× bare** (≈3.0 s vs ≈1.0 s, paired 2026-06-10; down from ~17× at first
-conformance), **at parity with warm tc-cache** (≈1.0 s, off by default). The
-remaining bare gap is structural — the boxed-`Value` + interpreted-dispatch
-model, not a single hot spot. On served workloads the story inverts: VM
-~2.3× warm, AOT overlay ~3.1× over that on spec code. Full story in
-`PERFORMANCE.md`, `BENCHMARKS.md`, and `design/perf-*.md`.
+**S41.2 ~3.0× bare** (≈3.0 s vs ≈1.0 s, paired 2026-06-10; down from ~17× at
+first conformance), **at parity with warm tc-cache** (≈1.0 s, off by default).
+Those 3.0s numbers are S41.2, not S42 — PR #21's S42 run was ~8s with core AOT
+skipped; a 2026-09-01 release retime with core AOT restored is ≈ 7.9 s wall
+(min-of-3, 134/0), the same ~8s band, not 3s (see `PERFORMANCE.md`). The remaining bare gap is structural — the
+boxed-`Value` + interpreted-dispatch model, not a single hot spot. On served
+workloads the story inverts: VM ~2.3× warm, AOT overlay ~3.1× over that on spec
+code. Full story in `PERFORMANCE.md`, `BENCHMARKS.md`, and `design/perf-*.md`.
 
 ## Milestones
 
@@ -105,6 +107,15 @@ model, not a single hot spot. On served workloads the story inverts: VM
 - **Rename** — the engine port `shen-cedar` → **`shen-rust`** (the name
   `shen-cedar` now denotes the Shen+Cedar examples). History before that commit
   says "shen-cedar".
+- **S42 kernel** (2026-08-25/27) — vendor Mark Tarver Shen 42.0
+  (`s42-pristine-20260825`; PR #21 squash `42c2f16`). `(value *version*)` is
+  `"42"`. First S42 `core.rs` codegen was empty, so `9f81b64` skipped
+  `core::install`; `839cca1` regenerated `core.rs` (~11k lines, `pub fn
+  install`) but left the skip. `core.kl` has ~60 defuns (`shen->kl`, `define`,
+  `linearise`, …); 41.2 installed core, and AOT install is restored. Release
+  `--kernel-tests` retime 2026-09-01: ≈ 7.9 s wall (min-of-3), 134/0 — vs PR #21
+  ~8s and vs June S41.2 ~3s (do not quote 3s for S42). GC, VM, overlay, and
+  Cedar are unchanged.
 
 ## Known limitations
 

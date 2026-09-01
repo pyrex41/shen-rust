@@ -7,8 +7,9 @@ with native [AWS Cedar](https://www.cedarpolicy.com/) authorization integration.
 
 Shen is a functional language with an integrated logic engine and an optional,
 very expressive type system (a sequent-calculus theorem prover). `shen-rust`
-boots the upstream **ShenOSKernel-41.2** and passes its full conformance suite —
-**134 / 134 kernel tests**, in every execution mode.
+boots the upstream **Shen S42** kernel (`*version*` 42, provenance
+`s42-pristine-20260825`; see `kernel/klambda/PROVENANCE.md`) and passes its
+full conformance suite — **134 / 134 kernel tests**, in every execution mode.
 
 The name follows the Shen-port convention (`shen-cl`, `shen-go`, `shen-ocaml`):
 the engine is `shen-rust`. The name `shen-cedar` is reused for the Shen **+**
@@ -135,7 +136,7 @@ crates/klcompile/           build-time KL → Rust AOT compiler for the kernel
 crates/shengen-rust/        Shen sequent-calc specs → Rust guard types (backpressure)
 bin/shen-rust/              the REPL / CLI (`--served`, `--kernel-tests`)
 examples/shen-cedar-authz/  Shen + Cedar integration (gate / verify / generate)
-kernel/                     vendored ShenOSKernel-41.2 (klambda + conformance tests)
+kernel/                     vendored Shen S42 (klambda + conformance tests)
 specs/                      backpressure specs in Shen sequent-calculus syntax
 design/                     architecture + performance design notes
 scripts/                    gates.sh (CI), benches, cross-port + warm benchmarks
@@ -144,7 +145,12 @@ scripts/                    gates.sh (CI), benches, cross-port + warm benchmarks
 ## Performance
 
 The reference target is the upstream `shen-cl` (SBCL) port. Two metrics, two
-answers (paired interleaved runs, 2026-06-10, Apple M-series):
+answers. The one-shot table below is **S41.2** (paired interleaved, 2026-06-10,
+Apple M-series) — do not read it as S42. PR #21's S42 vendor (~8s
+`--kernel-tests`, 134/0) ran with core AOT skipped. A 2026-09-01 release retime
+with core AOT restored is **≈ 7.9 s wall** (min-of-3: 7.89 / 8.39 / 9.43 s,
+134/0) — the same ~8s band as PR #21, **not** the 3s S41.2 path. See
+`PERFORMANCE.md`.
 
 **One-shot** (`--kernel-tests`, boot + load + run + exit):
 

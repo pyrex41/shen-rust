@@ -52,6 +52,21 @@ for f in "$KERNEL_AOT_DIR"/*.rs; do
     fi
 done
 
+# core.kl has ~60 defuns. 9f81b64 skipped core::install after an empty first
+# S42 codegen; 839cca1 regenerated core.rs (`pub fn install`) and left the skip.
+# backend / programmable-pattern-matching stay out of install_all on purpose.
+mod_rs="$KERNEL_AOT_DIR/mod.rs"
+core_kl="kernel/klambda/core.kl"
+if { grep -qE '^pub fn install\(' "$KERNEL_AOT_DIR/core.rs" || grep -qE '^pub fn install\(' "$SCRATCH/core.rs"; } \
+    && ! grep -qE '^[[:space:]]*core::install\(' "$mod_rs"; then
+    echo "FAIL: core.rs has pub fn install but install_all omits core::install"
+    drift=1
+fi
+if grep -qE '^\(defun[[:space:]]' "$core_kl" && ! grep -qE '^[[:space:]]*core::install\(' "$mod_rs"; then
+    echo "FAIL: $core_kl has defuns but install_all omits core::install"
+    drift=1
+fi
+
 if [ $drift -ne 0 ]; then
     echo "kernel-aot-audit: FAIL — run scripts/codegen-kernel-aot.sh and re-commit."
     exit 1

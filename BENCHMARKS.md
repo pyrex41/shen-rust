@@ -10,21 +10,34 @@ ratio, not the absolute. Harnesses live in `crates/shen-rust/benches/`,
 `scripts/cross-port-bench.sh` runs the upstream Shen kernel test suite (134
 tests) through both ports on the same machine, interleaved.
 
+**S41.2 (2026-06-10, paired interleaved min-of-5)** — historical. Do not read
+these 3.0s figures as S42.
+
 | Port | `--kernel-tests` | vs shen-cl |
 |---|---:|---:|
 | shen-cl (SBCL interpreted) | ≈ 1.0 s | 1× |
 | **shen-rust (release, bare)** | ≈ 3.0 s | **~3.0×** |
 | shen-rust + warm tc-cache (`SHEN_RUST_TC_CACHE`) | ≈ 1.0 s | **~1× (parity / ahead)** |
 
-(Paired interleaved min-of-5, 2026-06-10. The 2026-06-09 snapshot read
-≈4.3 s vs ≈1.3 s = ~3.3×; the 2026-06-10 profiling round — thin-LTO build
-flags, the split-TLS heap, the direct-mapped intern cache — bought ~18%
-cumulative, and shen-cl also ran faster on this box that day. The *ratio* is
-the stable claim.) Down from ~17× at first conformance (see `PERFORMANCE.md`
-for the path). The remaining bare gap is the boxed-`Value` +
-interpreted-dispatch model, not a single hot spot — each remaining local
-lever measures ≤ ~8%. The tc-cache row is verdict memoization (off by
-default), not raw speed.
+(The 2026-06-09 snapshot read ≈4.3 s vs ≈1.3 s = ~3.3×; the 2026-06-10
+profiling round — thin-LTO build flags, the split-TLS heap, the direct-mapped
+intern cache — bought ~18% cumulative, and shen-cl also ran faster on this box
+that day. The *ratio* is the stable S41.2 claim.) Down from ~17× at first
+conformance (see `PERFORMANCE.md` for the path). The remaining bare gap is the
+boxed-`Value` + interpreted-dispatch model, not a single hot spot — each
+remaining local lever measures ≤ ~8%. The tc-cache row is verdict memoization
+(off by default), not raw speed.
+
+**S42 (2026-09-01 retime, core AOT restored; `*version*` 42).** Same suite,
+release `shen-rust --kernel-tests`, `/usr/bin/time -p` wall, min-of-3 on this
+box. PR #21 (`42c2f16`) was ~8s with `core::install` skipped; June S41.2 was
+~3s. This run is **not** 3s.
+
+| Kernel / config | `--kernel-tests` wall | 134/0 | notes |
+|---|---:|:---:|---|
+| S41.2 (2026-06-10, paired min-of-5) | ≈ 3.0 s | yes | historical; vs shen-cl ≈1.0 s |
+| S42 PR #21 (`42c2f16`, core AOT skipped) | ≈ 8 s | yes | first S42 vendor |
+| **S42 (2026-09-01, core AOT restored)** | **≈ 7.9 s** (7.89 / 8.39 / 9.43) | **yes** | same ~8s band as PR #21, not the 3s S41.2 path |
 
 ## Cross-port: the wider field (rust vs cl vs lua)
 
@@ -166,6 +179,9 @@ Gate 7 in `scripts/gates.sh`; Gate 8 repeats it in a debug build, where the
 heap-reentrancy sentinel (`value.rs` split-TLS note) is live; Gate 9 repeats
 the debug run with `SHEN_RUST_GC` at a small trigger floor, so full
 mark/sweep cycles run under the sentinel plus the debug poison-on-sweep.
+S42 release wall on this box (2026-09-01, core AOT restored) is **≈ 7.9 s**
+min-of-3 — quote against PR #21 ~8s and June S41.2 ~3s; do not claim 3s for
+this kernel.
 
 ## Methodology
 
