@@ -29,6 +29,43 @@ fn main() -> ExitCode {
         shen_rust::interp::eval::enable_vm();
         eprintln!("shen-rust: served mode — bytecode VM enabled.");
     }
+    // `--version`: print just the port version (bifrost `version` adapter cmd).
+    if args.iter().skip(1).any(|a| a == "--version") {
+        println!("shen-rust 0.1.0");
+        return ExitCode::SUCCESS;
+    }
+    // Non-interactive launcher subcommands so bifrost (and any tool) can drive
+    // this port the same way it drives shen-go / shen-swift:
+    //   shen-rust script <file>   — load+eval every top-level form, no prompts
+    //   shen-rust eval -e <expr>  — eval one expression, print its value
+    // These run in a big-stack thread (same reason as the REPL) and boot the
+    // kernel *silently* (no banner) so captured stdout is behaviour-only.
+    if let Some(pos) = args.iter().position(|a| a == "script") {
+        if let Some(file) = args.get(pos + 1).cloned() {
+            let handle = std::thread::Builder::new()
+                .name("script".to_string())
+                .stack_size(1024 * 1024 * 1024)
+                .spawn(move || run_script(&file))
+                .expect("spawn script thread");
+            return handle.join().unwrap_or(ExitCode::from(2));
+        }
+    }
+    if let Some(pos) = args.iter().position(|a| a == "eval") {
+        // form: eval -e "<expr>"  (also accept: eval "<expr>")
+        let expr = if args.get(pos + 1).map(String::as_str) == Some("-e") {
+            args.get(pos + 2).cloned()
+        } else {
+            args.get(pos + 1).cloned()
+        };
+        if let Some(expr) = expr {
+            let handle = std::thread::Builder::new()
+                .name("eval".to_string())
+                .stack_size(1024 * 1024 * 1024)
+                .spawn(move || run_eval(&expr))
+                .expect("spawn eval thread");
+            return handle.join().unwrap_or(ExitCode::from(2));
+        }
+    }
     if args.iter().skip(1).any(|a| a == "--kernel-tests") {
         // The kernel suite hits deep AOT recursion in places (the reader,
         // YACC, type checker) which we don't trampoline through the Rust
@@ -150,6 +187,92 @@ fn run_kernel_tests() -> ExitCode {
         ExitCode::from(1)
     } else {
         ExitCode::SUCCESS
+    }
+}
+
+/// Boot the kernel silently (no banner on stdout/stderr) and return the
+/// interpreter, or a non-zero ExitCode on boot failure. Used by the
+/// non-interactive `script` / `eval` launcher paths so captured output is
+/// purely the program's own, matching the other bifrost ports.
+fn boot_silent() -> Result<Interp, ExitCode> {
+    let mut interp = Interp::new();
+    if let Err(e) = boot(&mut interp) {
+        eprintln!("shen-rust boot FAILED: {e}");
+        return Err(ExitCode::from(2));
+    }
+    Ok(interp)
+}
+
+/// `shen-rust script <file>`: evaluate every balanced top-level form in the
+/// file through the kernel's `eval`, discarding each form's value (only what
+/// the program explicitly prints reaches stdout). Comment-only / blank chunks
+/// are skipped silently. Exits non-zero on the first eval or parse error.
+fn run_script(path: &str) -> ExitCode {
+    let src = match std::fs::read_to_string(path) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("script: cannot read {path}: {e}");
+            return ExitCode::from(1);
+        }
+    };
+    let mut interp = match boot_silent() {
+        Ok(i) => i,
+        Err(code) => return code,
+    };
+    let mut buf = String::new();
+    for line in src.lines() {
+        buf.push_str(line);
+        buf.push('\n');
+        if !parens_balanced(&buf) {
+            continue;
+        }
+        let trimmed = buf.trim();
+        if trimmed.is_empty() {
+            buf.clear();
+            continue;
+        }
+        match parse_one(trimmed, &mut interp.symbols) {
+            Ok(expr) => {
+                if let Err(e) = dispatch_through_kernel_eval(&mut interp, &expr) {
+                    eprintln!("script: eval error: {e}");
+                    return ExitCode::from(1);
+                }
+            }
+            // A chunk that is only a comment / whitespace parses to "empty
+            // input" — that is expected between forms, so skip it silently.
+            Err(e) if e.to_string().contains("empty input") => {}
+            Err(e) => {
+                eprintln!("script: parse error: {e}");
+                return ExitCode::from(1);
+            }
+        }
+        buf.clear();
+    }
+    ExitCode::SUCCESS
+}
+
+/// `shen-rust eval -e <expr>`: evaluate one expression and print its value
+/// (same rendering as the REPL echo). Exits non-zero on error.
+fn run_eval(expr: &str) -> ExitCode {
+    let mut interp = match boot_silent() {
+        Ok(i) => i,
+        Err(code) => return code,
+    };
+    match parse_one(expr.trim(), &mut interp.symbols) {
+        Ok(e) => match dispatch_through_kernel_eval(&mut interp, &e) {
+            Ok(v) => {
+                println!("{}", render(&interp, &v));
+                ExitCode::SUCCESS
+            }
+            Err(err) => {
+                eprintln!("eval error: {err}");
+                ExitCode::from(1)
+            }
+        },
+        Err(err) => {
+            eprintln!("parse error: {err}");
+            ExitCode::from(1)
+        }
     }
 }
 
