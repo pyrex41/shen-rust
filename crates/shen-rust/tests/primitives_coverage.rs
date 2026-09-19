@@ -292,8 +292,8 @@ fn hash_is_deterministic_and_in_range() {
     let b = int(&mut i, r#"(hash "session-token-42" 256)"#);
     assert_eq!(a, b, "hash must be deterministic for equal keys");
 
-    // Bucket index lands in [1, 256] for many distinct keys (shen-rust's
-    // contract is `(h % buckets) + 1`).
+    // Bucket index lands in [1, 256] (kernel/Shen-Scheme 0-guard: never 0;
+    // bucket 0 stores the property-vector length).
     for n in 0..500 {
         let h = int(&mut i, &format!(r#"(hash "k{n}" 256)"#));
         assert!(

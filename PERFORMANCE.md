@@ -76,6 +76,39 @@ The living, detailed record is in `design/`:
    work didn't vanish — it CSE'd into `eval_in` and the call sites — but the
    per-step call/return overhead and cold-blob bloat did.
 
+## Shen/Scheme-style compiler mappings + kernel overrides
+
+Shen/Scheme (and the old SBCL port that reused its compiler) is fast not only
+because Chez/SBCL are fast, but because the KL→host compiler exploits KLambda
+properties and because well-placed overrides replace the kernel's portable
+bodies. The kernel is deliberately inefficient on hot functions so a new port
+can boot at all; once the port is up, those bodies are the cheapest wins.
+
+Landed (134/0, kernel AOT regenerated):
+
+1. **Native overrides** (after AOT install, dual-registered into `aot_direct`)
+   for the portable bodies Shen/Scheme also replaces: `hash` (must be live
+   *before* `declarations.kl` fills `*property-vector*` — same algorithm at
+   populate and lookup; 0-guard so bucket 0 stays the vector length),
+   `integer?` (kernel is recursive subtraction via `magless`/`integer-test?`),
+   `symbol?` / `variable?` / `shen.analyse-symbol?` (kernel walks `str` through
+   `alpha?`/`alphanums?` under `trap-error`), `@p`/`tuple?`/`fst`/`snd`,
+   `vector`/`<-vector`/`vector->`/`limit`, `empty?`/`not`/`boolean?`, reader
+   leaves (`hdstr`, `shen.digit?`, `shen.byte->digit`, case predicates).
+2. **klcompile mappings** that Chez already does: `(intern "foo")` →
+   `intern_static`; `(value unbound-sym)` → `rt::global_value`; `(set unbound-sym
+   V)` → `rt::set_global`; `(trap-error (value X) (lambda E H))` → `value/or`
+   and the same for `<-address` (Shen/Scheme `emit-trap-error-optimize`); more
+   primitives inlined (`empty?`, `cn`, `hdstr`/`tlstr`, `string->n`/`n->string`,
+   `<-address`/`address->`, `not`, `boolean?`, `fail`, `intern`). Kernel
+   `symbol?` is **not** inlined to `is_sym()` — that was the KL primitive, not
+   the kernel predicate.
+
+Still on the table, same playbook: equality specialization (`eq?`/`null?` for
+symbols/nil vs `shen_eq`); `yields-boolean?` so AOT `if` skips `is_truthy` when
+the test is already a predicate; static globals as real Rust `static`s rather
+than `env.get_global`; `<-vector/or` for `put`/`get`. Measure before claiming.
+
 ## Why the remaining ~3.0× is structural
 
 Two execution-engine bets — the bytecode VM and the Cranelift closure-JIT —

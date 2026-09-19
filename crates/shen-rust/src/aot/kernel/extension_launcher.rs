@@ -135,7 +135,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_version_x2d_string(
                     let __t24 = Value::sym(interp.intern("shen.r"));
                     rt::apply_direct(interp, "shen.app", &[__t22, __t23, __t24])?
                 };
-                rt::apply_direct(interp, "cn", &[__t5, __t25])?
+                rt::cn(&__t5, &__t25)?
             };
             let __t27 = Value::sym(interp.intern("shen.a"));
             rt::apply_direct(interp, "shen.app", &[__t4, __t26, __t27])?
@@ -178,7 +178,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_help_x2d_text(
                 let __t31 = Value::sym(interp.intern("shen.a"));
                 rt::apply_direct(interp, "shen.app", &[__t29, __t30, __t31])?
             };
-            rt::apply_direct(interp, "cn", &[__t28, __t32])?
+            rt::cn(&__t28, &__t32)?
         });
     }
 }
@@ -459,196 +459,196 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t201 = {
-                let __t197 = Value::nil();
-                let __t198 = v_V7115.clone();
-                rt::eq(&__t197, &__t198)
+            let __t199 = {
+                let __t195 = Value::nil();
+                let __t196 = v_V7115.clone();
+                rt::eq(&__t195, &__t196)
             };
-            if match rt::is_truthy(interp, &__t201) {
+            if match rt::is_truthy(interp, &__t199) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t200 = {
-                        let __t199 = v_V7116.clone();
-                        rt::apply_direct(interp, "reverse", &[__t199])?
+                    let __t198 = {
+                        let __t197 = v_V7116.clone();
+                        rt::apply_direct(interp, "reverse", &[__t197])?
                     };
-                    rt::apply_direct(interp, "shen.x.launcher.execute-all", &[__t200])?
+                    rt::apply_direct(interp, "shen.x.launcher.execute-all", &[__t198])?
                 });
             } else {
                 {
-                    let __t196 = {
-                        let __t180 = {
-                            let __t172 = v_V7115.clone();
-                            rt::is_cons(&__t172)
+                    let __t194 = {
+                        let __t178 = {
+                            let __t170 = v_V7115.clone();
+                            rt::is_cons(&__t170)
                         };
-                        if !rt::is_truthy(interp, &__t180)? {
+                        if !rt::is_truthy(interp, &__t178)? {
                             Value::bool(false)
                         } else {
-                            let __t181 = {
-                                let __t178 = {
-                                    let __t173 = Value::str("--eval");
-                                    let __t175 = {
-                                        let __t174 = v_V7115.clone();
-                                        rt::hd(&__t174)?
+                            let __t179 = {
+                                let __t176 = {
+                                    let __t171 = Value::str("--eval");
+                                    let __t173 = {
+                                        let __t172 = v_V7115.clone();
+                                        rt::hd(&__t172)?
                                     };
-                                    rt::eq(&__t173, &__t175)
+                                    rt::eq(&__t171, &__t173)
                                 };
-                                if !rt::is_truthy(interp, &__t178)? {
+                                if !rt::is_truthy(interp, &__t176)? {
                                     Value::bool(false)
                                 } else {
-                                    let __t179 = {
-                                        let __t177 = {
-                                            let __t176 = v_V7115.clone();
-                                            rt::tl(&__t176)?
+                                    let __t177 = {
+                                        let __t175 = {
+                                            let __t174 = v_V7115.clone();
+                                            rt::tl(&__t174)?
                                         };
-                                        rt::is_cons(&__t177)
+                                        rt::is_cons(&__t175)
                                     };
-                                    Value::bool(rt::is_truthy(interp, &__t179)?)
+                                    Value::bool(rt::is_truthy(interp, &__t177)?)
                                 }
                             };
-                            Value::bool(rt::is_truthy(interp, &__t181)?)
+                            Value::bool(rt::is_truthy(interp, &__t179)?)
                         }
                     };
-                    if match rt::is_truthy(interp, &__t196) {
+                    if match rt::is_truthy(interp, &__t194) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         {
-                            let __t184 = {
-                                let __t183 = {
-                                    let __t182 = v_V7115.clone();
-                                    rt::tl(&__t182)?
+                            let __t182 = {
+                                let __t181 = {
+                                    let __t180 = v_V7115.clone();
+                                    rt::tl(&__t180)?
                                 };
-                                rt::tl(&__t183)?
+                                rt::tl(&__t181)?
                             };
-                            let __t195 = {
-                                let __t193 = {
+                            let __t193 = {
+                                let __t191 = {
                                     let v_V7115 = v_V7115.clone();
                                     rt::make_aot_closure(
                                         "<freeze>",
                                         0,
                                         move |interp, _args| {
                                             Ok({
-                                                let __t191 = {
-                                                    let __t188 = {
-                                                        let __t187 = {
-                                                            let __t186 = {
-                                                                let __t185 = v_V7115.clone();
-                                                                rt::tl(&__t185)?
+                                                let __t189 = {
+                                                    let __t186 = {
+                                                        let __t185 = {
+                                                            let __t184 = {
+                                                                let __t183 = v_V7115.clone();
+                                                                rt::tl(&__t183)?
                                                             };
-                                                            rt::hd(&__t186)?
+                                                            rt::hd(&__t184)?
                                                         };
                                                         rt::apply_direct(
                                                             interp,
                                                             "shen.x.launcher.eval-string",
-                                                            &[__t187],
+                                                            &[__t185],
                                                         )?
                                                     };
-                                                    let __t189 = Value::str("\n");
-                                                    let __t190 =
+                                                    let __t187 = Value::str("\n");
+                                                    let __t188 =
                                                         Value::sym(interp.intern("shen.a"));
                                                     rt::apply_direct(
                                                         interp,
                                                         "shen.app",
-                                                        &[__t188, __t189, __t190],
+                                                        &[__t186, __t187, __t188],
                                                     )?
                                                 };
-                                                let __t192 =
+                                                let __t190 =
                                                     { rt::apply_direct(interp, "stoutput", &[])? };
-                                                rt::apply_direct(interp, "pr", &[__t191, __t192])?
+                                                rt::apply_direct(interp, "pr", &[__t189, __t190])?
                                             })
                                         },
                                         vec![v_V7115],
                                         interp,
                                     )
                                 };
-                                let __t194 = v_V7116.clone();
-                                rt::cons(&__t193, &__t194)
+                                let __t192 = v_V7116.clone();
+                                rt::cons(&__t191, &__t192)
                             };
-                            v_V7115 = __t184;
-                            v_V7116 = __t195;
+                            v_V7115 = __t182;
+                            v_V7116 = __t193;
                             continue;
                         }
                     } else {
                         {
-                            let __t171 = {
-                                let __t160 = {
-                                    let __t152 = v_V7115.clone();
-                                    rt::is_cons(&__t152)
+                            let __t169 = {
+                                let __t158 = {
+                                    let __t150 = v_V7115.clone();
+                                    rt::is_cons(&__t150)
                                 };
-                                if !rt::is_truthy(interp, &__t160)? {
+                                if !rt::is_truthy(interp, &__t158)? {
                                     Value::bool(false)
                                 } else {
-                                    let __t161 = {
-                                        let __t158 = {
-                                            let __t153 = Value::str("--load");
-                                            let __t155 = {
-                                                let __t154 = v_V7115.clone();
-                                                rt::hd(&__t154)?
+                                    let __t159 = {
+                                        let __t156 = {
+                                            let __t151 = Value::str("--load");
+                                            let __t153 = {
+                                                let __t152 = v_V7115.clone();
+                                                rt::hd(&__t152)?
                                             };
-                                            rt::eq(&__t153, &__t155)
+                                            rt::eq(&__t151, &__t153)
                                         };
-                                        if !rt::is_truthy(interp, &__t158)? {
+                                        if !rt::is_truthy(interp, &__t156)? {
                                             Value::bool(false)
                                         } else {
-                                            let __t159 = {
-                                                let __t157 = {
-                                                    let __t156 = v_V7115.clone();
-                                                    rt::tl(&__t156)?
+                                            let __t157 = {
+                                                let __t155 = {
+                                                    let __t154 = v_V7115.clone();
+                                                    rt::tl(&__t154)?
                                                 };
-                                                rt::is_cons(&__t157)
+                                                rt::is_cons(&__t155)
                                             };
-                                            Value::bool(rt::is_truthy(interp, &__t159)?)
+                                            Value::bool(rt::is_truthy(interp, &__t157)?)
                                         }
                                     };
-                                    Value::bool(rt::is_truthy(interp, &__t161)?)
+                                    Value::bool(rt::is_truthy(interp, &__t159)?)
                                 }
                             };
-                            if match rt::is_truthy(interp, &__t171) {
+                            if match rt::is_truthy(interp, &__t169) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 {
-                                    let __t164 = {
-                                        let __t163 = {
-                                            let __t162 = v_V7115.clone();
-                                            rt::tl(&__t162)?
+                                    let __t162 = {
+                                        let __t161 = {
+                                            let __t160 = v_V7115.clone();
+                                            rt::tl(&__t160)?
                                         };
-                                        rt::tl(&__t163)?
+                                        rt::tl(&__t161)?
                                     };
-                                    let __t170 = {
-                                        let __t168 = {
+                                    let __t168 = {
+                                        let __t166 = {
                                             let v_V7115 = v_V7115.clone();
                                             rt::make_aot_closure(
                                                 "<freeze>",
                                                 0,
                                                 move |interp, _args| {
                                                     Ok({
-                                                        let __t167 = {
-                                                            let __t166 = {
-                                                                let __t165 = v_V7115.clone();
-                                                                rt::tl(&__t165)?
+                                                        let __t165 = {
+                                                            let __t164 = {
+                                                                let __t163 = v_V7115.clone();
+                                                                rt::tl(&__t163)?
                                                             };
-                                                            rt::hd(&__t166)?
+                                                            rt::hd(&__t164)?
                                                         };
-                                                        rt::apply_direct(interp, "load", &[__t167])?
+                                                        rt::apply_direct(interp, "load", &[__t165])?
                                                     })
                                                 },
                                                 vec![v_V7115],
                                                 interp,
                                             )
                                         };
-                                        let __t169 = v_V7116.clone();
-                                        rt::cons(&__t168, &__t169)
+                                        let __t167 = v_V7116.clone();
+                                        rt::cons(&__t166, &__t167)
                                     };
-                                    v_V7115 = __t164;
-                                    v_V7116 = __t170;
+                                    v_V7115 = __t162;
+                                    v_V7116 = __t168;
                                     continue;
                                 }
                             } else {
                                 {
-                                    let __t151 = {
+                                    let __t149 = {
                                         let __t142 = {
                                             let __t138 = v_V7115.clone();
                                             rt::is_cons(&__t138)
@@ -667,7 +667,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                             Value::bool(rt::is_truthy(interp, &__t143)?)
                                         }
                                     };
-                                    if match rt::is_truthy(interp, &__t151) {
+                                    if match rt::is_truthy(interp, &__t149) {
                                         Ok(b) => b,
                                         Err(e) => break Err(e),
                                     } {
@@ -676,33 +676,28 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                 let __t144 = v_V7115.clone();
                                                 rt::tl(&__t144)?
                                             };
-                                            let __t150 = {
-                                                let __t148 = {
+                                            let __t148 = {
+                                                let __t146 = {
                                                     rt::make_aot_closure(
                                                         "<freeze>",
                                                         0,
                                                         move |interp, _args| {
                                                             Ok({
-                                                                let __t146 = Value::sym(
-                                                                    interp.intern("*hush*"),
-                                                                );
-                                                                let __t147 = Value::bool(true);
-                                                                rt::apply_direct(
-                                                                    interp,
-                                                                    "set",
-                                                                    &[__t146, __t147],
-                                                                )?
+                                                                let __v = Value::bool(true);
+                                                                rt::set_global(
+                                                                    interp, "*hush*", __v,
+                                                                )
                                                             })
                                                         },
                                                         Vec::new(),
                                                         interp,
                                                     )
                                                 };
-                                                let __t149 = v_V7116.clone();
-                                                rt::cons(&__t148, &__t149)
+                                                let __t147 = v_V7116.clone();
+                                                rt::cons(&__t146, &__t147)
                                             };
                                             v_V7115 = __t145;
-                                            v_V7116 = __t150;
+                                            v_V7116 = __t148;
                                             continue;
                                         }
                                     } else {
@@ -899,7 +894,7 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                                                             &__t66,
                                                                                         )
                                                                                     };
-                                                                                    if rt::is_truthy(interp, &__t77)? { { let __t67 = Value::sym(interp.intern("error")); let __t76 = { let __t74 = { let __t68 = Value::str("Invalid eval argument: "); let __t73 = { let __t70 = { let __t69 = v_V7115.clone(); rt::hd(&__t69)? }; let __t71 = Value::str(""); let __t72 = Value::sym(interp.intern("shen.a")); rt::apply_direct(interp, "shen.app", &[__t70, __t71, __t72])? }; rt::apply_direct(interp, "cn", &[__t68, __t73])? }; let __t75 = Value::nil(); rt::cons(&__t74, &__t75) }; rt::cons(&__t67, &__t76) } } else { { let __t65 = Value::bool(true); if rt::is_truthy(interp, &__t65)? { { let __t64 = Value::sym(interp.intern("shen.x.launcher.eval-command-h")); rt::apply_direct(interp, "shen.f-error", &[__t64])? } } else { return Err(ShenError::new("cond: no clause matched")) } } }
+                                                                                    if rt::is_truthy(interp, &__t77)? { { let __t67 = Value::sym(interp.intern("error")); let __t76 = { let __t74 = { let __t68 = Value::str("Invalid eval argument: "); let __t73 = { let __t70 = { let __t69 = v_V7115.clone(); rt::hd(&__t69)? }; let __t71 = Value::str(""); let __t72 = Value::sym(interp.intern("shen.a")); rt::apply_direct(interp, "shen.app", &[__t70, __t71, __t72])? }; rt::cn(&__t68, &__t73)? }; let __t75 = Value::nil(); rt::cons(&__t74, &__t75) }; rt::cons(&__t67, &__t76) } } else { { let __t65 = Value::bool(true); if rt::is_truthy(interp, &__t65)? { { let __t64 = Value::sym(interp.intern("shen.x.launcher.eval-command-h")); rt::apply_direct(interp, "shen.f-error", &[__t64])? } } else { return Err(ShenError::new("cond: no clause matched")) } } }
                                                                                 })
                                                                             },
                                                                             vec![v_V7115],
@@ -933,14 +928,14 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command_x2d_h(
                                                                                             let __t83 = v_W7117.clone();
                                                                                             rt::eq(&__t82, &__t83)
                                                                                         };
-                                                                                        if rt::is_truthy(interp, &__t89)? { { rt::apply_direct(interp, "fail", &[])? } } else { { let __t87 = { let __t84 = v_W7117.clone(); let __t86 = { let __t85 = v_V7115.clone(); rt::tl(&__t85)? }; rt::cons(&__t84, &__t86) }; let __t88 = v_V7116.clone(); rt::apply_direct(interp, "shen.x.launcher.eval-command-h", &[__t87, __t88])? } }
+                                                                                        if rt::is_truthy(interp, &__t89)? { { rt::fail(interp) } } else { { let __t87 = { let __t84 = v_W7117.clone(); let __t86 = { let __t85 = v_V7115.clone(); rt::tl(&__t85)? }; rt::cons(&__t84, &__t86) }; let __t88 = v_V7116.clone(); rt::apply_direct(interp, "shen.x.launcher.eval-command-h", &[__t87, __t88])? } }
                                                                                     }
                                                                                 };
                                                                                 {
                                                                                     let __t92 = {
                                                                                         let __t90 = v_Result7118.clone();
                                                                                         let __t91 = {
-                                                                                            rt::apply_direct(interp, "fail", &[])?
+                                                                                            rt::fail(interp)
                                                                                         };
                                                                                         rt::eq(
                                                                                             &__t90,
@@ -1011,9 +1006,9 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_eval_x2d_command(
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t202 = v_V7120.clone();
-            let __t203 = Value::nil();
-            rt::apply_direct(interp, "shen.x.launcher.eval-command-h", &[__t202, __t203])?
+            let __t200 = v_V7120.clone();
+            let __t201 = Value::nil();
+            rt::apply_direct(interp, "shen.x.launcher.eval-command-h", &[__t200, __t201])?
         });
     }
 }
@@ -1049,23 +1044,22 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_script_x2d_command(
     loop {
         {
             let _ = {
-                let __t204 = Value::sym(interp.intern("*argv*"));
-                let __t207 = {
-                    let __t205 = v_V7121.clone();
-                    let __t206 = v_V7122.clone();
-                    rt::cons(&__t205, &__t206)
+                let __v = {
+                    let __t202 = v_V7121.clone();
+                    let __t203 = v_V7122.clone();
+                    rt::cons(&__t202, &__t203)
                 };
-                rt::apply_direct(interp, "set", &[__t204, __t207])?
+                rt::set_global(interp, "*argv*", __v)
             };
             {
                 let _ = {
-                    let __t208 = v_V7121.clone();
-                    rt::apply_direct(interp, "shen.x.launcher.quiet-load", &[__t208])?
+                    let __t204 = v_V7121.clone();
+                    rt::apply_direct(interp, "shen.x.launcher.quiet-load", &[__t204])?
                 };
                 break Ok({
-                    let __t209 = Value::sym(interp.intern("success"));
-                    let __t210 = Value::nil();
-                    rt::cons(&__t209, &__t210)
+                    let __t205 = Value::sym(interp.intern("success"));
+                    let __t206 = Value::nil();
+                    rt::cons(&__t205, &__t206)
                 });
             }
         }
@@ -1100,273 +1094,283 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t319 = {
-                let __t315 = {
-                    let __t311 = v_V7123.clone();
-                    rt::is_cons(&__t311)
+            let __t315 = {
+                let __t311 = {
+                    let __t307 = v_V7123.clone();
+                    rt::is_cons(&__t307)
                 };
-                if !rt::is_truthy(interp, &__t315)? {
+                if !rt::is_truthy(interp, &__t311)? {
                     Value::bool(false)
                 } else {
-                    let __t316 = {
-                        let __t312 = Value::nil();
-                        let __t314 = {
-                            let __t313 = v_V7123.clone();
-                            rt::tl(&__t313)?
+                    let __t312 = {
+                        let __t308 = Value::nil();
+                        let __t310 = {
+                            let __t309 = v_V7123.clone();
+                            rt::tl(&__t309)?
                         };
-                        rt::eq(&__t312, &__t314)
+                        rt::eq(&__t308, &__t310)
                     };
-                    Value::bool(rt::is_truthy(interp, &__t316)?)
+                    Value::bool(rt::is_truthy(interp, &__t312)?)
                 }
             };
-            if match rt::is_truthy(interp, &__t319) {
+            if match rt::is_truthy(interp, &__t315) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t317 = Value::sym(interp.intern("launch-repl"));
-                    let __t318 = Value::nil();
-                    rt::cons(&__t317, &__t318)
+                    let __t313 = Value::sym(interp.intern("launch-repl"));
+                    let __t314 = Value::nil();
+                    rt::cons(&__t313, &__t314)
                 });
             } else {
                 {
-                    let __t310 = {
-                        let __t302 = {
-                            let __t293 = v_V7123.clone();
-                            rt::is_cons(&__t293)
+                    let __t306 = {
+                        let __t298 = {
+                            let __t289 = v_V7123.clone();
+                            rt::is_cons(&__t289)
                         };
-                        if !rt::is_truthy(interp, &__t302)? {
+                        if !rt::is_truthy(interp, &__t298)? {
                             Value::bool(false)
                         } else {
-                            let __t303 = {
-                                let __t300 = {
-                                    let __t295 = {
-                                        let __t294 = v_V7123.clone();
-                                        rt::tl(&__t294)?
+                            let __t299 = {
+                                let __t296 = {
+                                    let __t291 = {
+                                        let __t290 = v_V7123.clone();
+                                        rt::tl(&__t290)?
                                     };
-                                    rt::is_cons(&__t295)
+                                    rt::is_cons(&__t291)
                                 };
-                                if !rt::is_truthy(interp, &__t300)? {
+                                if !rt::is_truthy(interp, &__t296)? {
                                     Value::bool(false)
                                 } else {
-                                    let __t301 = {
-                                        let __t296 = Value::str("--help");
-                                        let __t299 = {
-                                            let __t298 = {
-                                                let __t297 = v_V7123.clone();
-                                                rt::tl(&__t297)?
+                                    let __t297 = {
+                                        let __t292 = Value::str("--help");
+                                        let __t295 = {
+                                            let __t294 = {
+                                                let __t293 = v_V7123.clone();
+                                                rt::tl(&__t293)?
                                             };
-                                            rt::hd(&__t298)?
+                                            rt::hd(&__t294)?
                                         };
-                                        rt::eq(&__t296, &__t299)
+                                        rt::eq(&__t292, &__t295)
                                     };
-                                    Value::bool(rt::is_truthy(interp, &__t301)?)
+                                    Value::bool(rt::is_truthy(interp, &__t297)?)
                                 }
                             };
-                            Value::bool(rt::is_truthy(interp, &__t303)?)
+                            Value::bool(rt::is_truthy(interp, &__t299)?)
                         }
                     };
-                    if match rt::is_truthy(interp, &__t310) {
+                    if match rt::is_truthy(interp, &__t306) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t304 = Value::sym(interp.intern("show-help"));
-                            let __t309 = {
-                                let __t307 = {
-                                    let __t306 = {
-                                        let __t305 = v_V7123.clone();
-                                        rt::hd(&__t305)?
+                            let __t300 = Value::sym(interp.intern("show-help"));
+                            let __t305 = {
+                                let __t303 = {
+                                    let __t302 = {
+                                        let __t301 = v_V7123.clone();
+                                        rt::hd(&__t301)?
                                     };
                                     rt::apply_direct(
                                         interp,
                                         "shen.x.launcher.help-text",
-                                        &[__t306],
+                                        &[__t302],
                                     )?
                                 };
-                                let __t308 = Value::nil();
-                                rt::cons(&__t307, &__t308)
+                                let __t304 = Value::nil();
+                                rt::cons(&__t303, &__t304)
                             };
-                            rt::cons(&__t304, &__t309)
+                            rt::cons(&__t300, &__t305)
                         });
                     } else {
                         {
-                            let __t292 = {
-                                let __t286 = {
-                                    let __t277 = v_V7123.clone();
-                                    rt::is_cons(&__t277)
+                            let __t288 = {
+                                let __t282 = {
+                                    let __t273 = v_V7123.clone();
+                                    rt::is_cons(&__t273)
                                 };
-                                if !rt::is_truthy(interp, &__t286)? {
+                                if !rt::is_truthy(interp, &__t282)? {
                                     Value::bool(false)
                                 } else {
-                                    let __t287 = {
-                                        let __t284 = {
-                                            let __t279 = {
-                                                let __t278 = v_V7123.clone();
-                                                rt::tl(&__t278)?
+                                    let __t283 = {
+                                        let __t280 = {
+                                            let __t275 = {
+                                                let __t274 = v_V7123.clone();
+                                                rt::tl(&__t274)?
                                             };
-                                            rt::is_cons(&__t279)
+                                            rt::is_cons(&__t275)
                                         };
-                                        if !rt::is_truthy(interp, &__t284)? {
+                                        if !rt::is_truthy(interp, &__t280)? {
                                             Value::bool(false)
                                         } else {
-                                            let __t285 = {
-                                                let __t280 = Value::str("--version");
-                                                let __t283 = {
-                                                    let __t282 = {
-                                                        let __t281 = v_V7123.clone();
-                                                        rt::tl(&__t281)?
+                                            let __t281 = {
+                                                let __t276 = Value::str("--version");
+                                                let __t279 = {
+                                                    let __t278 = {
+                                                        let __t277 = v_V7123.clone();
+                                                        rt::tl(&__t277)?
                                                     };
-                                                    rt::hd(&__t282)?
+                                                    rt::hd(&__t278)?
                                                 };
-                                                rt::eq(&__t280, &__t283)
+                                                rt::eq(&__t276, &__t279)
                                             };
-                                            Value::bool(rt::is_truthy(interp, &__t285)?)
+                                            Value::bool(rt::is_truthy(interp, &__t281)?)
                                         }
                                     };
-                                    Value::bool(rt::is_truthy(interp, &__t287)?)
+                                    Value::bool(rt::is_truthy(interp, &__t283)?)
                                 }
                             };
-                            if match rt::is_truthy(interp, &__t292) {
+                            if match rt::is_truthy(interp, &__t288) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t288 = Value::sym(interp.intern("success"));
-                                    let __t291 = {
-                                        let __t289 = {
+                                    let __t284 = Value::sym(interp.intern("success"));
+                                    let __t287 = {
+                                        let __t285 = {
                                             rt::apply_direct(
                                                 interp,
                                                 "shen.x.launcher.version-string",
                                                 &[],
                                             )?
                                         };
-                                        let __t290 = Value::nil();
-                                        rt::cons(&__t289, &__t290)
+                                        let __t286 = Value::nil();
+                                        rt::cons(&__t285, &__t286)
                                     };
-                                    rt::cons(&__t288, &__t291)
+                                    rt::cons(&__t284, &__t287)
                                 });
                             } else {
                                 {
-                                    let __t276 = {
-                                        let __t270 = {
-                                            let __t261 = v_V7123.clone();
-                                            rt::is_cons(&__t261)
+                                    let __t272 = {
+                                        let __t266 = {
+                                            let __t257 = v_V7123.clone();
+                                            rt::is_cons(&__t257)
                                         };
-                                        if !rt::is_truthy(interp, &__t270)? {
+                                        if !rt::is_truthy(interp, &__t266)? {
                                             Value::bool(false)
                                         } else {
-                                            let __t271 = {
-                                                let __t268 = {
-                                                    let __t263 = {
-                                                        let __t262 = v_V7123.clone();
-                                                        rt::tl(&__t262)?
+                                            let __t267 = {
+                                                let __t264 = {
+                                                    let __t259 = {
+                                                        let __t258 = v_V7123.clone();
+                                                        rt::tl(&__t258)?
                                                     };
-                                                    rt::is_cons(&__t263)
+                                                    rt::is_cons(&__t259)
                                                 };
-                                                if !rt::is_truthy(interp, &__t268)? {
+                                                if !rt::is_truthy(interp, &__t264)? {
                                                     Value::bool(false)
                                                 } else {
-                                                    let __t269 = {
-                                                        let __t264 = Value::str("repl");
-                                                        let __t267 = {
-                                                            let __t266 = {
-                                                                let __t265 = v_V7123.clone();
-                                                                rt::tl(&__t265)?
+                                                    let __t265 = {
+                                                        let __t260 = Value::str("repl");
+                                                        let __t263 = {
+                                                            let __t262 = {
+                                                                let __t261 = v_V7123.clone();
+                                                                rt::tl(&__t261)?
                                                             };
-                                                            rt::hd(&__t266)?
+                                                            rt::hd(&__t262)?
                                                         };
-                                                        rt::eq(&__t264, &__t267)
+                                                        rt::eq(&__t260, &__t263)
                                                     };
-                                                    Value::bool(rt::is_truthy(interp, &__t269)?)
+                                                    Value::bool(rt::is_truthy(interp, &__t265)?)
                                                 }
                                             };
-                                            Value::bool(rt::is_truthy(interp, &__t271)?)
+                                            Value::bool(rt::is_truthy(interp, &__t267)?)
                                         }
                                     };
-                                    if match rt::is_truthy(interp, &__t276) {
+                                    if match rt::is_truthy(interp, &__t272) {
                                         Ok(b) => b,
                                         Err(e) => break Err(e),
                                     } {
                                         break Ok({
-                                            let __t272 = Value::sym(interp.intern("launch-repl"));
-                                            let __t275 = {
-                                                let __t274 = {
-                                                    let __t273 = v_V7123.clone();
-                                                    rt::tl(&__t273)?
+                                            let __t268 = Value::sym(interp.intern("launch-repl"));
+                                            let __t271 = {
+                                                let __t270 = {
+                                                    let __t269 = v_V7123.clone();
+                                                    rt::tl(&__t269)?
                                                 };
-                                                rt::tl(&__t274)?
+                                                rt::tl(&__t270)?
                                             };
-                                            rt::cons(&__t272, &__t275)
+                                            rt::cons(&__t268, &__t271)
                                         });
                                     } else {
                                         {
-                                            let __t260 = {
-                                                let __t250 = {
-                                                    let __t236 = v_V7123.clone();
-                                                    rt::is_cons(&__t236)
+                                            let __t256 = {
+                                                let __t246 = {
+                                                    let __t232 = v_V7123.clone();
+                                                    rt::is_cons(&__t232)
                                                 };
-                                                if !rt::is_truthy(interp, &__t250)? {
+                                                if !rt::is_truthy(interp, &__t246)? {
                                                     Value::bool(false)
                                                 } else {
-                                                    let __t251 = {
-                                                        let __t248 = {
-                                                            let __t238 = {
-                                                                let __t237 = v_V7123.clone();
-                                                                rt::tl(&__t237)?
+                                                    let __t247 = {
+                                                        let __t244 = {
+                                                            let __t234 = {
+                                                                let __t233 = v_V7123.clone();
+                                                                rt::tl(&__t233)?
                                                             };
-                                                            rt::is_cons(&__t238)
+                                                            rt::is_cons(&__t234)
                                                         };
-                                                        if !rt::is_truthy(interp, &__t248)? {
+                                                        if !rt::is_truthy(interp, &__t244)? {
                                                             Value::bool(false)
                                                         } else {
-                                                            let __t249 = {
-                                                                let __t246 = {
-                                                                    let __t239 =
+                                                            let __t245 = {
+                                                                let __t242 = {
+                                                                    let __t235 =
                                                                         Value::str("script");
-                                                                    let __t242 = {
-                                                                        let __t241 = {
-                                                                            let __t240 =
+                                                                    let __t238 = {
+                                                                        let __t237 = {
+                                                                            let __t236 =
                                                                                 v_V7123.clone();
-                                                                            rt::tl(&__t240)?
+                                                                            rt::tl(&__t236)?
                                                                         };
-                                                                        rt::hd(&__t241)?
+                                                                        rt::hd(&__t237)?
                                                                     };
-                                                                    rt::eq(&__t239, &__t242)
+                                                                    rt::eq(&__t235, &__t238)
                                                                 };
-                                                                if !rt::is_truthy(interp, &__t246)?
+                                                                if !rt::is_truthy(interp, &__t242)?
                                                                 {
                                                                     Value::bool(false)
                                                                 } else {
-                                                                    let __t247 = {
-                                                                        let __t245 = {
-                                                                            let __t244 = {
-                                                                                let __t243 =
+                                                                    let __t243 = {
+                                                                        let __t241 = {
+                                                                            let __t240 = {
+                                                                                let __t239 =
                                                                                     v_V7123.clone();
-                                                                                rt::tl(&__t243)?
+                                                                                rt::tl(&__t239)?
                                                                             };
-                                                                            rt::tl(&__t244)?
+                                                                            rt::tl(&__t240)?
                                                                         };
-                                                                        rt::is_cons(&__t245)
+                                                                        rt::is_cons(&__t241)
                                                                     };
                                                                     Value::bool(rt::is_truthy(
-                                                                        interp, &__t247,
+                                                                        interp, &__t243,
                                                                     )?)
                                                                 }
                                                             };
                                                             Value::bool(rt::is_truthy(
-                                                                interp, &__t249,
+                                                                interp, &__t245,
                                                             )?)
                                                         }
                                                     };
-                                                    Value::bool(rt::is_truthy(interp, &__t251)?)
+                                                    Value::bool(rt::is_truthy(interp, &__t247)?)
                                                 }
                                             };
-                                            if match rt::is_truthy(interp, &__t260) {
+                                            if match rt::is_truthy(interp, &__t256) {
                                                 Ok(b) => b,
                                                 Err(e) => break Err(e),
                                             } {
                                                 break Ok({
+                                                    let __t251 = {
+                                                        let __t250 = {
+                                                            let __t249 = {
+                                                                let __t248 = v_V7123.clone();
+                                                                rt::tl(&__t248)?
+                                                            };
+                                                            rt::tl(&__t249)?
+                                                        };
+                                                        rt::hd(&__t250)?
+                                                    };
                                                     let __t255 = {
                                                         let __t254 = {
                                                             let __t253 = {
@@ -1375,140 +1379,130 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_launch_x2d_shen(
                                                             };
                                                             rt::tl(&__t253)?
                                                         };
-                                                        rt::hd(&__t254)?
-                                                    };
-                                                    let __t259 = {
-                                                        let __t258 = {
-                                                            let __t257 = {
-                                                                let __t256 = v_V7123.clone();
-                                                                rt::tl(&__t256)?
-                                                            };
-                                                            rt::tl(&__t257)?
-                                                        };
-                                                        rt::tl(&__t258)?
+                                                        rt::tl(&__t254)?
                                                     };
                                                     rt::apply_direct(
                                                         interp,
                                                         "shen.x.launcher.script-command",
-                                                        &[__t255, __t259],
+                                                        &[__t251, __t255],
                                                     )?
                                                 });
                                             } else {
                                                 {
-                                                    let __t235 = {
-                                                        let __t230 = {
-                                                            let __t221 = v_V7123.clone();
-                                                            rt::is_cons(&__t221)
+                                                    let __t231 = {
+                                                        let __t226 = {
+                                                            let __t217 = v_V7123.clone();
+                                                            rt::is_cons(&__t217)
                                                         };
-                                                        if !rt::is_truthy(interp, &__t230)? {
+                                                        if !rt::is_truthy(interp, &__t226)? {
                                                             Value::bool(false)
                                                         } else {
-                                                            let __t231 = {
-                                                                let __t228 = {
-                                                                    let __t223 = {
-                                                                        let __t222 =
+                                                            let __t227 = {
+                                                                let __t224 = {
+                                                                    let __t219 = {
+                                                                        let __t218 =
                                                                             v_V7123.clone();
-                                                                        rt::tl(&__t222)?
+                                                                        rt::tl(&__t218)?
                                                                     };
-                                                                    rt::is_cons(&__t223)
+                                                                    rt::is_cons(&__t219)
                                                                 };
-                                                                if !rt::is_truthy(interp, &__t228)?
+                                                                if !rt::is_truthy(interp, &__t224)?
                                                                 {
                                                                     Value::bool(false)
                                                                 } else {
-                                                                    let __t229 = {
-                                                                        let __t224 =
+                                                                    let __t225 = {
+                                                                        let __t220 =
                                                                             Value::str("eval");
-                                                                        let __t227 = {
-                                                                            let __t226 = {
-                                                                                let __t225 =
+                                                                        let __t223 = {
+                                                                            let __t222 = {
+                                                                                let __t221 =
                                                                                     v_V7123.clone();
-                                                                                rt::tl(&__t225)?
+                                                                                rt::tl(&__t221)?
                                                                             };
-                                                                            rt::hd(&__t226)?
+                                                                            rt::hd(&__t222)?
                                                                         };
-                                                                        rt::eq(&__t224, &__t227)
+                                                                        rt::eq(&__t220, &__t223)
                                                                     };
                                                                     Value::bool(rt::is_truthy(
-                                                                        interp, &__t229,
+                                                                        interp, &__t225,
                                                                     )?)
                                                                 }
                                                             };
                                                             Value::bool(rt::is_truthy(
-                                                                interp, &__t231,
+                                                                interp, &__t227,
                                                             )?)
                                                         }
                                                     };
-                                                    if match rt::is_truthy(interp, &__t235) {
+                                                    if match rt::is_truthy(interp, &__t231) {
                                                         Ok(b) => b,
                                                         Err(e) => break Err(e),
                                                     } {
                                                         break Ok({
-                                                            let __t234 = {
-                                                                let __t233 = {
-                                                                    let __t232 = v_V7123.clone();
-                                                                    rt::tl(&__t232)?
+                                                            let __t230 = {
+                                                                let __t229 = {
+                                                                    let __t228 = v_V7123.clone();
+                                                                    rt::tl(&__t228)?
                                                                 };
-                                                                rt::tl(&__t233)?
+                                                                rt::tl(&__t229)?
                                                             };
                                                             rt::apply_direct(
                                                                 interp,
                                                                 "shen.x.launcher.eval-command",
-                                                                &[__t234],
+                                                                &[__t230],
                                                             )?
                                                         });
                                                     } else {
                                                         {
-                                                            let __t220 = {
-                                                                let __t216 = {
-                                                                    let __t213 = v_V7123.clone();
-                                                                    rt::is_cons(&__t213)
+                                                            let __t216 = {
+                                                                let __t212 = {
+                                                                    let __t209 = v_V7123.clone();
+                                                                    rt::is_cons(&__t209)
                                                                 };
-                                                                if !rt::is_truthy(interp, &__t216)?
+                                                                if !rt::is_truthy(interp, &__t212)?
                                                                 {
                                                                     Value::bool(false)
                                                                 } else {
-                                                                    let __t217 = {
-                                                                        let __t215 = {
-                                                                            let __t214 =
+                                                                    let __t213 = {
+                                                                        let __t211 = {
+                                                                            let __t210 =
                                                                                 v_V7123.clone();
-                                                                            rt::tl(&__t214)?
+                                                                            rt::tl(&__t210)?
                                                                         };
-                                                                        rt::is_cons(&__t215)
+                                                                        rt::is_cons(&__t211)
                                                                     };
                                                                     Value::bool(rt::is_truthy(
-                                                                        interp, &__t217,
+                                                                        interp, &__t213,
                                                                     )?)
                                                                 }
                                                             };
-                                                            if match rt::is_truthy(interp, &__t220)
+                                                            if match rt::is_truthy(interp, &__t216)
                                                             {
                                                                 Ok(b) => b,
                                                                 Err(e) => break Err(e),
                                                             } {
                                                                 break Ok({
-                                                                    let __t218 =
+                                                                    let __t214 =
                                                                         Value::sym(interp.intern(
                                                                             "unknown-arguments",
                                                                         ));
-                                                                    let __t219 = v_V7123.clone();
-                                                                    rt::cons(&__t218, &__t219)
+                                                                    let __t215 = v_V7123.clone();
+                                                                    rt::cons(&__t214, &__t215)
                                                                 });
                                                             } else {
                                                                 {
-                                                                    let __t212 = Value::bool(true);
+                                                                    let __t208 = Value::bool(true);
                                                                     if match rt::is_truthy(
-                                                                        interp, &__t212,
+                                                                        interp, &__t208,
                                                                     ) {
                                                                         Ok(b) => b,
                                                                         Err(e) => break Err(e),
                                                                     } {
                                                                         break Ok({
-                                                                            let __t211 = Value::sym(interp.intern("shen.x.launcher.launch-shen"));
+                                                                            let __t207 = Value::sym(interp.intern("shen.x.launcher.launch-shen"));
                                                                             rt::apply_direct(
                                                                                 interp,
                                                                                 "shen.f-error",
-                                                                                &[__t211],
+                                                                                &[__t207],
                                                                             )?
                                                                         });
                                                                     } else {
@@ -1560,426 +1554,426 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t447 = {
-                let __t445 = {
-                    let __t436 = v_V7126.clone();
-                    rt::is_cons(&__t436)
+            let __t443 = {
+                let __t441 = {
+                    let __t432 = v_V7126.clone();
+                    rt::is_cons(&__t432)
                 };
-                if !rt::is_truthy(interp, &__t445)? {
+                if !rt::is_truthy(interp, &__t441)? {
                     Value::bool(false)
                 } else {
-                    let __t446 = {
-                        let __t443 = {
-                            let __t437 = Value::sym(interp.intern("success"));
-                            let __t439 = {
-                                let __t438 = v_V7126.clone();
-                                rt::hd(&__t438)?
+                    let __t442 = {
+                        let __t439 = {
+                            let __t433 = Value::sym(interp.intern("success"));
+                            let __t435 = {
+                                let __t434 = v_V7126.clone();
+                                rt::hd(&__t434)?
                             };
-                            rt::eq(&__t437, &__t439)
+                            rt::eq(&__t433, &__t435)
                         };
-                        if !rt::is_truthy(interp, &__t443)? {
+                        if !rt::is_truthy(interp, &__t439)? {
                             Value::bool(false)
                         } else {
-                            let __t444 = {
-                                let __t440 = Value::nil();
-                                let __t442 = {
-                                    let __t441 = v_V7126.clone();
-                                    rt::tl(&__t441)?
+                            let __t440 = {
+                                let __t436 = Value::nil();
+                                let __t438 = {
+                                    let __t437 = v_V7126.clone();
+                                    rt::tl(&__t437)?
                                 };
-                                rt::eq(&__t440, &__t442)
+                                rt::eq(&__t436, &__t438)
                             };
-                            Value::bool(rt::is_truthy(interp, &__t444)?)
+                            Value::bool(rt::is_truthy(interp, &__t440)?)
                         }
                     };
-                    Value::bool(rt::is_truthy(interp, &__t446)?)
+                    Value::bool(rt::is_truthy(interp, &__t442)?)
                 }
             };
-            if match rt::is_truthy(interp, &__t447) {
+            if match rt::is_truthy(interp, &__t443) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::sym(interp.intern("shen.x.launcher.done")));
             } else {
                 {
-                    let __t435 = {
-                        let __t426 = {
-                            let __t412 = v_V7126.clone();
-                            rt::is_cons(&__t412)
+                    let __t431 = {
+                        let __t422 = {
+                            let __t408 = v_V7126.clone();
+                            rt::is_cons(&__t408)
                         };
-                        if !rt::is_truthy(interp, &__t426)? {
+                        if !rt::is_truthy(interp, &__t422)? {
                             Value::bool(false)
                         } else {
-                            let __t427 = {
-                                let __t424 = {
-                                    let __t413 = Value::sym(interp.intern("success"));
-                                    let __t415 = {
-                                        let __t414 = v_V7126.clone();
-                                        rt::hd(&__t414)?
+                            let __t423 = {
+                                let __t420 = {
+                                    let __t409 = Value::sym(interp.intern("success"));
+                                    let __t411 = {
+                                        let __t410 = v_V7126.clone();
+                                        rt::hd(&__t410)?
                                     };
-                                    rt::eq(&__t413, &__t415)
+                                    rt::eq(&__t409, &__t411)
                                 };
-                                if !rt::is_truthy(interp, &__t424)? {
+                                if !rt::is_truthy(interp, &__t420)? {
                                     Value::bool(false)
                                 } else {
-                                    let __t425 = {
-                                        let __t422 = {
-                                            let __t417 = {
-                                                let __t416 = v_V7126.clone();
-                                                rt::tl(&__t416)?
+                                    let __t421 = {
+                                        let __t418 = {
+                                            let __t413 = {
+                                                let __t412 = v_V7126.clone();
+                                                rt::tl(&__t412)?
                                             };
-                                            rt::is_cons(&__t417)
+                                            rt::is_cons(&__t413)
                                         };
-                                        if !rt::is_truthy(interp, &__t422)? {
+                                        if !rt::is_truthy(interp, &__t418)? {
                                             Value::bool(false)
                                         } else {
-                                            let __t423 = {
-                                                let __t418 = Value::nil();
-                                                let __t421 = {
-                                                    let __t420 = {
-                                                        let __t419 = v_V7126.clone();
-                                                        rt::tl(&__t419)?
+                                            let __t419 = {
+                                                let __t414 = Value::nil();
+                                                let __t417 = {
+                                                    let __t416 = {
+                                                        let __t415 = v_V7126.clone();
+                                                        rt::tl(&__t415)?
                                                     };
-                                                    rt::tl(&__t420)?
+                                                    rt::tl(&__t416)?
                                                 };
-                                                rt::eq(&__t418, &__t421)
+                                                rt::eq(&__t414, &__t417)
                                             };
-                                            Value::bool(rt::is_truthy(interp, &__t423)?)
+                                            Value::bool(rt::is_truthy(interp, &__t419)?)
                                         }
                                     };
-                                    Value::bool(rt::is_truthy(interp, &__t425)?)
+                                    Value::bool(rt::is_truthy(interp, &__t421)?)
                                 }
                             };
-                            Value::bool(rt::is_truthy(interp, &__t427)?)
+                            Value::bool(rt::is_truthy(interp, &__t423)?)
                         }
                     };
-                    if match rt::is_truthy(interp, &__t435) {
+                    if match rt::is_truthy(interp, &__t431) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t433 = {
-                                let __t430 = {
-                                    let __t429 = {
-                                        let __t428 = v_V7126.clone();
-                                        rt::tl(&__t428)?
+                            let __t429 = {
+                                let __t426 = {
+                                    let __t425 = {
+                                        let __t424 = v_V7126.clone();
+                                        rt::tl(&__t424)?
                                     };
-                                    rt::hd(&__t429)?
+                                    rt::hd(&__t425)?
                                 };
-                                let __t431 = Value::str("\n");
-                                let __t432 = Value::sym(interp.intern("shen.a"));
-                                rt::apply_direct(interp, "shen.app", &[__t430, __t431, __t432])?
+                                let __t427 = Value::str("\n");
+                                let __t428 = Value::sym(interp.intern("shen.a"));
+                                rt::apply_direct(interp, "shen.app", &[__t426, __t427, __t428])?
                             };
-                            let __t434 = { rt::apply_direct(interp, "stoutput", &[])? };
-                            rt::apply_direct(interp, "pr", &[__t433, __t434])?
+                            let __t430 = { rt::apply_direct(interp, "stoutput", &[])? };
+                            rt::apply_direct(interp, "pr", &[__t429, __t430])?
                         });
                     } else {
                         {
-                            let __t411 = {
-                                let __t400 = {
-                                    let __t386 = v_V7126.clone();
-                                    rt::is_cons(&__t386)
+                            let __t407 = {
+                                let __t396 = {
+                                    let __t382 = v_V7126.clone();
+                                    rt::is_cons(&__t382)
                                 };
-                                if !rt::is_truthy(interp, &__t400)? {
+                                if !rt::is_truthy(interp, &__t396)? {
                                     Value::bool(false)
                                 } else {
-                                    let __t401 = {
-                                        let __t398 = {
-                                            let __t387 = Value::sym(interp.intern("error"));
-                                            let __t389 = {
-                                                let __t388 = v_V7126.clone();
-                                                rt::hd(&__t388)?
+                                    let __t397 = {
+                                        let __t394 = {
+                                            let __t383 = Value::sym(interp.intern("error"));
+                                            let __t385 = {
+                                                let __t384 = v_V7126.clone();
+                                                rt::hd(&__t384)?
                                             };
-                                            rt::eq(&__t387, &__t389)
+                                            rt::eq(&__t383, &__t385)
                                         };
-                                        if !rt::is_truthy(interp, &__t398)? {
+                                        if !rt::is_truthy(interp, &__t394)? {
                                             Value::bool(false)
                                         } else {
-                                            let __t399 = {
-                                                let __t396 = {
-                                                    let __t391 = {
-                                                        let __t390 = v_V7126.clone();
-                                                        rt::tl(&__t390)?
+                                            let __t395 = {
+                                                let __t392 = {
+                                                    let __t387 = {
+                                                        let __t386 = v_V7126.clone();
+                                                        rt::tl(&__t386)?
                                                     };
-                                                    rt::is_cons(&__t391)
+                                                    rt::is_cons(&__t387)
                                                 };
-                                                if !rt::is_truthy(interp, &__t396)? {
+                                                if !rt::is_truthy(interp, &__t392)? {
                                                     Value::bool(false)
                                                 } else {
-                                                    let __t397 = {
-                                                        let __t392 = Value::nil();
-                                                        let __t395 = {
-                                                            let __t394 = {
-                                                                let __t393 = v_V7126.clone();
-                                                                rt::tl(&__t393)?
+                                                    let __t393 = {
+                                                        let __t388 = Value::nil();
+                                                        let __t391 = {
+                                                            let __t390 = {
+                                                                let __t389 = v_V7126.clone();
+                                                                rt::tl(&__t389)?
                                                             };
-                                                            rt::tl(&__t394)?
+                                                            rt::tl(&__t390)?
                                                         };
-                                                        rt::eq(&__t392, &__t395)
+                                                        rt::eq(&__t388, &__t391)
                                                     };
-                                                    Value::bool(rt::is_truthy(interp, &__t397)?)
+                                                    Value::bool(rt::is_truthy(interp, &__t393)?)
                                                 }
                                             };
-                                            Value::bool(rt::is_truthy(interp, &__t399)?)
+                                            Value::bool(rt::is_truthy(interp, &__t395)?)
                                         }
                                     };
-                                    Value::bool(rt::is_truthy(interp, &__t401)?)
+                                    Value::bool(rt::is_truthy(interp, &__t397)?)
                                 }
                             };
-                            if match rt::is_truthy(interp, &__t411) {
+                            if match rt::is_truthy(interp, &__t407) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t409 = {
-                                        let __t402 = Value::str("ERROR: ");
-                                        let __t408 = {
-                                            let __t405 = {
-                                                let __t404 = {
-                                                    let __t403 = v_V7126.clone();
-                                                    rt::tl(&__t403)?
+                                    let __t405 = {
+                                        let __t398 = Value::str("ERROR: ");
+                                        let __t404 = {
+                                            let __t401 = {
+                                                let __t400 = {
+                                                    let __t399 = v_V7126.clone();
+                                                    rt::tl(&__t399)?
                                                 };
-                                                rt::hd(&__t404)?
+                                                rt::hd(&__t400)?
                                             };
-                                            let __t406 = Value::str("\n");
-                                            let __t407 = Value::sym(interp.intern("shen.a"));
+                                            let __t402 = Value::str("\n");
+                                            let __t403 = Value::sym(interp.intern("shen.a"));
                                             rt::apply_direct(
                                                 interp,
                                                 "shen.app",
-                                                &[__t405, __t406, __t407],
+                                                &[__t401, __t402, __t403],
                                             )?
                                         };
-                                        rt::apply_direct(interp, "cn", &[__t402, __t408])?
+                                        rt::cn(&__t398, &__t404)?
                                     };
-                                    let __t410 = { rt::apply_direct(interp, "stoutput", &[])? };
-                                    rt::apply_direct(interp, "pr", &[__t409, __t410])?
+                                    let __t406 = { rt::apply_direct(interp, "stoutput", &[])? };
+                                    rt::apply_direct(interp, "pr", &[__t405, __t406])?
                                 });
                             } else {
                                 {
-                                    let __t385 = {
-                                        let __t383 = {
-                                            let __t379 = v_V7126.clone();
-                                            rt::is_cons(&__t379)
+                                    let __t381 = {
+                                        let __t379 = {
+                                            let __t375 = v_V7126.clone();
+                                            rt::is_cons(&__t375)
                                         };
-                                        if !rt::is_truthy(interp, &__t383)? {
+                                        if !rt::is_truthy(interp, &__t379)? {
                                             Value::bool(false)
                                         } else {
-                                            let __t384 = {
-                                                let __t380 =
+                                            let __t380 = {
+                                                let __t376 =
                                                     Value::sym(interp.intern("launch-repl"));
-                                                let __t382 = {
-                                                    let __t381 = v_V7126.clone();
-                                                    rt::hd(&__t381)?
+                                                let __t378 = {
+                                                    let __t377 = v_V7126.clone();
+                                                    rt::hd(&__t377)?
                                                 };
-                                                rt::eq(&__t380, &__t382)
+                                                rt::eq(&__t376, &__t378)
                                             };
-                                            Value::bool(rt::is_truthy(interp, &__t384)?)
+                                            Value::bool(rt::is_truthy(interp, &__t380)?)
                                         }
                                     };
-                                    if match rt::is_truthy(interp, &__t385) {
+                                    if match rt::is_truthy(interp, &__t381) {
                                         Ok(b) => b,
                                         Err(e) => break Err(e),
                                     } {
                                         break Ok({ rt::apply_direct(interp, "shen.repl", &[])? });
                                     } else {
                                         {
-                                            let __t378 = {
-                                                let __t369 = {
-                                                    let __t355 = v_V7126.clone();
-                                                    rt::is_cons(&__t355)
+                                            let __t374 = {
+                                                let __t365 = {
+                                                    let __t351 = v_V7126.clone();
+                                                    rt::is_cons(&__t351)
                                                 };
-                                                if !rt::is_truthy(interp, &__t369)? {
+                                                if !rt::is_truthy(interp, &__t365)? {
                                                     Value::bool(false)
                                                 } else {
-                                                    let __t370 = {
-                                                        let __t367 = {
-                                                            let __t356 = Value::sym(
+                                                    let __t366 = {
+                                                        let __t363 = {
+                                                            let __t352 = Value::sym(
                                                                 interp.intern("show-help"),
                                                             );
-                                                            let __t358 = {
-                                                                let __t357 = v_V7126.clone();
-                                                                rt::hd(&__t357)?
+                                                            let __t354 = {
+                                                                let __t353 = v_V7126.clone();
+                                                                rt::hd(&__t353)?
                                                             };
-                                                            rt::eq(&__t356, &__t358)
+                                                            rt::eq(&__t352, &__t354)
                                                         };
-                                                        if !rt::is_truthy(interp, &__t367)? {
+                                                        if !rt::is_truthy(interp, &__t363)? {
                                                             Value::bool(false)
                                                         } else {
-                                                            let __t368 = {
-                                                                let __t365 = {
-                                                                    let __t360 = {
-                                                                        let __t359 =
+                                                            let __t364 = {
+                                                                let __t361 = {
+                                                                    let __t356 = {
+                                                                        let __t355 =
                                                                             v_V7126.clone();
-                                                                        rt::tl(&__t359)?
+                                                                        rt::tl(&__t355)?
                                                                     };
-                                                                    rt::is_cons(&__t360)
+                                                                    rt::is_cons(&__t356)
                                                                 };
-                                                                if !rt::is_truthy(interp, &__t365)?
+                                                                if !rt::is_truthy(interp, &__t361)?
                                                                 {
                                                                     Value::bool(false)
                                                                 } else {
-                                                                    let __t366 = {
-                                                                        let __t361 = Value::nil();
-                                                                        let __t364 = {
-                                                                            let __t363 = {
-                                                                                let __t362 =
+                                                                    let __t362 = {
+                                                                        let __t357 = Value::nil();
+                                                                        let __t360 = {
+                                                                            let __t359 = {
+                                                                                let __t358 =
                                                                                     v_V7126.clone();
-                                                                                rt::tl(&__t362)?
+                                                                                rt::tl(&__t358)?
                                                                             };
-                                                                            rt::tl(&__t363)?
+                                                                            rt::tl(&__t359)?
                                                                         };
-                                                                        rt::eq(&__t361, &__t364)
+                                                                        rt::eq(&__t357, &__t360)
                                                                     };
                                                                     Value::bool(rt::is_truthy(
-                                                                        interp, &__t366,
+                                                                        interp, &__t362,
                                                                     )?)
                                                                 }
                                                             };
                                                             Value::bool(rt::is_truthy(
-                                                                interp, &__t368,
+                                                                interp, &__t364,
                                                             )?)
                                                         }
                                                     };
-                                                    Value::bool(rt::is_truthy(interp, &__t370)?)
+                                                    Value::bool(rt::is_truthy(interp, &__t366)?)
                                                 }
                                             };
-                                            if match rt::is_truthy(interp, &__t378) {
+                                            if match rt::is_truthy(interp, &__t374) {
                                                 Ok(b) => b,
                                                 Err(e) => break Err(e),
                                             } {
                                                 break Ok({
-                                                    let __t376 = {
-                                                        let __t373 = {
-                                                            let __t372 = {
-                                                                let __t371 = v_V7126.clone();
-                                                                rt::tl(&__t371)?
+                                                    let __t372 = {
+                                                        let __t369 = {
+                                                            let __t368 = {
+                                                                let __t367 = v_V7126.clone();
+                                                                rt::tl(&__t367)?
                                                             };
-                                                            rt::hd(&__t372)?
+                                                            rt::hd(&__t368)?
                                                         };
-                                                        let __t374 = Value::str("\n");
-                                                        let __t375 =
+                                                        let __t370 = Value::str("\n");
+                                                        let __t371 =
                                                             Value::sym(interp.intern("shen.a"));
                                                         rt::apply_direct(
                                                             interp,
                                                             "shen.app",
-                                                            &[__t373, __t374, __t375],
+                                                            &[__t369, __t370, __t371],
                                                         )?
                                                     };
-                                                    let __t377 = {
+                                                    let __t373 = {
                                                         rt::apply_direct(interp, "stoutput", &[])?
                                                     };
                                                     rt::apply_direct(
                                                         interp,
                                                         "pr",
-                                                        &[__t376, __t377],
+                                                        &[__t372, __t373],
                                                     )?
                                                 });
                                             } else {
                                                 {
-                                                    let __t354 = {
-                                                        let __t335 = {
-                                                            let __t322 = v_V7126.clone();
-                                                            rt::is_cons(&__t322)
+                                                    let __t350 = {
+                                                        let __t331 = {
+                                                            let __t318 = v_V7126.clone();
+                                                            rt::is_cons(&__t318)
                                                         };
-                                                        if !rt::is_truthy(interp, &__t335)? {
+                                                        if !rt::is_truthy(interp, &__t331)? {
                                                             Value::bool(false)
                                                         } else {
-                                                            let __t336 = {
-                                                                let __t333 = {
-                                                                    let __t323 =
+                                                            let __t332 = {
+                                                                let __t329 = {
+                                                                    let __t319 =
                                                                         Value::sym(interp.intern(
                                                                             "unknown-arguments",
                                                                         ));
-                                                                    let __t325 = {
-                                                                        let __t324 =
+                                                                    let __t321 = {
+                                                                        let __t320 =
                                                                             v_V7126.clone();
-                                                                        rt::hd(&__t324)?
+                                                                        rt::hd(&__t320)?
                                                                     };
-                                                                    rt::eq(&__t323, &__t325)
+                                                                    rt::eq(&__t319, &__t321)
                                                                 };
-                                                                if !rt::is_truthy(interp, &__t333)?
+                                                                if !rt::is_truthy(interp, &__t329)?
                                                                 {
                                                                     Value::bool(false)
                                                                 } else {
-                                                                    let __t334 = {
-                                                                        let __t331 = {
-                                                                            let __t327 = {
-                                                                                let __t326 =
+                                                                    let __t330 = {
+                                                                        let __t327 = {
+                                                                            let __t323 = {
+                                                                                let __t322 =
                                                                                     v_V7126.clone();
-                                                                                rt::tl(&__t326)?
+                                                                                rt::tl(&__t322)?
                                                                             };
-                                                                            rt::is_cons(&__t327)
+                                                                            rt::is_cons(&__t323)
                                                                         };
                                                                         if !rt::is_truthy(
-                                                                            interp, &__t331,
+                                                                            interp, &__t327,
                                                                         )? {
                                                                             Value::bool(false)
                                                                         } else {
-                                                                            let __t332 = {
-                                                                                let __t330 = {
-                                                                                    let __t329 = {
-                                                                                        let __t328 = v_V7126.clone();
+                                                                            let __t328 = {
+                                                                                let __t326 = {
+                                                                                    let __t325 = {
+                                                                                        let __t324 = v_V7126.clone();
                                                                                         rt::tl(
-                                                                                            &__t328,
+                                                                                            &__t324,
                                                                                         )?
                                                                                     };
-                                                                                    rt::tl(&__t329)?
+                                                                                    rt::tl(&__t325)?
                                                                                 };
-                                                                                rt::is_cons(&__t330)
+                                                                                rt::is_cons(&__t326)
                                                                             };
                                                                             Value::bool(
                                                                                 rt::is_truthy(
-                                                                                    interp, &__t332,
+                                                                                    interp, &__t328,
                                                                                 )?,
                                                                             )
                                                                         }
                                                                     };
                                                                     Value::bool(rt::is_truthy(
-                                                                        interp, &__t334,
+                                                                        interp, &__t330,
                                                                     )?)
                                                                 }
                                                             };
                                                             Value::bool(rt::is_truthy(
-                                                                interp, &__t336,
+                                                                interp, &__t332,
                                                             )?)
                                                         }
                                                     };
-                                                    if match rt::is_truthy(interp, &__t354) {
+                                                    if match rt::is_truthy(interp, &__t350) {
                                                         Ok(b) => b,
                                                         Err(e) => break Err(e),
                                                     } {
                                                         break Ok({
-                                                            let __t352 = {
-                                                                let __t337 = Value::str(
+                                                            let __t348 = {
+                                                                let __t333 = Value::str(
                                                                     "ERROR: Invalid argument: ",
                                                                 );
-                                                                let __t351 = {
-                                                                    let __t341 = {
-                                                                        let __t340 = {
-                                                                            let __t339 = {
-                                                                                let __t338 =
+                                                                let __t347 = {
+                                                                    let __t337 = {
+                                                                        let __t336 = {
+                                                                            let __t335 = {
+                                                                                let __t334 =
                                                                                     v_V7126.clone();
-                                                                                rt::tl(&__t338)?
+                                                                                rt::tl(&__t334)?
                                                                             };
-                                                                            rt::tl(&__t339)?
+                                                                            rt::tl(&__t335)?
                                                                         };
-                                                                        rt::hd(&__t340)?
+                                                                        rt::hd(&__t336)?
                                                                     };
-                                                                    let __t349 = {
-                                                                        let __t342 =
+                                                                    let __t345 = {
+                                                                        let __t338 =
                                                                             Value::str("\nTry `");
-                                                                        let __t348 = {
-                                                                            let __t345 = {
-                                                                                let __t344 = {
-                                                                                    let __t343 =
+                                                                        let __t344 = {
+                                                                            let __t341 = {
+                                                                                let __t340 = {
+                                                                                    let __t339 =
                                                                                         v_V7126
                                                                                             .clone(
                                                                                             );
-                                                                                    rt::tl(&__t343)?
+                                                                                    rt::tl(&__t339)?
                                                                                 };
-                                                                                rt::hd(&__t344)?
+                                                                                rt::hd(&__t340)?
                                                                             };
-                                                                            let __t346 = Value::str(" --help' for more information.\n");
-                                                                            let __t347 = Value::sym(
+                                                                            let __t342 = Value::str(" --help' for more information.\n");
+                                                                            let __t343 = Value::sym(
                                                                                 interp.intern(
                                                                                     "shen.a",
                                                                                 ),
@@ -1988,33 +1982,25 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                                                                 interp,
                                                                                 "shen.app",
                                                                                 &[
-                                                                                    __t345, __t346,
-                                                                                    __t347,
+                                                                                    __t341, __t342,
+                                                                                    __t343,
                                                                                 ],
                                                                             )?
                                                                         };
-                                                                        rt::apply_direct(
-                                                                            interp,
-                                                                            "cn",
-                                                                            &[__t342, __t348],
-                                                                        )?
+                                                                        rt::cn(&__t338, &__t344)?
                                                                     };
-                                                                    let __t350 = Value::sym(
+                                                                    let __t346 = Value::sym(
                                                                         interp.intern("shen.a"),
                                                                     );
                                                                     rt::apply_direct(
                                                                         interp,
                                                                         "shen.app",
-                                                                        &[__t341, __t349, __t350],
+                                                                        &[__t337, __t345, __t346],
                                                                     )?
                                                                 };
-                                                                rt::apply_direct(
-                                                                    interp,
-                                                                    "cn",
-                                                                    &[__t337, __t351],
-                                                                )?
+                                                                rt::cn(&__t333, &__t347)?
                                                             };
-                                                            let __t353 = {
+                                                            let __t349 = {
                                                                 rt::apply_direct(
                                                                     interp,
                                                                     "stoutput",
@@ -2024,23 +2010,23 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_default_x2d_handle_x2d_result(
                                                             rt::apply_direct(
                                                                 interp,
                                                                 "pr",
-                                                                &[__t352, __t353],
+                                                                &[__t348, __t349],
                                                             )?
                                                         });
                                                     } else {
                                                         {
-                                                            let __t321 = Value::bool(true);
-                                                            if match rt::is_truthy(interp, &__t321)
+                                                            let __t317 = Value::bool(true);
+                                                            if match rt::is_truthy(interp, &__t317)
                                                             {
                                                                 Ok(b) => b,
                                                                 Err(e) => break Err(e),
                                                             } {
                                                                 break Ok({
-                                                                    let __t320 = Value::sym(interp.intern("shen.x.launcher.default-handle-result"));
+                                                                    let __t316 = Value::sym(interp.intern("shen.x.launcher.default-handle-result"));
                                                                     rt::apply_direct(
                                                                         interp,
                                                                         "shen.f-error",
-                                                                        &[__t320],
+                                                                        &[__t316],
                                                                     )?
                                                                 });
                                                             } else {
@@ -2092,11 +2078,11 @@ pub fn aot_shen_x2e_x_x2e_launcher_x2e_main(
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t449 = {
-                let __t448 = v_V7127.clone();
-                rt::apply_direct(interp, "shen.x.launcher.launch-shen", &[__t448])?
+            let __t445 = {
+                let __t444 = v_V7127.clone();
+                rt::apply_direct(interp, "shen.x.launcher.launch-shen", &[__t444])?
             };
-            rt::apply_direct(interp, "shen.x.launcher.default-handle-result", &[__t449])?
+            rt::apply_direct(interp, "shen.x.launcher.default-handle-result", &[__t445])?
         });
     }
 }

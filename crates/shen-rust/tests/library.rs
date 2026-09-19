@@ -171,6 +171,40 @@ fn kernel_type_predicates() {
     assert_eq!(eval(&mut i, "(variable? x)").as_bool(), Some(false));
     assert_eq!(eval(&mut i, "(integer? 42)").as_bool(), Some(true));
     assert_eq!(eval(&mut i, "(integer? 4.5)").as_bool(), Some(false));
+    assert_eq!(eval(&mut i, "(integer? 4.0)").as_bool(), Some(true));
+    assert_eq!(eval(&mut i, "(empty? ())").as_bool(), Some(true));
+    assert_eq!(eval(&mut i, "(empty? (cons 1 ()))").as_bool(), Some(false));
+    assert_eq!(eval(&mut i, "(boolean? true)").as_bool(), Some(true));
+    assert_eq!(eval(&mut i, "(boolean? 1)").as_bool(), Some(false));
+    assert_eq!(eval(&mut i, "(symbol? foo)").as_bool(), Some(true));
+    assert_eq!(eval(&mut i, "(symbol? true)").as_bool(), Some(false));
+    assert_eq!(eval(&mut i, "(symbol? {)").as_bool(), Some(true));
+    assert_eq!(eval(&mut i, "(not false)").as_bool(), Some(true));
+}
+
+#[test]
+fn tuple_and_vector_overrides() {
+    let mut i = fresh_booted();
+    let t = eval(&mut i, "(@p 1 2)");
+    assert!(t.is_vec());
+    assert_eq!(eval(&mut i, "(tuple? (@p 1 2))").as_bool(), Some(true));
+    assert_eq!(eval(&mut i, "(fst (@p 1 2))").as_int(), Some(1));
+    assert_eq!(eval(&mut i, "(snd (@p 1 2))").as_int(), Some(2));
+    assert_eq!(eval(&mut i, "(limit (vector 3))").as_int(), Some(3));
+    assert_eq!(
+        eval(&mut i, "(<-vector (vector-> (vector 1) 1 9) 1)").as_int(),
+        Some(9)
+    );
+}
+
+#[test]
+fn hash_never_returns_zero() {
+    let mut i = fresh_booted();
+    for n in 0..32 {
+        let h = eval(&mut i, &format!("(hash {n} 7)"));
+        let v = h.as_int().expect("hash int");
+        assert!((1..=7).contains(&v), "hash {n} 7 = {v}");
+    }
 }
 
 #[test]

@@ -414,6 +414,8 @@ pub struct WellKnown {
     pub k_shen_null: SymId,
     /// `shen.fail!` (return value of `(fail)`).
     pub k_shen_fail: SymId,
+    /// `shen.tuple` tag in slot 0 of `@p` products.
+    pub k_shen_tuple: SymId,
 }
 
 impl WellKnown {
@@ -438,6 +440,7 @@ impl WellKnown {
             k_shen_pvar: interner.intern("shen.pvar"),
             k_shen_null: interner.intern("shen.-null-"),
             k_shen_fail: interner.intern("shen.fail!"),
+            k_shen_tuple: interner.intern("shen.tuple"),
         }
     }
 }
