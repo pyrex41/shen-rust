@@ -104,10 +104,28 @@ Landed (134/0, kernel AOT regenerated):
    `symbol?` is **not** inlined to `is_sym()` — that was the KL primitive, not
    the kernel predicate.
 
-Still on the table, same playbook: equality specialization (`eq?`/`null?` for
-symbols/nil vs `shen_eq`); `yields-boolean?` so AOT `if` skips `is_truthy` when
-the test is already a predicate; static globals as real Rust `static`s rather
-than `env.get_global`; `<-vector/or` for `put`/`get`. Measure before claiming.
+Follow-up (`af86b09`, Astra review): trap-error rewrite is gated on unused `E`
++ non-raising operands; `intern` of `"true"`/`"false"` is Bool on the primitive
+*and* `rt::intern`; `hash` agrees with `shen_eq`; freeze-continuation inlining
+refuses escaping `lambda`/`freeze`; same-module seal is kernel-AOT only;
+native `get`/`put` distinguish uninit vs assoc-miss. Tests in
+`tests/scheme_mapping_soundness.rs`.
+
+**Paired A/B** (this machine, 2026-09-20, interleaved min-of-5, both 134/0,
+`kernel/shen-42` `c8f5cc9` vs `perf/shen-scheme-kl-overrides` `af86b09`):
+
+| | wall (s) | suite `run time` (s) |
+|---|---|---|
+| base | 19.29, 11.59, 13.87, 15.81, 13.19 (**min 11.59**) | 13.40, 8.17, 7.71, 11.88, 8.84 (**min 7.71**) |
+| new | 10.42, 7.29, 14.07, 10.79, 10.27 (**min 7.29**) | 7.46, 5.22, 9.65, 6.56, 7.78 (**min 5.22**) |
+
+Min-of-5 wall **11.59 → 7.29 (~1.6×)**; suite **7.71 → 5.22 (~1.5×)**. NEW won
+wall in 4/5 pairs (pair 3 lost: 13.87 vs 14.07). Variance is large (~2× spread
+within each arm) — treat the factor as directional, not a scoreboard number.
+No ablation of individual mappings.
+
+Still on the table: `yields-boolean?`; dedicated `@p` type; remaining `t-star`
+heap freezes; cross-module seal (needs a documented immutable kernel boundary).
 
 ## Why the remaining ~3.0× is structural
 
