@@ -204,6 +204,9 @@ fn str_renders_non_finite_floats_lowercase() {
 fn intern_value_set() {
     let mut i = Interp::new();
     assert!(ok(&mut i, r#"(intern "abc")"#).is_sym());
+    // Host booleans: intern of the textual names, per port-performance.md.
+    assert_eq!(ok(&mut i, r#"(intern "true")"#).as_bool(), Some(true));
+    assert_eq!(ok(&mut i, r#"(intern "false")"#).as_bool(), Some(false));
     // set returns the value; value reads it back.
     assert_eq!(int(&mut i, "(set foo 99)"), 99);
     assert_eq!(int(&mut i, "(value foo)"), 99);

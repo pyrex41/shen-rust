@@ -350,7 +350,7 @@ pub fn fail(interp: &Interp) -> Value {
 #[inline(always)]
 pub fn intern(interp: &mut Interp, s: &Value) -> ShenResult<Value> {
     match s.as_str() {
-        Some(s) => Ok(Value::sym(interp.intern(s))),
+        Some(s) => Ok(interp.intern_kl(s)),
         None => Err(ShenError::new(format!("intern: not a string: {s:?}"))),
     }
 }

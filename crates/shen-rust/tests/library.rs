@@ -198,6 +198,17 @@ fn tuple_and_vector_overrides() {
 }
 
 #[test]
+fn hash_agrees_with_equality() {
+    let mut i = fresh_booted();
+    let ht = eval(&mut i, r#"(hash true 1009)"#).as_int();
+    let hi = eval(&mut i, r#"(hash (intern "true") 1009)"#).as_int();
+    assert_eq!(ht, hi, "Bool true and interned true must hash equal");
+    let h1 = eval(&mut i, "(hash 1 1009)").as_int();
+    let hf = eval(&mut i, "(hash 1.0 1009)").as_int();
+    assert_eq!(h1, hf, "1 and 1.0 must hash equal");
+}
+
+#[test]
 fn hash_never_returns_zero() {
     let mut i = fresh_booted();
     for n in 0..32 {
@@ -205,6 +216,21 @@ fn hash_never_returns_zero() {
         let v = h.as_int().expect("hash int");
         assert!((1..=7).contains(&v), "hash {n} 7 = {v}");
     }
+}
+
+#[test]
+fn put_get_roundtrip() {
+    let mut i = fresh_booted();
+    eval(&mut i, "(put foo bar 42 (value *property-vector*))");
+    assert_eq!(
+        eval(&mut i, "(get foo bar (value *property-vector*))").as_int(),
+        Some(42)
+    );
+    eval(&mut i, "(put foo bar 7 (value *property-vector*))");
+    assert_eq!(
+        eval(&mut i, "(get foo bar (value *property-vector*))").as_int(),
+        Some(7)
+    );
 }
 
 #[test]

@@ -15,7 +15,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::error::{ShenError, ShenResult};
 use crate::interp::eval::{DirectFn, Interp};
-use crate::value::{shen_eq, Stream, Value};
+use crate::value::{as_shen_bool, shen_eq, Stream, Value};
 
 /// Cap oversized absvector/vector requests so an absurd size raises a
 /// catchable Shen error instead of OOM-aborting. 2^24 (~16.7M slots) is
@@ -46,6 +46,11 @@ fn override_kernel(interp: &mut Interp, name: &str, arity: usize, f: DirectFn) {
 /// (which would otherwise overwrite the primitive) and again after AOT install.
 pub fn register_early_overrides(interp: &mut Interp) {
     override_kernel(interp, "hash", 2, hot_hash);
+    // Property store: native put/get must be live before declarations.kl
+    // fills *property-vector*, same reason as hash.
+    override_kernel(interp, "put", 4, hot_put);
+    override_kernel(interp, "get", 3, hot_get);
+    override_kernel(interp, "unput", 3, hot_unput);
 }
 
 /// Override kernel-level Shen functions with native Rust implementations
@@ -66,6 +71,7 @@ pub fn register_hot_overrides(interp: &mut Interp) {
     override_kernel(interp, "fail", 0, hot_fail);
     override_kernel(interp, "value/or", 2, hot_value_or);
     override_kernel(interp, "<-address/or", 3, hot_address_or);
+    override_kernel(interp, "<-vector/or", 3, hot_vector_or);
 
     // Shen/Scheme kernel overrides: portable bodies that are cheap natively.
     register_early_overrides(interp);
@@ -267,15 +273,21 @@ fn hot_address_or(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
 /// (bucket 0 stores the vector length). Algorithm need not match the kernel's
 /// `hashkey`/`mod` — only the 0-guard must, since the same override is used
 /// at both populate and lookup (Shen/Scheme `overrides.shen`).
+fn hash_bound(v: &Value, bound: i64) -> ShenResult<i64> {
+    if bound < 1 {
+        return Err(ShenError::new(format!(
+            "hash: bound must be >= 1, got {bound}"
+        )));
+    }
+    let mut h = DefaultHasher::new();
+    value_hash(v, &mut h);
+    let r = (h.finish() % bound as u64) as i64;
+    Ok(if r == 0 { 1 } else { r })
+}
+
 fn hot_hash(_: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     match args[1].as_int() {
-        Some(bound) => {
-            let mut h = DefaultHasher::new();
-            value_hash(&args[0], &mut h);
-            let bound = bound.max(1) as u64;
-            let r = (h.finish() % bound) as i64;
-            Ok(Value::int(if r == 0 { 1 } else { r }))
-        }
+        Some(bound) => Ok(Value::int(hash_bound(&args[0], bound)?)),
         None => Err(ShenError::new(format!(
             "hash: bad args: {:?}, {:?}",
             args[0], args[1]
@@ -425,6 +437,166 @@ fn hot_limit(_: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     args[0]
         .vec_get_opt(0)
         .ok_or_else(|| ShenError::new(format!("limit: not a vector: {:?}", args[0])))
+}
+
+/// `(<-vector V N)` that returns the default thunk instead of erroring on
+/// index 0, OOB, or an uninitialised `(fail)` slot.
+fn hot_vector_or(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
+    if let Some(i) = args[1].as_int() {
+        if i != 0 {
+            if let Some(v) = args[0].vec_get_opt(i as usize) {
+                if v.as_sym() != Some(interp.well_known.k_shen_fail) {
+                    return Ok(v);
+                }
+            }
+        }
+    }
+    interp.apply(args[2], vec![])
+}
+
+/// `None` = uninitialised / OOB slot (kernel `<-vector` would error).
+fn vector_bucket(interp: &Interp, dict: Value, key: &Value) -> ShenResult<(i64, Option<Value>)> {
+    let bound = dict
+        .vec_get_opt(0)
+        .and_then(|v| v.as_int())
+        .ok_or_else(|| ShenError::new("put/get: not a vector"))?;
+    let h = hash_bound(key, bound)?;
+    let bucket = match dict.vec_get_opt(h as usize) {
+        Some(v) if v.as_sym() == Some(interp.well_known.k_shen_fail) => None,
+        Some(v) => Some(v),
+        None => None,
+    };
+    Ok((h, bucket))
+}
+
+/// Association-list lookup: first pair whose `hd` equals `key`.
+fn assoc_entry(key: &Value, mut list: Value) -> ShenResult<Option<Value>> {
+    loop {
+        if list.is_nil() {
+            return Ok(None);
+        }
+        let (h, t) = match (list.head(), list.tail()) {
+            (Some(h), Some(t)) => (*h, *t),
+            _ => return Err(ShenError::new("attempt to search a non-list with assoc\n")),
+        };
+        if let Some(hh) = h.head() {
+            if shen_eq(hh, key) {
+                return Ok(Some(h));
+            }
+        }
+        list = t;
+    }
+}
+
+fn change_pointer(key: Value, prop: Value, val: Value, bucket: Value) -> ShenResult<Value> {
+    if bucket.is_nil() {
+        return Ok(Value::cons(
+            Value::cons(Value::cons(key, Value::cons(prop, Value::nil())), val),
+            Value::nil(),
+        ));
+    }
+    let (h, t) = match (bucket.head(), bucket.tail()) {
+        (Some(h), Some(t)) => (*h, *t),
+        _ => {
+            return Err(ShenError::new(
+                "implementation error in shen.change-pointer-value",
+            ))
+        }
+    };
+    let match_here = h.head().and_then(|pair| {
+        let k = pair.head()?;
+        let rest = pair.tail()?;
+        let p = rest.head()?;
+        let rest2 = rest.tail()?;
+        if rest2.is_nil() && shen_eq(k, &key) && shen_eq(p, &prop) {
+            Some(())
+        } else {
+            None
+        }
+    });
+    if match_here.is_some() {
+        let pair = h
+            .head()
+            .copied()
+            .ok_or_else(|| ShenError::new("implementation error in shen.change-pointer-value"))?;
+        Ok(Value::cons(Value::cons(pair, val), t))
+    } else {
+        Ok(Value::cons(h, change_pointer(key, prop, val, t)?))
+    }
+}
+
+fn remove_pointer(key: Value, prop: Value, bucket: Value) -> ShenResult<Value> {
+    if bucket.is_nil() {
+        return Ok(Value::nil());
+    }
+    let (h, t) = match (bucket.head(), bucket.tail()) {
+        (Some(h), Some(t)) => (*h, *t),
+        _ => {
+            return Err(ShenError::new(
+                "implementation error in shen.remove-pointer",
+            ))
+        }
+    };
+    let match_here = h.head().and_then(|pair| {
+        let k = pair.head()?;
+        let rest = pair.tail()?;
+        let p = rest.head()?;
+        let rest2 = rest.tail()?;
+        if rest2.is_nil() && shen_eq(k, &key) && shen_eq(p, &prop) {
+            Some(())
+        } else {
+            None
+        }
+    });
+    if match_here.is_some() {
+        Ok(t)
+    } else {
+        Ok(Value::cons(h, remove_pointer(key, prop, t)?))
+    }
+}
+
+fn hot_put(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
+    let (key, prop, val, dict) = (args[0], args[1], args[2], args[3]);
+    let (h, bucket) = vector_bucket(interp, dict, &key)?;
+    let new_bucket = change_pointer(key, prop, val, bucket.unwrap_or(Value::nil()))?;
+    let idx = h as usize;
+    if idx >= dict.vec_len() {
+        return Err(ShenError::new(format!("put: out of range {h}")));
+    }
+    dict.vec_set(idx, new_bucket);
+    Ok(val)
+}
+
+fn hot_get(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
+    let (key, prop, dict) = (args[0], args[1], args[2]);
+    let (_h, bucket) = vector_bucket(interp, dict, &key)?;
+    let ks = value_to_str(interp, &key);
+    let ps = value_to_str(interp, &prop);
+    let Some(bucket) = bucket else {
+        return Err(ShenError::new(format!("{ks} has no attributes: {ps}\n")));
+    };
+    let needle = Value::cons(key, Value::cons(prop, Value::nil()));
+    match assoc_entry(&needle, bucket)? {
+        Some(entry) => entry
+            .tail()
+            .copied()
+            .ok_or_else(|| ShenError::new("implementation error in shen.change-pointer-value")),
+        None => Err(ShenError::new(format!(
+            "attribute {ps} not found for {ks}\n"
+        ))),
+    }
+}
+
+fn hot_unput(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
+    let (key, prop, dict) = (args[0], args[1], args[2]);
+    let (h, bucket) = vector_bucket(interp, dict, &key)?;
+    let new_bucket = remove_pointer(key, prop, bucket.unwrap_or(Value::nil()))?;
+    let idx = h as usize;
+    if idx >= dict.vec_len() {
+        return Err(ShenError::new(format!("unput: out of range {h}")));
+    }
+    dict.vec_set(idx, new_bucket);
+    Ok(key)
 }
 
 fn hot_hdstr(_: &mut Interp, args: &[Value]) -> ShenResult<Value> {
@@ -646,10 +818,7 @@ fn register_core(interp: &mut Interp) {
 
     // --- symbols / strings ---
     interp.register_native("intern", 1, |interp, args| match args[0].as_str() {
-        Some(s) => {
-            let id = interp.intern(s);
-            Ok(Value::sym(id))
-        }
+        Some(s) => Ok(interp.intern_kl(s)),
         None => Err(ShenError::new(format!(
             "intern: not a string: {:?}",
             args[0]
@@ -1192,19 +1361,22 @@ fn value_to_klexpr(v: &Value) -> ShenResult<crate::kl::ast::KlExpr> {
 }
 
 fn value_hash<H: Hasher>(v: &Value, h: &mut H) {
-    // Hash a small kind discriminant first, then the structural contents — the
-    // post-flip `Value` is a `Copy` word with no enum discriminant.
+    // Discriminants must match `shen_eq`: Bool and the symbols true/false
+    // share a bucket, as do Int N and Float N.0 (and +0.0/-0.0).
     if v.is_nil() {
         0u8.hash(h);
-    } else if let Some(b) = v.as_bool() {
+    } else if let Some(b) = as_shen_bool(v) {
         1u8.hash(h);
         b.hash(h);
-    } else if let Some(n) = v.as_int() {
+    } else if v.is_number() {
         2u8.hash(h);
-        n.hash(h);
-    } else if let Some(x) = v.as_float() {
-        3u8.hash(h);
-        x.to_bits().hash(h);
+        let x = v.as_number_f64().expect("is_number");
+        let bits = if x == 0.0 {
+            0.0f64.to_bits()
+        } else {
+            x.to_bits()
+        };
+        bits.hash(h);
     } else if let Some(s) = v.as_str() {
         4u8.hash(h);
         s.hash(h);

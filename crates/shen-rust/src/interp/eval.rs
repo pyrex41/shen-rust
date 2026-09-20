@@ -621,6 +621,16 @@ impl Interp {
         self.symbols.intern(name)
     }
 
+    /// KLambda `intern`: the textual names `true`/`false` are host booleans.
+    #[inline]
+    pub fn intern_kl(&mut self, name: &str) -> crate::value::Value {
+        match name {
+            "true" => crate::value::Value::bool(true),
+            "false" => crate::value::Value::bool(false),
+            _ => crate::value::Value::sym(self.intern(name)),
+        }
+    }
+
     /// Resolve a `&'static str` call-target literal to its `SymId`, using
     /// the interner's pointer cache. Used by AOT-emitted call sites.
     #[inline]
