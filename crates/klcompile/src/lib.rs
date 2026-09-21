@@ -26,7 +26,7 @@
 //!   `crate::` imports) must not drift; external configs change the
 //!   header but the kernel default must stay byte-identical.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use shen_rust::kl::ast::KlExpr;
 use shen_rust::kl::parser::parse_all;
@@ -60,6 +60,9 @@ pub struct CompileOptions {
     /// `Interp::install_overlay*`). Overlay/external configs only — the
     /// kernel AOT modules are manifest-free and byte-frozen (Gate 6).
     pub emit_manifest: Option<ManifestInfo>,
+    /// Same-module saturated calls compile to `aot_foo` (sealed kernel unit).
+    /// Off for overlays: user `defun` / tracking must keep `apply_direct`.
+    pub seal_same_module: bool,
 }
 
 /// Generation-time provenance recorded into the overlay manifest. Both
@@ -102,6 +105,7 @@ impl CompileOptions {
                 force_skip: KERNEL_SLOW_DEFUNS.iter().map(|s| s.to_string()).collect(),
             },
             emit_manifest: None,
+            seal_same_module: true,
         }
     }
 
@@ -120,6 +124,7 @@ impl CompileOptions {
                 force_skip: Vec::new(),
             },
             emit_manifest: None,
+            seal_same_module: false,
         }
     }
 }
@@ -164,6 +169,26 @@ pub fn compile_kl(src: &str, opts: &CompileOptions) -> Result<(String, CompileRe
     }
 
     let mut g = Codegen::new(&interner);
+    // Sealed kernel unit only (Shen/Scheme runtime library). Overlays keep
+    // apply_direct so later defun/tracking can invalidate the cell.
+    if opts.seal_same_module {
+        for (i, form) in forms.iter().enumerate() {
+            if let Some((name, arity)) = defun_name_arity(form, &interner) {
+                if last_index.get(&name) != Some(&i) {
+                    continue;
+                }
+                if opts.skip.force_skip.contains(&name) {
+                    continue;
+                }
+                if let Some(budget) = opts.skip.max_body_nodes {
+                    if body_node_count(form) > budget {
+                        continue;
+                    }
+                }
+                g.module_fns.insert(name, arity);
+            }
+        }
+    }
     g.emit_header(opts);
     let mut compiled = Vec::new();
     let mut skipped = Vec::new();
@@ -226,6 +251,10 @@ struct Codegen<'a> {
     /// detector to turn self-calls in tail position into `continue`s.
     current_fn: Option<String>,
     current_params: Vec<String>,
+    /// Last-wins defuns in this module and their arities, for same-file sealing.
+    module_fns: HashMap<String, usize>,
+    /// `let Go (freeze Else)` continuations: thaw of `Go` compiles to this Rust expr.
+    inline_thaws: HashMap<String, String>,
 }
 
 impl<'a> Codegen<'a> {
@@ -236,6 +265,8 @@ impl<'a> Codegen<'a> {
             counter: 0,
             current_fn: None,
             current_params: Vec::new(),
+            module_fns: HashMap::new(),
+            inline_thaws: HashMap::new(),
         }
     }
 
@@ -540,6 +571,9 @@ impl<'a> Codegen<'a> {
             KlExpr::Sym(s) => self.interner.resolve(*s).to_string(),
             _ => return Err("let: var must be symbol".into()),
         };
+        if let Some(src) = self.try_compile_freeze_cont(&var, &args[1], &args[2], scope, true)? {
+            return Ok(src);
+        }
         let value_src = self.compile_expr(&args[1], scope)?;
         scope.bind(&var);
         let body_src = self.compile_tail(&args[2], scope)?;
@@ -627,7 +661,7 @@ impl<'a> Codegen<'a> {
                 } else {
                     // Free symbol — innocent symbol semantics: evaluate
                     // to the symbol value itself.
-                    format!("Value::sym(interp.intern({:?}))", name)
+                    format!("Value::sym(interp.intern_static({:?}))", name)
                 }
             }
             KlExpr::App(items) => self.compile_app(items, scope)?,
@@ -682,18 +716,49 @@ impl<'a> Codegen<'a> {
                 ));
             }
 
+            // Shen/Scheme-style mappings that exploit KL properties:
+            // intern of a string literal, (value free-sym), (set free-sym).
+            if let Some(src) = self.compile_kl_special(head, args, scope)? {
+                return Ok(src);
+            }
+
+            // Prolog CPS: `(when T … (freeze B))` / cut / bind! thaw the last
+            // arg immediately. Lowering skips the heap freeze (t-star's 23).
+            if let Some(src) = self.compile_cps_freeze(head, args, scope)? {
+                return Ok(src);
+            }
+
             // Inlinable primitive? Emit a direct call to the rt:: helper,
             // bypassing the env-routed apply_named path. release-mode LLVM
             // inlines the helper body so e.g. `(+ X 1)` becomes a direct
             // Value::Int match.
-            if let Some((rust_helper, fallible)) = inlinable(head, args.len()) {
+            if let Some((rust_helper, fallible, needs_interp)) = inlinable(head, args.len()) {
                 let (binds, names) = self.bind_args(args, scope)?;
                 let refs: Vec<String> = names.iter().map(|n| format!("&{n}")).collect();
                 let q = if fallible { "?" } else { "" };
-                return Ok(format!(
-                    "{{ {binds}rt::{rust_helper}({}){q} }}",
+                let args_src = if needs_interp {
+                    if refs.is_empty() {
+                        "interp".to_string()
+                    } else {
+                        format!("interp, {}", refs.join(", "))
+                    }
+                } else {
                     refs.join(", ")
-                ));
+                };
+                return Ok(format!("{{ {binds}rt::{rust_helper}({args_src}){q} }}"));
+            }
+
+            // Same-module seal: saturated call to a defun in this file.
+            // Native overrides stay on apply_direct so hot_* wins after install.
+            if let Some(&arity) = self.module_fns.get(head) {
+                if args.len() == arity && !SEAL_EXCLUDE.contains(&head) {
+                    let (binds, names) = self.bind_args(args, scope)?;
+                    return Ok(format!(
+                        "{{ {binds}aot_{}(interp, &[{}])? }}",
+                        sanitize_ident(head),
+                        names.join(", ")
+                    ));
+                }
             }
 
             // Plain named call. Uses the direct table (populated for every
@@ -757,6 +822,9 @@ impl<'a> Codegen<'a> {
             KlExpr::Sym(s) => self.interner.resolve(*s).to_string(),
             _ => return Err("let: var must be symbol".into()),
         };
+        if let Some(src) = self.try_compile_freeze_cont(&var, &args[1], &args[2], scope, false)? {
+            return Ok(src);
+        }
         let value_src = self.compile_expr(&args[1], scope)?;
         scope.bind(&var);
         let body_src = self.compile_expr(&args[2], scope)?;
@@ -939,13 +1007,70 @@ impl<'a> Codegen<'a> {
         if args.len() != 1 {
             return Err("thaw: expected 1 arg".into());
         }
+        if let KlExpr::Sym(s) = &args[0] {
+            let name = self.interner.resolve(*s);
+            if let Some(src) = self.inline_thaws.get(name) {
+                return Ok(src.clone());
+            }
+        }
         let f = self.compile_expr(&args[0], scope)?;
         Ok(format!("rt::apply_value(interp, {f}, &[])?"))
+    }
+
+    /// KL properties that map onto cheap Rust: intern of a string literal
+    /// (Shen/Scheme: `(intern "foo")` → quote), `(value unbound-sym)` as a
+    /// direct global load, `(set unbound-sym V)` as a direct store.
+    fn compile_kl_special(
+        &mut self,
+        head: &str,
+        args: &[KlExpr],
+        scope: &mut Scope,
+    ) -> Result<Option<String>, String> {
+        match head {
+            "intern" if args.len() == 1 => {
+                if let KlExpr::Str(s) = &args[0] {
+                    return Ok(Some(match s.as_ref() {
+                        "true" => "Value::bool(true)".to_string(),
+                        "false" => "Value::bool(false)".to_string(),
+                        other => format!("Value::sym(interp.intern_static({other:?}))"),
+                    }));
+                }
+            }
+            "=" if args.len() == 2 => {
+                if let Some(src) = self.compile_eq_special(&args[0], &args[1], scope)? {
+                    return Ok(Some(src));
+                }
+            }
+            "value" if args.len() == 1 => {
+                if let KlExpr::Sym(id) = &args[0] {
+                    let name = self.interner.resolve(*id);
+                    if !scope.has(name) {
+                        return Ok(Some(format!("rt::global_value(interp, {name:?})?")));
+                    }
+                }
+            }
+            "set" if args.len() == 2 => {
+                if let KlExpr::Sym(id) = &args[0] {
+                    let name = self.interner.resolve(*id).to_string();
+                    if !scope.has(&name) {
+                        let val = self.compile_expr(&args[1], scope)?;
+                        return Ok(Some(format!(
+                            "{{ let __v = {val}; rt::set_global(interp, {name:?}, __v) }}"
+                        )));
+                    }
+                }
+            }
+            _ => {}
+        }
+        Ok(None)
     }
 
     fn compile_trap_error(&mut self, args: &[KlExpr], scope: &mut Scope) -> Result<String, String> {
         if args.len() != 2 {
             return Err("trap-error: expected 2 args".into());
+        }
+        if let Some(opt) = self.try_trap_error_optimize(args, scope)? {
+            return Ok(opt);
         }
         let body = self.compile_expr(&args[0], scope)?;
         let handler = self.compile_expr(&args[1], scope)?;
@@ -955,6 +1080,253 @@ impl<'a> Codegen<'a> {
         Ok(format!(
             "match (|| -> ShenResult<Value> {{ Ok({body}) }})() {{ Ok(v) => v, Err(e) => {{ let __h = {handler}; let __err = Value::err(e.message.clone()); rt::apply_value(interp, __h, &[__err])? }} }}"
         ))
+    }
+
+    /// Shen/Scheme `emit-trap-error-optimize`: `(trap-error (value X) (lambda E H))`
+    /// → `value/or`, same for `<-address`. Enabled for all klcompile output
+    /// (kernel + overlays) because the rewrite assumes operands don't raise
+    /// their own errors and the handler ignores `E` — true of the kernel
+    /// forms this fires on, and of overlay code that copies them.
+    fn try_trap_error_optimize(
+        &mut self,
+        args: &[KlExpr],
+        scope: &mut Scope,
+    ) -> Result<Option<String>, String> {
+        let body_items = match &args[0] {
+            KlExpr::App(items) if !items.is_empty() => items,
+            _ => return Ok(None),
+        };
+        let op = match &body_items[0] {
+            KlExpr::Sym(s) => self.interner.resolve(*s),
+            _ => return Ok(None),
+        };
+        if !matches!(op, "value" | "<-address" | "<-vector") {
+            return Ok(None);
+        }
+        let handler_items = match &args[1] {
+            KlExpr::App(items) if items.len() == 3 => items,
+            _ => return Ok(None),
+        };
+        let hhead = match &handler_items[0] {
+            KlExpr::Sym(s) => self.interner.resolve(*s),
+            _ => return Ok(None),
+        };
+        if hhead != "lambda" {
+            return Ok(None);
+        }
+        let param = match &handler_items[1] {
+            KlExpr::Sym(s) => self.interner.resolve(*s),
+            _ => return Ok(None),
+        };
+        // Handler must ignore the exception (Shen/Scheme's documented premise).
+        if expr_uses_name(self.interner, param, &handler_items[2]) {
+            return Ok(None);
+        }
+        // Operands must not themselves raise: compiling them with `?` outside
+        // the trap would leak errors the original form catches.
+        let operands = &body_items[1..];
+        if !operands.iter().all(is_safe_operand) {
+            return Ok(None);
+        }
+        let thunk = self.compile_freeze(std::slice::from_ref(&handler_items[2]), scope)?;
+        match op {
+            "value" if body_items.len() == 2 => {
+                let x = self.compile_expr(&body_items[1], scope)?;
+                Ok(Some(format!(
+                    "{{ let __x = {x}; let __h = {thunk}; rt::apply_direct(interp, \"value/or\", &[__x, __h])? }}"
+                )))
+            }
+            "<-address" if body_items.len() == 3 => {
+                let x = self.compile_expr(&body_items[1], scope)?;
+                let n = self.compile_expr(&body_items[2], scope)?;
+                Ok(Some(format!(
+                    "{{ let __x = {x}; let __n = {n}; let __h = {thunk}; rt::apply_direct(interp, \"<-address/or\", &[__x, __n, __h])? }}"
+                )))
+            }
+            "<-vector" if body_items.len() == 3 => {
+                let x = self.compile_expr(&body_items[1], scope)?;
+                let n = self.compile_expr(&body_items[2], scope)?;
+                Ok(Some(format!(
+                    "{{ let __x = {x}; let __n = {n}; let __h = {thunk}; rt::apply_direct(interp, \"<-vector/or\", &[__x, __n, __h])? }}"
+                )))
+            }
+            _ => Ok(None),
+        }
+    }
+
+    /// `(when T _ _ _ (freeze B))`, `(shen.cut V C N (freeze B))`,
+    /// `(shen.bind! P X V (freeze B))`, `(bind P X V _ _ (freeze B))`.
+    /// These callees thaw the last argument immediately (prolog.kl).
+    fn compile_cps_freeze(
+        &mut self,
+        head: &str,
+        args: &[KlExpr],
+        scope: &mut Scope,
+    ) -> Result<Option<String>, String> {
+        let Some(body) = freeze_arg_body(self.interner, args.last()) else {
+            return Ok(None);
+        };
+        match (head, args.len()) {
+            ("when", 5) => {
+                let t = self.compile_expr(&args[0], scope)?;
+                let b = self.compile_expr(&args[1], scope)?;
+                let c = self.compile_expr(&args[2], scope)?;
+                let n = self.compile_expr(&args[3], scope)?;
+                let body_src = self.compile_expr(body, scope)?;
+                let tv = self.fresh();
+                Ok(Some(format!(
+                    "{{ let {tv} = {t}; let _ = {b}; let _ = {c}; let _ = {n}; if rt::is_truthy(interp, &{tv})? {{ {body_src} }} else {{ Value::bool(false) }} }}"
+                )))
+            }
+            ("shen.cut", 4) => {
+                let v = self.compile_expr(&args[0], scope)?;
+                let c = self.compile_expr(&args[1], scope)?;
+                let n = self.compile_expr(&args[2], scope)?;
+                let body_src = self.compile_expr(body, scope)?;
+                let rv = self.fresh();
+                let cv = self.fresh();
+                Ok(Some(format!(
+                    "{{ let _ = {v}; let {cv} = {c}; let __n = {n}; let {rv} = {body_src}; if rt::is_truthy(interp, &rt::eq(&{rv}, &Value::bool(false)))? {{ let __u = rt::apply_direct(interp, \"shen.unlocked?\", &[{cv}])?; if rt::is_truthy(interp, &__u)? {{ let _ = rt::apply_direct(interp, \"shen.lock\", &[__n, {cv}])?; }} }} {rv} }}"
+                )))
+            }
+            ("shen.bind!", 4) => {
+                let p = self.compile_expr(&args[0], scope)?;
+                let x = self.compile_expr(&args[1], scope)?;
+                let vec = self.compile_expr(&args[2], scope)?;
+                let body_src = self.compile_expr(body, scope)?;
+                let pv = self.fresh();
+                let xv = self.fresh();
+                let vv = self.fresh();
+                let rv = self.fresh();
+                Ok(Some(format!(
+                    "{{ let {pv} = {p}; let {xv} = {x}; let {vv} = {vec}; let _ = rt::apply_direct(interp, \"shen.bindv\", &[{pv}, {xv}, {vv}])?; let {rv} = {body_src}; if rt::is_truthy(interp, &rt::eq(&{rv}, &Value::bool(false)))? {{ rt::apply_direct(interp, \"shen.unwind\", &[{pv}, {vv}, {rv}])? }} else {{ {rv} }} }}"
+                )))
+            }
+            ("bind", 6) => {
+                // (bind P X Vec C N Cont) → bind! P X Vec Cont
+                let p = self.compile_expr(&args[0], scope)?;
+                let x = self.compile_expr(&args[1], scope)?;
+                let vec = self.compile_expr(&args[2], scope)?;
+                let c = self.compile_expr(&args[3], scope)?;
+                let n = self.compile_expr(&args[4], scope)?;
+                let body_src = self.compile_expr(body, scope)?;
+                let pv = self.fresh();
+                let xv = self.fresh();
+                let vv = self.fresh();
+                let rv = self.fresh();
+                Ok(Some(format!(
+                    "{{ let {pv} = {p}; let {xv} = {x}; let {vv} = {vec}; let _ = {c}; let _ = {n}; let _ = rt::apply_direct(interp, \"shen.bindv\", &[{pv}, {xv}, {vv}])?; let {rv} = {body_src}; if rt::is_truthy(interp, &rt::eq(&{rv}, &Value::bool(false)))? {{ rt::apply_direct(interp, \"shen.unwind\", &[{pv}, {vv}, {rv}])? }} else {{ {rv} }} }}"
+                )))
+            }
+            _ => Ok(None),
+        }
+    }
+
+    /// S37+ factoriser: `(let Go (freeze Else) Body)` where `Go` is only
+    /// `(thaw Go)`'d. Emit a Rust closure (no Shen heap allocation) so Chez's
+    /// local-procedure / jump lowering has a Rust analogue.
+    fn try_compile_freeze_cont(
+        &mut self,
+        var: &str,
+        value: &KlExpr,
+        body: &KlExpr,
+        scope: &mut Scope,
+        tail: bool,
+    ) -> Result<Option<String>, String> {
+        let freeze_body = match value {
+            KlExpr::App(items) if items.len() == 2 => {
+                let head = match &items[0] {
+                    KlExpr::Sym(s) => self.interner.resolve(*s),
+                    _ => return Ok(None),
+                };
+                if head != "freeze" {
+                    return Ok(None);
+                }
+                &items[1]
+            }
+            _ => return Ok(None),
+        };
+        if !only_thawed(self.interner, var, body) {
+            return Ok(None);
+        }
+        let else_src = self.compile_expr(freeze_body, scope)?;
+        let go = self.fresh();
+        self.inline_thaws
+            .insert(var.to_string(), format!("{go}(interp)?"));
+        scope.bind(var);
+        let body_src = if tail {
+            self.compile_tail(body, scope)?
+        } else {
+            self.compile_expr(body, scope)?
+        };
+        scope.unbind(var);
+        self.inline_thaws.remove(var);
+        Ok(Some(format!(
+            "{{ let {go} = |interp: &mut Interp| -> ShenResult<Value> {{ Ok({else_src}) }}; {body_src} }}"
+        )))
+    }
+
+    /// Shen/Scheme `emit-equality-check`: nil / fail / symbol / string literals
+    /// skip general `shen_eq`.
+    fn compile_eq_special(
+        &mut self,
+        a: &KlExpr,
+        b: &KlExpr,
+        scope: &mut Scope,
+    ) -> Result<Option<String>, String> {
+        if let Some(src) = self.compile_eq_hint(a, b, scope)? {
+            return Ok(Some(src));
+        }
+        self.compile_eq_hint(b, a, scope)
+    }
+
+    fn compile_eq_hint(
+        &mut self,
+        lit: &KlExpr,
+        other: &KlExpr,
+        scope: &mut Scope,
+    ) -> Result<Option<String>, String> {
+        match lit {
+            KlExpr::Nil => {
+                let x = self.compile_expr(other, scope)?;
+                Ok(Some(format!("Value::bool(({x}).is_nil())")))
+            }
+            KlExpr::Str(s) => {
+                let x = self.compile_expr(other, scope)?;
+                Ok(Some(format!(
+                    "Value::bool(({x}).as_str() == Some({:?}))",
+                    s.as_ref()
+                )))
+            }
+            KlExpr::Sym(id) => {
+                let name = self.interner.resolve(*id);
+                if scope.has(name) {
+                    return Ok(None);
+                }
+                if name == "shen.fail!" {
+                    let x = self.compile_expr(other, scope)?;
+                    return Ok(Some(format!(
+                        "Value::bool(({x}).as_sym() == Some(interp.well_known.k_shen_fail))"
+                    )));
+                }
+                let x = self.compile_expr(other, scope)?;
+                Ok(Some(format!(
+                    "Value::bool(({x}).as_sym() == Some(interp.intern_static({name:?})))"
+                )))
+            }
+            KlExpr::App(items) if items.len() == 1 => {
+                if let KlExpr::Sym(s) = &items[0] {
+                    if self.interner.resolve(*s) == "fail" && !scope.has("fail") {
+                        let x = self.compile_expr(other, scope)?;
+                        return Ok(Some(format!(
+                            "Value::bool(({x}).as_sym() == Some(interp.well_known.k_shen_fail))"
+                        )));
+                    }
+                }
+                Ok(None)
+            }
+            _ => Ok(None),
+        }
     }
 
     fn compile_quote(&mut self, expr: &KlExpr) -> Result<String, String> {
@@ -1044,34 +1416,162 @@ fn defun_name(form: &KlExpr, interner: &Interner) -> Option<String> {
     }
 }
 
-/// Inlinable primitive table. Returns the `rt::` helper name and whether
-/// it returns `ShenResult<Value>` (needs `?`) vs. `Value` (infallible).
+fn defun_name_arity(form: &KlExpr, interner: &Interner) -> Option<(String, usize)> {
+    let items = match form {
+        KlExpr::App(items) if items.len() == 4 => items,
+        _ => return None,
+    };
+    let head = match &items[0] {
+        KlExpr::Sym(s) => interner.resolve(*s),
+        _ => return None,
+    };
+    if head != "defun" {
+        return None;
+    }
+    let name = match &items[1] {
+        KlExpr::Sym(s) => interner.resolve(*s).to_string(),
+        _ => return None,
+    };
+    let arity = match &items[2] {
+        KlExpr::Nil => 0,
+        KlExpr::App(ps) => ps.len(),
+        _ => return None,
+    };
+    Some((name, arity))
+}
+
+/// `Go` occurs only as `(thaw Go)` in the current frame — not inside a
+/// `lambda`/`freeze` (those escape and would capture an unbound Rust local).
+fn only_thawed(interner: &Interner, var: &str, expr: &KlExpr) -> bool {
+    fn walk(interner: &Interner, var: &str, expr: &KlExpr, escape: bool) -> bool {
+        match expr {
+            KlExpr::Sym(s) => interner.resolve(*s) != var,
+            KlExpr::App(items) => {
+                if items.len() == 2 {
+                    if let (KlExpr::Sym(h), KlExpr::Sym(v)) = (&items[0], &items[1]) {
+                        if interner.resolve(*h) == "thaw" && interner.resolve(*v) == var {
+                            return !escape;
+                        }
+                    }
+                }
+                let head = match items.first() {
+                    Some(KlExpr::Sym(s)) => interner.resolve(*s),
+                    _ => "",
+                };
+                let nest = escape || head == "lambda" || head == "freeze";
+                items.iter().all(|c| walk(interner, var, c, nest))
+            }
+            _ => true,
+        }
+    }
+    walk(interner, var, expr, false)
+}
+
+fn expr_uses_name(interner: &Interner, name: &str, expr: &KlExpr) -> bool {
+    match expr {
+        KlExpr::Sym(s) => interner.resolve(*s) == name,
+        KlExpr::App(items) => items.iter().any(|c| expr_uses_name(interner, name, c)),
+        _ => false,
+    }
+}
+
+fn is_safe_operand(expr: &KlExpr) -> bool {
+    !matches!(expr, KlExpr::App(_))
+}
+
+fn freeze_arg_body<'a>(interner: &Interner, last: Option<&'a KlExpr>) -> Option<&'a KlExpr> {
+    let KlExpr::App(items) = last? else {
+        return None;
+    };
+    if items.len() != 2 {
+        return None;
+    }
+    match &items[0] {
+        KlExpr::Sym(s) if interner.resolve(*s) == "freeze" => Some(&items[1]),
+        _ => None,
+    }
+}
+
+/// Kernel names with native overrides. Sealing to `aot_*` would skip them.
+const SEAL_EXCLUDE: &[&str] = &[
+    "hash",
+    "put",
+    "get",
+    "unput",
+    "element?",
+    "shen.pvar?",
+    "shen.lazyderef",
+    "fail",
+    "value/or",
+    "<-address/or",
+    "<-vector/or",
+    "not",
+    "boolean?",
+    "integer?",
+    "empty?",
+    "symbol?",
+    "variable?",
+    "shen.analyse-symbol?",
+    "@p",
+    "tuple?",
+    "fst",
+    "snd",
+    "vector",
+    "<-vector",
+    "vector->",
+    "limit",
+    "hdstr",
+    "shen.byte->digit",
+    "shen.digit?",
+    "shen.lowercase?",
+    "shen.uppercase?",
+    "read-file-as-bytelist",
+    "read-file-as-string",
+    "pr",
+];
+
+/// Inlinable primitive table. Returns `(rt helper, fallible, needs_interp)`.
 /// Arity must match exactly — partial application stays on the
 /// apply_named path so its closure semantics are preserved.
-fn inlinable(name: &str, arity: usize) -> Option<(&'static str, bool)> {
-    let (helper, expected_arity, fallible) = match name {
-        "+" => ("add", 2, true),
-        "-" => ("sub", 2, true),
-        "*" => ("mul", 2, true),
-        "/" => ("div", 2, true),
-        "<" => ("lt", 2, true),
-        ">" => ("gt", 2, true),
-        "<=" => ("lte", 2, true),
-        ">=" => ("gte", 2, true),
-        "=" => ("eq", 2, false),
-        "cons" => ("cons", 2, false),
-        "hd" => ("hd", 1, true),
-        "tl" => ("tl", 1, true),
-        "cons?" => ("is_cons", 1, false),
-        "number?" => ("is_number", 1, false),
-        "string?" => ("is_string", 1, false),
-        "symbol?" => ("is_symbol", 1, false),
-        "absvector?" => ("is_absvector", 1, false),
-        "vector?" => ("is_absvector", 1, false),
+///
+/// `symbol?` is **not** inlined: the KL primitive is `is_sym()`, but the
+/// kernel `symbol?` (overridden natively after boot) rejects booleans and
+/// checks `analyse-symbol?`. AOT bodies must call the override.
+fn inlinable(name: &str, arity: usize) -> Option<(&'static str, bool, bool)> {
+    // (helper, expected_arity, fallible, needs_interp)
+    let (helper, expected_arity, fallible, needs_interp) = match name {
+        "+" => ("add", 2, true, false),
+        "-" => ("sub", 2, true, false),
+        "*" => ("mul", 2, true, false),
+        "/" => ("div", 2, true, false),
+        "<" => ("lt", 2, true, false),
+        ">" => ("gt", 2, true, false),
+        "<=" => ("lte", 2, true, false),
+        ">=" => ("gte", 2, true, false),
+        "=" => ("eq", 2, false, false),
+        "cons" => ("cons", 2, false, false),
+        "hd" => ("hd", 1, true, false),
+        "tl" => ("tl", 1, true, false),
+        "cons?" => ("is_cons", 1, false, false),
+        "number?" => ("is_number", 1, false, false),
+        "string?" => ("is_string", 1, false, false),
+        "absvector?" => ("is_absvector", 1, false, false),
+        "empty?" => ("is_empty", 1, false, false),
+        "cn" => ("cn", 2, true, false),
+        "hdstr" => ("hdstr", 1, true, false),
+        "tlstr" => ("tlstr", 1, true, false),
+        "string->n" => ("string_to_n", 1, true, false),
+        "n->string" => ("n_to_string", 1, true, false),
+        "<-address" => ("address_ref", 2, true, false),
+        "address->" => ("address_set", 3, true, false),
+        "not" => ("not", 1, true, true),
+        "boolean?" => ("is_boolean", 1, false, true),
+        "fail" => ("fail", 0, false, true),
+        "intern" => ("intern", 1, true, true),
         _ => return None,
     };
     if arity == expected_arity {
-        Some((helper, fallible))
+        Some((helper, fallible, needs_interp))
     } else {
         None
     }
@@ -1206,5 +1706,127 @@ mod tests {
         assert!(out.contains("use shen_rust::aot::runtime as rt;"));
         assert!(!out.contains("#![allow"));
         assert!(!out.contains("use crate::"));
+    }
+
+    /// `(intern "foo")` compiles to intern_static of the literal (Shen/Scheme
+    /// quotes the interned symbol).
+    #[test]
+    fn intern_string_literal_uses_intern_static() {
+        let src = "(defun f () (intern \"foo\"))";
+        let opts = CompileOptions::external("test.kl");
+        let (out, _) = compile_kl(src, &opts).expect("compile");
+        assert!(out.contains("intern_static(\"foo\")"), "{out}");
+        assert!(!out.contains("rt::intern("));
+    }
+
+    /// `(value *stoutput*)` of a free symbol is a direct global load.
+    #[test]
+    fn value_of_free_symbol_uses_global_value() {
+        let src = "(defun f () (value *stoutput*))";
+        let opts = CompileOptions::external("test.kl");
+        let (out, _) = compile_kl(src, &opts).expect("compile");
+        assert!(
+            out.contains("rt::global_value(interp, \"*stoutput*\")"),
+            "{out}"
+        );
+    }
+
+    /// `(trap-error (value X) (lambda E H))` → value/or, matching Shen/Scheme.
+    #[test]
+    fn trap_error_value_lowers_to_value_or() {
+        let src = "(defun f (X) (trap-error (value X) (lambda E 0)))";
+        let opts = CompileOptions::external("test.kl");
+        let (out, _) = compile_kl(src, &opts).expect("compile");
+        assert!(out.contains("value/or"), "{out}");
+        assert!(!out.contains("Value::err"), "{out}");
+    }
+
+    /// `empty?` inlines to `rt::is_empty`.
+    #[test]
+    fn empty_p_is_inlined() {
+        let src = "(defun f (X) (empty? X))";
+        let opts = CompileOptions::external("test.kl");
+        let (out, _) = compile_kl(src, &opts).expect("compile");
+        assert!(out.contains("rt::is_empty"), "{out}");
+    }
+
+    #[test]
+    fn eq_nil_uses_is_nil() {
+        let src = "(defun f (X) (= X ()))";
+        let opts = CompileOptions::external("test.kl");
+        let (out, _) = compile_kl(src, &opts).expect("compile");
+        assert!(out.contains("is_nil()"), "{out}");
+        assert!(!out.contains("rt::eq"), "{out}");
+    }
+
+    #[test]
+    fn intern_true_false_are_bools() {
+        let src = "(defun f () (intern \"true\"))";
+        let opts = CompileOptions::external("test.kl");
+        let (out, _) = compile_kl(src, &opts).expect("compile");
+        assert!(out.contains("Value::bool(true)"), "{out}");
+    }
+
+    #[test]
+    fn freeze_continuation_is_local_closure() {
+        let src = "(defun f (X Y) (let G (freeze Y) (if X X (thaw G))))";
+        let opts = CompileOptions::external("test.kl");
+        let (out, _) = compile_kl(src, &opts).expect("compile");
+        assert!(out.contains("|interp: &mut Interp|"), "{out}");
+        assert!(!out.contains("make_aot_closure(\"<freeze>\""), "{out}");
+    }
+
+    #[test]
+    fn same_module_saturated_call_is_sealed() {
+        let src = "(defun g (X) X) (defun f (X) (g X))";
+        let mut opts = CompileOptions::external("test.kl");
+        opts.seal_same_module = true;
+        let (out, _) = compile_kl(src, &opts).expect("compile");
+        assert!(out.contains("aot_g(interp,"), "{out}");
+        assert!(!out.contains("apply_direct(interp, \"g\""), "{out}");
+    }
+
+    #[test]
+    fn overlay_calls_are_not_sealed() {
+        let src = "(defun g (X) X) (defun f (X) (g X))";
+        let opts = CompileOptions::external("test.kl");
+        let (out, _) = compile_kl(src, &opts).expect("compile");
+        assert!(out.contains("apply_direct(interp, \"g\""), "{out}");
+        assert!(!out.contains("aot_g(interp,"), "{out}");
+    }
+
+    #[test]
+    fn trap_error_skips_optimize_if_handler_uses_exn() {
+        let src = "(defun f (X) (trap-error (value X) (lambda E (error-to-string E))))";
+        let opts = CompileOptions::external("test.kl");
+        let (out, _) = compile_kl(src, &opts).expect("compile");
+        assert!(!out.contains("value/or"), "{out}");
+        assert!(out.contains("Value::err"), "{out}");
+    }
+
+    #[test]
+    fn trap_error_skips_optimize_if_operand_can_raise() {
+        let src = "(defun f () (trap-error (<-vector (simple-error \"boom\") 1) (lambda E 42)))";
+        let opts = CompileOptions::external("test.kl");
+        let (out, _) = compile_kl(src, &opts).expect("compile");
+        assert!(!out.contains("vector/or"), "{out}");
+        assert!(out.contains("Value::err"), "{out}");
+    }
+
+    #[test]
+    fn when_freeze_is_inlined() {
+        let src = "(defun f (X) (when X A B C (freeze 1)))";
+        let opts = CompileOptions::external("test.kl");
+        let (out, _) = compile_kl(src, &opts).expect("compile");
+        assert!(!out.contains("make_aot_closure(\"<freeze>\""), "{out}");
+        assert!(out.contains("is_truthy"), "{out}");
+    }
+
+    #[test]
+    fn freeze_inside_lambda_is_not_inlined() {
+        let src = "(defun f (X) (let G (freeze X) (lambda Y (thaw G))))";
+        let opts = CompileOptions::external("test.kl");
+        let (out, _) = compile_kl(src, &opts).expect("compile");
+        assert!(out.contains("make_aot_closure(\"<freeze>\""), "{out}");
     }
 }

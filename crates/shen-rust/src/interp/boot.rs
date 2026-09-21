@@ -182,6 +182,11 @@ pub fn boot_with_kernel(interp: &mut Interp, kernel_dir: &Path) -> ShenResult<()
 
     for name in KERNEL_FILES {
         load_kl_file(interp, &kernel_dir.join(name))?;
+        // `sys.kl` defuns `hash` over the native primitive. Re-assert the
+        // native before `declarations.kl` populates `*property-vector*`.
+        if *name == "sys.kl" {
+            crate::primitives::register_early_overrides(interp);
+        }
     }
 
     run_shen_initialise(interp)?;
@@ -330,6 +335,7 @@ pub fn boot_from_kl_source(
     set_standard_streams(interp);
 
     eval_kl_source(interp, kernel_src, "shaken kernel", &[])?;
+    crate::primitives::register_early_overrides(interp);
 
     run_shen_initialise(interp)?;
     register_all_metadata(interp)?;

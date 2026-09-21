@@ -204,6 +204,9 @@ fn str_renders_non_finite_floats_lowercase() {
 fn intern_value_set() {
     let mut i = Interp::new();
     assert!(ok(&mut i, r#"(intern "abc")"#).is_sym());
+    // Host booleans: intern of the textual names, per port-performance.md.
+    assert_eq!(ok(&mut i, r#"(intern "true")"#).as_bool(), Some(true));
+    assert_eq!(ok(&mut i, r#"(intern "false")"#).as_bool(), Some(false));
     // set returns the value; value reads it back.
     assert_eq!(int(&mut i, "(set foo 99)"), 99);
     assert_eq!(int(&mut i, "(value foo)"), 99);
@@ -292,8 +295,8 @@ fn hash_is_deterministic_and_in_range() {
     let b = int(&mut i, r#"(hash "session-token-42" 256)"#);
     assert_eq!(a, b, "hash must be deterministic for equal keys");
 
-    // Bucket index lands in [1, 256] for many distinct keys (shen-rust's
-    // contract is `(h % buckets) + 1`).
+    // Bucket index lands in [1, 256] (kernel/Shen-Scheme 0-guard: never 0;
+    // bucket 0 stores the property-vector length).
     for n in 0..500 {
         let h = int(&mut i, &format!(r#"(hash "k{n}" 256)"#));
         assert!(
