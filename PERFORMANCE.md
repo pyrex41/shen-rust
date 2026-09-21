@@ -76,6 +76,57 @@ The living, detailed record is in `design/`:
    work didn't vanish — it CSE'd into `eval_in` and the call sites — but the
    per-step call/return overhead and cold-blob bloat did.
 
+## Shen/Scheme-style compiler mappings + kernel overrides
+
+Shen/Scheme (and the old SBCL port that reused its compiler) is fast not only
+because Chez/SBCL are fast, but because the KL→host compiler exploits KLambda
+properties and because well-placed overrides replace the kernel's portable
+bodies. The kernel is deliberately inefficient on hot functions so a new port
+can boot at all; once the port is up, those bodies are the cheapest wins.
+
+Landed (134/0, kernel AOT regenerated):
+
+1. **Native overrides** (after AOT install, dual-registered into `aot_direct`)
+   for the portable bodies Shen/Scheme also replaces: `hash` (must be live
+   *before* `declarations.kl` fills `*property-vector*` — same algorithm at
+   populate and lookup; 0-guard so bucket 0 stays the vector length),
+   `integer?` (kernel is recursive subtraction via `magless`/`integer-test?`),
+   `symbol?` / `variable?` / `shen.analyse-symbol?` (kernel walks `str` through
+   `alpha?`/`alphanums?` under `trap-error`), `@p`/`tuple?`/`fst`/`snd`,
+   `vector`/`<-vector`/`vector->`/`limit`, `empty?`/`not`/`boolean?`, reader
+   leaves (`hdstr`, `shen.digit?`, `shen.byte->digit`, case predicates).
+2. **klcompile mappings** that Chez already does: `(intern "foo")` →
+   `intern_static`; `(value unbound-sym)` → `rt::global_value`; `(set unbound-sym
+   V)` → `rt::set_global`; `(trap-error (value X) (lambda E H))` → `value/or`
+   and the same for `<-address` (Shen/Scheme `emit-trap-error-optimize`); more
+   primitives inlined (`empty?`, `cn`, `hdstr`/`tlstr`, `string->n`/`n->string`,
+   `<-address`/`address->`, `not`, `boolean?`, `fail`, `intern`). Kernel
+   `symbol?` is **not** inlined to `is_sym()` — that was the KL primitive, not
+   the kernel predicate.
+
+Follow-up (`af86b09`, Astra review): trap-error rewrite is gated on unused `E`
++ non-raising operands; `intern` of `"true"`/`"false"` is Bool on the primitive
+*and* `rt::intern`; `hash` agrees with `shen_eq`; freeze-continuation inlining
+refuses escaping `lambda`/`freeze`; same-module seal is kernel-AOT only;
+native `get`/`put` distinguish uninit vs assoc-miss. Tests in
+`tests/scheme_mapping_soundness.rs`.
+
+**Paired A/B** (this machine, 2026-09-20, interleaved min-of-5, both 134/0,
+`kernel/shen-42` `c8f5cc9` vs `perf/shen-scheme-kl-overrides` `af86b09`):
+
+| | wall (s) | suite `run time` (s) |
+|---|---|---|
+| base | 19.29, 11.59, 13.87, 15.81, 13.19 (**min 11.59**) | 13.40, 8.17, 7.71, 11.88, 8.84 (**min 7.71**) |
+| new | 10.42, 7.29, 14.07, 10.79, 10.27 (**min 7.29**) | 7.46, 5.22, 9.65, 6.56, 7.78 (**min 5.22**) |
+
+Min-of-5 wall **11.59 → 7.29 (~1.6×)**; suite **7.71 → 5.22 (~1.5×)**. NEW won
+wall in 4/5 pairs (pair 3 lost: 13.87 vs 14.07). Variance is large (~2× spread
+within each arm) — treat the factor as directional, not a scoreboard number.
+No ablation of individual mappings.
+
+Still on the table: `yields-boolean?`; dedicated `@p` type; remaining `t-star`
+heap freezes; cross-module seal (needs a documented immutable kernel boundary).
+
 ## Why the remaining ~3.0× is structural
 
 Two execution-engine bets — the bytecode VM and the Cranelift closure-JIT —
