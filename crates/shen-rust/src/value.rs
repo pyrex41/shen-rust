@@ -942,6 +942,26 @@ pub fn shen_eq(a: &Value, b: &Value) -> bool {
     }
 }
 
+/// Host `Bool` or the interned symbols `true` / `false`.
+pub fn as_shen_bool(v: &Value) -> Option<bool> {
+    if let Some(b) = v.as_bool() {
+        return Some(b);
+    }
+    match v.as_sym() {
+        Some(s) => {
+            let (kt, kf) = boolean_sym_ids();
+            if s == kt {
+                Some(true)
+            } else if s == kf {
+                Some(false)
+            } else {
+                None
+            }
+        }
+        None => None,
+    }
+}
+
 /// Process-wide cache of the `SymId`s for the kernel symbols `true` and
 /// `false`. Initialised once at interpreter boot via [`set_boolean_sym_ids`].
 static BOOLEAN_SYM_IDS: std::sync::OnceLock<(SymId, SymId)> = std::sync::OnceLock::new();

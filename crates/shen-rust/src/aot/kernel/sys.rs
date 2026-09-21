@@ -94,20 +94,17 @@ pub fn aot_external(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t19 = {
-                let __t17 = Value::sym(interp.intern("null"));
-                let __t18 = v_V3446.clone();
-                rt::eq(&__t17, &__t18)
-            };
-            if match rt::is_truthy(interp, &__t19) {
+            let __t16 =
+                Value::bool((v_V3446.clone()).as_sym() == Some(interp.intern_static("null")));
+            if match rt::is_truthy(interp, &__t16) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::nil());
             } else {
                 {
-                    let __t16 = Value::bool(true);
-                    if match rt::is_truthy(interp, &__t16) {
+                    let __t15 = Value::bool(true);
+                    if match rt::is_truthy(interp, &__t15) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
@@ -115,12 +112,10 @@ pub fn aot_external(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                             match (|| -> ShenResult<Value> {
                                 Ok({
                                     let __t6 = v_V3446.clone();
-                                    let __t7 = Value::sym(interp.intern("shen.external-symbols"));
-                                    let __t9 = {
-                                        let __t8 = Value::sym(interp.intern("*property-vector*"));
-                                        rt::apply_direct(interp, "value", &[__t8])?
-                                    };
-                                    rt::apply_direct(interp, "get", &[__t6, __t7, __t9])?
+                                    let __t7 =
+                                        Value::sym(interp.intern_static("shen.external-symbols"));
+                                    let __t8 = rt::global_value(interp, "*property-vector*")?;
+                                    rt::apply_direct(interp, "get", &[__t6, __t7, __t8])?
                                 })
                             })() {
                                 Ok(v) => v,
@@ -133,30 +128,27 @@ pub fn aot_external(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                             move |interp, args| {
                                                 let v_Z3447 = args[0].clone();
                                                 Ok({
-                                                    let __t15 = {
-                                                        let __t10 = Value::str("package ");
-                                                        let __t14 = {
-                                                            let __t11 = v_V3446.clone();
-                                                            let __t12 =
+                                                    let __t14 = {
+                                                        let __t9 = Value::str("package ");
+                                                        let __t13 = {
+                                                            let __t10 = v_V3446.clone();
+                                                            let __t11 =
                                                                 Value::str(" does not exist.\n;");
-                                                            let __t13 =
-                                                                Value::sym(interp.intern("shen.a"));
+                                                            let __t12 = Value::sym(
+                                                                interp.intern_static("shen.a"),
+                                                            );
                                                             rt::apply_direct(
                                                                 interp,
                                                                 "shen.app",
-                                                                &[__t11, __t12, __t13],
+                                                                &[__t10, __t11, __t12],
                                                             )?
                                                         };
-                                                        rt::apply_direct(
-                                                            interp,
-                                                            "cn",
-                                                            &[__t10, __t14],
-                                                        )?
+                                                        rt::cn(&__t9, &__t13)?
                                                     };
                                                     rt::apply_direct(
                                                         interp,
                                                         "simple-error",
-                                                        &[__t15],
+                                                        &[__t14],
                                                     )?
                                                 })
                                             },
@@ -196,33 +188,28 @@ pub fn aot_internal(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t33 = {
-                let __t31 = Value::sym(interp.intern("null"));
-                let __t32 = v_V3448.clone();
-                rt::eq(&__t31, &__t32)
-            };
-            if match rt::is_truthy(interp, &__t33) {
+            let __t27 =
+                Value::bool((v_V3448.clone()).as_sym() == Some(interp.intern_static("null")));
+            if match rt::is_truthy(interp, &__t27) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::nil());
             } else {
                 {
-                    let __t30 = Value::bool(true);
-                    if match rt::is_truthy(interp, &__t30) {
+                    let __t26 = Value::bool(true);
+                    if match rt::is_truthy(interp, &__t26) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok(
                             match (|| -> ShenResult<Value> {
                                 Ok({
-                                    let __t20 = v_V3448.clone();
-                                    let __t21 = Value::sym(interp.intern("shen.internal-symbols"));
-                                    let __t23 = {
-                                        let __t22 = Value::sym(interp.intern("*property-vector*"));
-                                        rt::apply_direct(interp, "value", &[__t22])?
-                                    };
-                                    rt::apply_direct(interp, "get", &[__t20, __t21, __t23])?
+                                    let __t17 = v_V3448.clone();
+                                    let __t18 =
+                                        Value::sym(interp.intern_static("shen.internal-symbols"));
+                                    let __t19 = rt::global_value(interp, "*property-vector*")?;
+                                    rt::apply_direct(interp, "get", &[__t17, __t18, __t19])?
                                 })
                             })() {
                                 Ok(v) => v,
@@ -235,30 +222,27 @@ pub fn aot_internal(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                                             move |interp, args| {
                                                 let v_Z3449 = args[0].clone();
                                                 Ok({
-                                                    let __t29 = {
-                                                        let __t24 = Value::str("package ");
-                                                        let __t28 = {
-                                                            let __t25 = v_V3448.clone();
-                                                            let __t26 =
+                                                    let __t25 = {
+                                                        let __t20 = Value::str("package ");
+                                                        let __t24 = {
+                                                            let __t21 = v_V3448.clone();
+                                                            let __t22 =
                                                                 Value::str(" does not exist.\n;");
-                                                            let __t27 =
-                                                                Value::sym(interp.intern("shen.a"));
+                                                            let __t23 = Value::sym(
+                                                                interp.intern_static("shen.a"),
+                                                            );
                                                             rt::apply_direct(
                                                                 interp,
                                                                 "shen.app",
-                                                                &[__t25, __t26, __t27],
+                                                                &[__t21, __t22, __t23],
                                                             )?
                                                         };
-                                                        rt::apply_direct(
-                                                            interp,
-                                                            "cn",
-                                                            &[__t24, __t28],
-                                                        )?
+                                                        rt::cn(&__t20, &__t24)?
                                                     };
                                                     rt::apply_direct(
                                                         interp,
                                                         "simple-error",
-                                                        &[__t29],
+                                                        &[__t25],
                                                     )?
                                                 })
                                             },
@@ -300,15 +284,15 @@ pub fn aot_fail_x2d_if(interp: &mut Interp, args: &[Value]) -> ShenResult<Value>
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t35 = {
-                let __t34 = v_V3451.clone();
-                rt::apply_value(interp, v_V3450.clone(), &[__t34])?
+            let __t29 = {
+                let __t28 = v_V3451.clone();
+                rt::apply_value(interp, v_V3450.clone(), &[__t28])?
             };
-            if match rt::is_truthy(interp, &__t35) {
+            if match rt::is_truthy(interp, &__t29) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
-                break Ok({ rt::apply_direct(interp, "fail", &[])? });
+                break Ok({ rt::fail(interp) });
             } else {
                 break Ok(v_V3451.clone());
             }
@@ -336,9 +320,9 @@ pub fn aot__x40_s(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t36 = v_V3452.clone();
-            let __t37 = v_V3453.clone();
-            rt::apply_direct(interp, "cn", &[__t36, __t37])?
+            let __t30 = v_V3452.clone();
+            let __t31 = v_V3453.clone();
+            rt::cn(&__t30, &__t31)?
         });
     }
 }
@@ -358,10 +342,7 @@ pub fn aot_tc_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     }
     #[allow(clippy::never_loop)]
     loop {
-        break Ok({
-            let __t38 = Value::sym(interp.intern("shen.*tc*"));
-            rt::apply_direct(interp, "value", &[__t38])?
-        });
+        break Ok(rt::global_value(interp, "shen.*tc*")?);
     }
 }
 
@@ -380,10 +361,7 @@ pub fn aot_occurs_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value>
     }
     #[allow(clippy::never_loop)]
     loop {
-        break Ok({
-            let __t39 = Value::sym(interp.intern("shen.*occurs*"));
-            rt::apply_direct(interp, "value", &[__t39])?
-        });
+        break Ok(rt::global_value(interp, "shen.*occurs*")?);
     }
 }
 
@@ -402,10 +380,7 @@ pub fn aot_factorise_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Val
     }
     #[allow(clippy::never_loop)]
     loop {
-        break Ok({
-            let __t40 = Value::sym(interp.intern("shen.*factorise?*"));
-            rt::apply_direct(interp, "value", &[__t40])?
-        });
+        break Ok(rt::global_value(interp, "shen.*factorise?*")?);
     }
 }
 
@@ -424,10 +399,7 @@ pub fn aot_tracked(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     }
     #[allow(clippy::never_loop)]
     loop {
-        break Ok({
-            let __t41 = Value::sym(interp.intern("shen.*tracking*"));
-            rt::apply_direct(interp, "value", &[__t41])?
-        });
+        break Ok(rt::global_value(interp, "shen.*tracking*")?);
     }
 }
 
@@ -451,13 +423,10 @@ pub fn aot_ps(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
         break Ok(
             match (|| -> ShenResult<Value> {
                 Ok({
-                    let __t42 = v_V3454.clone();
-                    let __t43 = Value::sym(interp.intern("shen.source"));
-                    let __t45 = {
-                        let __t44 = Value::sym(interp.intern("*property-vector*"));
-                        rt::apply_direct(interp, "value", &[__t44])?
-                    };
-                    rt::apply_direct(interp, "get", &[__t42, __t43, __t45])?
+                    let __t32 = v_V3454.clone();
+                    let __t33 = Value::sym(interp.intern_static("shen.source"));
+                    let __t34 = rt::global_value(interp, "*property-vector*")?;
+                    rt::apply_direct(interp, "get", &[__t32, __t33, __t34])?
                 })
             })() {
                 Ok(v) => v,
@@ -470,17 +439,17 @@ pub fn aot_ps(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
                             move |interp, args| {
                                 let v_Z3455 = args[0].clone();
                                 Ok({
-                                    let __t49 = {
-                                        let __t46 = v_V3454.clone();
-                                        let __t47 = Value::str(" not found.\n");
-                                        let __t48 = Value::sym(interp.intern("shen.a"));
+                                    let __t38 = {
+                                        let __t35 = v_V3454.clone();
+                                        let __t36 = Value::str(" not found.\n");
+                                        let __t37 = Value::sym(interp.intern_static("shen.a"));
                                         rt::apply_direct(
                                             interp,
                                             "shen.app",
-                                            &[__t46, __t47, __t48],
+                                            &[__t35, __t36, __t37],
                                         )?
                                     };
-                                    rt::apply_direct(interp, "simple-error", &[__t49])?
+                                    rt::apply_direct(interp, "simple-error", &[__t38])?
                                 })
                             },
                             vec![v_V3454],
@@ -510,10 +479,7 @@ pub fn aot_stinput(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     }
     #[allow(clippy::never_loop)]
     loop {
-        break Ok({
-            let __t50 = Value::sym(interp.intern("*stinput*"));
-            rt::apply_direct(interp, "value", &[__t50])?
-        });
+        break Ok(rt::global_value(interp, "*stinput*")?);
     }
 }
 
@@ -536,40 +502,36 @@ pub fn aot_vector(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     loop {
         {
             let v_W3457 = {
-                let __t53 = {
-                    let __t51 = v_V3456.clone();
-                    let __t52 = Value::int(1i64);
-                    rt::add(&__t51, &__t52)?
+                let __t41 = {
+                    let __t39 = v_V3456.clone();
+                    let __t40 = Value::int(1i64);
+                    rt::add(&__t39, &__t40)?
                 };
-                rt::apply_direct(interp, "absvector", &[__t53])?
+                rt::apply_direct(interp, "absvector", &[__t41])?
             };
             {
                 let v_W3458 = {
-                    let __t54 = v_W3457.clone();
-                    let __t55 = Value::int(0i64);
-                    let __t56 = v_V3456.clone();
-                    rt::apply_direct(interp, "address->", &[__t54, __t55, __t56])?
+                    let __t42 = v_W3457.clone();
+                    let __t43 = Value::int(0i64);
+                    let __t44 = v_V3456.clone();
+                    rt::address_set(&__t42, &__t43, &__t44)?
                 };
                 {
                     let v_W3459 = {
-                        let __t63 = {
-                            let __t57 = v_V3456.clone();
-                            let __t58 = Value::int(0i64);
-                            rt::eq(&__t57, &__t58)
+                        let __t51 = {
+                            let __t45 = v_V3456.clone();
+                            let __t46 = Value::int(0i64);
+                            rt::eq(&__t45, &__t46)
                         };
-                        if rt::is_truthy(interp, &__t63)? {
+                        if rt::is_truthy(interp, &__t51)? {
                             v_W3458.clone()
                         } else {
                             {
-                                let __t59 = v_W3458.clone();
-                                let __t60 = Value::int(1i64);
-                                let __t61 = v_V3456.clone();
-                                let __t62 = { rt::apply_direct(interp, "fail", &[])? };
-                                rt::apply_direct(
-                                    interp,
-                                    "shen.fillvector",
-                                    &[__t59, __t60, __t61, __t62],
-                                )?
+                                let __t47 = v_W3458.clone();
+                                let __t48 = Value::int(1i64);
+                                let __t49 = v_V3456.clone();
+                                let __t50 = { rt::fail(interp) };
+                                aot_shen_x2e_fillvector(interp, &[__t47, __t48, __t49, __t50])?
                             }
                         }
                     };
@@ -604,46 +566,46 @@ pub fn aot_shen_x2e_fillvector(interp: &mut Interp, args: &[Value]) -> ShenResul
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t79 = {
-                let __t74 = v_V3462.clone();
-                let __t75 = v_V3463.clone();
-                rt::eq(&__t74, &__t75)
+            let __t67 = {
+                let __t62 = v_V3462.clone();
+                let __t63 = v_V3463.clone();
+                rt::eq(&__t62, &__t63)
             };
-            if match rt::is_truthy(interp, &__t79) {
+            if match rt::is_truthy(interp, &__t67) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t76 = v_V3461.clone();
-                    let __t77 = v_V3463.clone();
-                    let __t78 = v_V3464.clone();
-                    rt::apply_direct(interp, "address->", &[__t76, __t77, __t78])?
+                    let __t64 = v_V3461.clone();
+                    let __t65 = v_V3463.clone();
+                    let __t66 = v_V3464.clone();
+                    rt::address_set(&__t64, &__t65, &__t66)?
                 });
             } else {
                 {
-                    let __t73 = Value::bool(true);
-                    if match rt::is_truthy(interp, &__t73) {
+                    let __t61 = Value::bool(true);
+                    if match rt::is_truthy(interp, &__t61) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         {
-                            let __t67 = {
-                                let __t64 = v_V3461.clone();
-                                let __t65 = v_V3462.clone();
-                                let __t66 = v_V3464.clone();
-                                rt::apply_direct(interp, "address->", &[__t64, __t65, __t66])?
+                            let __t55 = {
+                                let __t52 = v_V3461.clone();
+                                let __t53 = v_V3462.clone();
+                                let __t54 = v_V3464.clone();
+                                rt::address_set(&__t52, &__t53, &__t54)?
                             };
-                            let __t70 = {
-                                let __t68 = Value::int(1i64);
-                                let __t69 = v_V3462.clone();
-                                rt::add(&__t68, &__t69)?
+                            let __t58 = {
+                                let __t56 = Value::int(1i64);
+                                let __t57 = v_V3462.clone();
+                                rt::add(&__t56, &__t57)?
                             };
-                            let __t71 = v_V3463.clone();
-                            let __t72 = v_V3464.clone();
-                            v_V3461 = __t67;
-                            v_V3462 = __t70;
-                            v_V3463 = __t71;
-                            v_V3464 = __t72;
+                            let __t59 = v_V3463.clone();
+                            let __t60 = v_V3464.clone();
+                            v_V3461 = __t55;
+                            v_V3462 = __t58;
+                            v_V3463 = __t59;
+                            v_V3464 = __t60;
                             continue;
                         }
                     } else {
@@ -673,11 +635,11 @@ pub fn aot_vector_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value>
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t81 = {
-                let __t80 = v_V3465.clone();
-                rt::is_absvector(&__t80)
+            let __t69 = {
+                let __t68 = v_V3465.clone();
+                rt::is_absvector(&__t68)
             };
-            if !match rt::is_truthy(interp, &__t81) {
+            if !match rt::is_truthy(interp, &__t69) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
@@ -686,13 +648,13 @@ pub fn aot_vector_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value>
                 break Ok(
                     match (|| -> ShenResult<Value> {
                         Ok({
-                            let __t84 = {
-                                let __t82 = v_V3465.clone();
-                                let __t83 = Value::int(0i64);
-                                rt::apply_direct(interp, "<-address", &[__t82, __t83])?
+                            let __t72 = {
+                                let __t70 = v_V3465.clone();
+                                let __t71 = Value::int(0i64);
+                                rt::address_ref(&__t70, &__t71)?
                             };
-                            let __t85 = Value::int(0i64);
-                            rt::gte(&__t84, &__t85)?
+                            let __t73 = Value::int(0i64);
+                            rt::gte(&__t72, &__t73)?
                         })
                     })() {
                         Ok(v) => v,
@@ -741,25 +703,25 @@ pub fn aot_vector_x2d__x3e_(interp: &mut Interp, args: &[Value]) -> ShenResult<V
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t88 = {
-                let __t86 = v_V3468.clone();
-                let __t87 = Value::int(0i64);
-                rt::eq(&__t86, &__t87)
+            let __t76 = {
+                let __t74 = v_V3468.clone();
+                let __t75 = Value::int(0i64);
+                rt::eq(&__t74, &__t75)
             };
-            if match rt::is_truthy(interp, &__t88) {
+            if match rt::is_truthy(interp, &__t76) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t89 = Value::str("cannot access 0th element of a vector\n");
-                    rt::apply_direct(interp, "simple-error", &[__t89])?
+                    let __t77 = Value::str("cannot access 0th element of a vector\n");
+                    rt::apply_direct(interp, "simple-error", &[__t77])?
                 });
             } else {
                 break Ok({
-                    let __t90 = v_V3467.clone();
-                    let __t91 = v_V3468.clone();
-                    let __t92 = v_V3469.clone();
-                    rt::apply_direct(interp, "address->", &[__t90, __t91, __t92])?
+                    let __t78 = v_V3467.clone();
+                    let __t79 = v_V3468.clone();
+                    let __t80 = v_V3469.clone();
+                    rt::address_set(&__t78, &__t79, &__t80)?
                 });
             }
         }
@@ -786,39 +748,37 @@ pub fn aot__x3c__x2d_vector(interp: &mut Interp, args: &[Value]) -> ShenResult<V
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t95 = {
-                let __t93 = v_V3471.clone();
-                let __t94 = Value::int(0i64);
-                rt::eq(&__t93, &__t94)
+            let __t83 = {
+                let __t81 = v_V3471.clone();
+                let __t82 = Value::int(0i64);
+                rt::eq(&__t81, &__t82)
             };
-            if match rt::is_truthy(interp, &__t95) {
+            if match rt::is_truthy(interp, &__t83) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t96 = Value::str("cannot access 0th element of a vector\n");
-                    rt::apply_direct(interp, "simple-error", &[__t96])?
+                    let __t84 = Value::str("cannot access 0th element of a vector\n");
+                    rt::apply_direct(interp, "simple-error", &[__t84])?
                 });
             } else {
                 {
                     let v_W3472 = {
-                        let __t97 = v_V3470.clone();
-                        let __t98 = v_V3471.clone();
-                        rt::apply_direct(interp, "<-address", &[__t97, __t98])?
+                        let __t85 = v_V3470.clone();
+                        let __t86 = v_V3471.clone();
+                        rt::address_ref(&__t85, &__t86)?
                     };
                     {
-                        let __t101 = {
-                            let __t99 = v_W3472.clone();
-                            let __t100 = { rt::apply_direct(interp, "fail", &[])? };
-                            rt::eq(&__t99, &__t100)
-                        };
-                        if match rt::is_truthy(interp, &__t101) {
+                        let __t87 = Value::bool(
+                            (v_W3472.clone()).as_sym() == Some(interp.well_known.k_shen_fail),
+                        );
+                        if match rt::is_truthy(interp, &__t87) {
                             Ok(b) => b,
                             Err(e) => break Err(e),
                         } {
                             break Ok({
-                                let __t102 = Value::str("vector element not found\n");
-                                rt::apply_direct(interp, "simple-error", &[__t102])?
+                                let __t88 = Value::str("vector element not found\n");
+                                rt::apply_direct(interp, "simple-error", &[__t88])?
                             });
                         } else {
                             break Ok(v_W3472.clone());
@@ -848,20 +808,20 @@ pub fn aot_shen_x2e_posint_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResu
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t104 = {
-                let __t103 = v_V3473.clone();
-                rt::apply_direct(interp, "integer?", &[__t103])?
+            let __t90 = {
+                let __t89 = v_V3473.clone();
+                rt::apply_direct(interp, "integer?", &[__t89])?
             };
-            if !match rt::is_truthy(interp, &__t104) {
+            if !match rt::is_truthy(interp, &__t90) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::bool(false));
             } else {
                 break Ok({
-                    let __t105 = v_V3473.clone();
-                    let __t106 = Value::int(0i64);
-                    rt::gte(&__t105, &__t106)?
+                    let __t91 = v_V3473.clone();
+                    let __t92 = Value::int(0i64);
+                    rt::gte(&__t91, &__t92)?
                 });
             }
         }
@@ -886,9 +846,9 @@ pub fn aot_limit(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t107 = v_V3474.clone();
-            let __t108 = Value::int(0i64);
-            rt::apply_direct(interp, "<-address", &[__t107, __t108])?
+            let __t93 = v_V3474.clone();
+            let __t94 = Value::int(0i64);
+            rt::address_ref(&__t93, &__t94)?
         });
     }
 }
@@ -911,115 +871,106 @@ pub fn aot_symbol_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value>
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t144 = {
-                let __t142 = {
-                    let __t128 = v_V3475.clone();
-                    rt::apply_direct(interp, "boolean?", &[__t128])?
+            let __t127 = {
+                let __t125 = {
+                    let __t111 = v_V3475.clone();
+                    rt::is_boolean(interp, &__t111)
                 };
-                if rt::is_truthy(interp, &__t142)? {
+                if rt::is_truthy(interp, &__t125)? {
                     Value::bool(true)
                 } else {
-                    let __t143 = {
-                        let __t140 = {
-                            let __t129 = v_V3475.clone();
-                            rt::is_number(&__t129)
+                    let __t126 = {
+                        let __t123 = {
+                            let __t112 = v_V3475.clone();
+                            rt::is_number(&__t112)
                         };
-                        if rt::is_truthy(interp, &__t140)? {
+                        if rt::is_truthy(interp, &__t123)? {
                             Value::bool(true)
                         } else {
-                            let __t141 = {
-                                let __t138 = {
-                                    let __t130 = v_V3475.clone();
-                                    rt::is_string(&__t130)
+                            let __t124 = {
+                                let __t121 = {
+                                    let __t113 = v_V3475.clone();
+                                    rt::is_string(&__t113)
                                 };
-                                if rt::is_truthy(interp, &__t138)? {
+                                if rt::is_truthy(interp, &__t121)? {
                                     Value::bool(true)
                                 } else {
-                                    let __t139 = {
-                                        let __t136 = {
-                                            let __t131 = v_V3475.clone();
-                                            rt::is_cons(&__t131)
+                                    let __t122 = {
+                                        let __t119 = {
+                                            let __t114 = v_V3475.clone();
+                                            rt::is_cons(&__t114)
                                         };
-                                        if rt::is_truthy(interp, &__t136)? {
+                                        if rt::is_truthy(interp, &__t119)? {
                                             Value::bool(true)
                                         } else {
-                                            let __t137 = {
-                                                let __t134 = {
-                                                    let __t132 = v_V3475.clone();
-                                                    rt::apply_direct(interp, "empty?", &[__t132])?
+                                            let __t120 = {
+                                                let __t117 = {
+                                                    let __t115 = v_V3475.clone();
+                                                    rt::is_empty(&__t115)
                                                 };
-                                                if rt::is_truthy(interp, &__t134)? {
+                                                if rt::is_truthy(interp, &__t117)? {
                                                     Value::bool(true)
                                                 } else {
-                                                    let __t135 = {
-                                                        let __t133 = v_V3475.clone();
-                                                        rt::is_absvector(&__t133)
+                                                    let __t118 = {
+                                                        let __t116 = v_V3475.clone();
+                                                        aot_vector_x3f_(interp, &[__t116])?
                                                     };
-                                                    Value::bool(rt::is_truthy(interp, &__t135)?)
+                                                    Value::bool(rt::is_truthy(interp, &__t118)?)
                                                 }
                                             };
-                                            Value::bool(rt::is_truthy(interp, &__t137)?)
+                                            Value::bool(rt::is_truthy(interp, &__t120)?)
                                         }
                                     };
-                                    Value::bool(rt::is_truthy(interp, &__t139)?)
+                                    Value::bool(rt::is_truthy(interp, &__t122)?)
                                 }
                             };
-                            Value::bool(rt::is_truthy(interp, &__t141)?)
+                            Value::bool(rt::is_truthy(interp, &__t124)?)
                         }
                     };
-                    Value::bool(rt::is_truthy(interp, &__t143)?)
+                    Value::bool(rt::is_truthy(interp, &__t126)?)
                 }
             };
-            if match rt::is_truthy(interp, &__t144) {
+            if match rt::is_truthy(interp, &__t127) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::bool(false));
             } else {
                 {
-                    let __t127 = {
-                        let __t112 = v_V3475.clone();
-                        let __t126 = {
-                            let __t113 = Value::sym(interp.intern("{"));
-                            let __t125 = {
-                                let __t114 = Value::sym(interp.intern("}"));
-                                let __t124 = {
-                                    let __t116 = {
-                                        let __t115 = Value::str(":");
-                                        rt::apply_direct(interp, "intern", &[__t115])?
-                                    };
-                                    let __t123 = {
-                                        let __t118 = {
-                                            let __t117 = Value::str(";");
-                                            rt::apply_direct(interp, "intern", &[__t117])?
+                    let __t110 = {
+                        let __t98 = v_V3475.clone();
+                        let __t109 = {
+                            let __t99 = Value::sym(interp.intern_static("{"));
+                            let __t108 = {
+                                let __t100 = Value::sym(interp.intern_static("}"));
+                                let __t107 = {
+                                    let __t101 = Value::sym(interp.intern_static(":"));
+                                    let __t106 = {
+                                        let __t102 = Value::sym(interp.intern_static(";"));
+                                        let __t105 = {
+                                            let __t103 = Value::sym(interp.intern_static(","));
+                                            let __t104 = Value::nil();
+                                            rt::cons(&__t103, &__t104)
                                         };
-                                        let __t122 = {
-                                            let __t120 = {
-                                                let __t119 = Value::str(",");
-                                                rt::apply_direct(interp, "intern", &[__t119])?
-                                            };
-                                            let __t121 = Value::nil();
-                                            rt::cons(&__t120, &__t121)
-                                        };
-                                        rt::cons(&__t118, &__t122)
+                                        rt::cons(&__t102, &__t105)
                                     };
-                                    rt::cons(&__t116, &__t123)
+                                    rt::cons(&__t101, &__t106)
                                 };
-                                rt::cons(&__t114, &__t124)
+                                rt::cons(&__t100, &__t107)
                             };
-                            rt::cons(&__t113, &__t125)
+                            rt::cons(&__t99, &__t108)
                         };
-                        rt::apply_direct(interp, "element?", &[__t112, __t126])?
+                        rt::apply_direct(interp, "element?", &[__t98, __t109])?
                     };
-                    if match rt::is_truthy(interp, &__t127) {
+                    if match rt::is_truthy(interp, &__t110) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok(Value::bool(true));
                     } else {
                         {
-                            let __t111 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t111) {
+                            let __t97 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t97) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
@@ -1027,15 +978,15 @@ pub fn aot_symbol_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value>
                                     match (|| -> ShenResult<Value> {
                                         Ok({
                                             let v_W3476 = {
-                                                let __t109 = v_V3475.clone();
-                                                rt::apply_direct(interp, "str", &[__t109])?
+                                                let __t95 = v_V3475.clone();
+                                                rt::apply_direct(interp, "str", &[__t95])?
                                             };
                                             {
-                                                let __t110 = v_W3476.clone();
+                                                let __t96 = v_W3476.clone();
                                                 rt::apply_direct(
                                                     interp,
                                                     "shen.analyse-symbol?",
-                                                    &[__t110],
+                                                    &[__t96],
                                                 )?
                                             }
                                         })
@@ -1091,50 +1042,50 @@ pub fn aot_shen_x2e_analyse_x2d_symbol_x3f_(
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t154 = {
-                let __t147 = v_V3480.clone();
-                rt::apply_direct(interp, "shen.+string?", &[__t147])?
+            let __t137 = {
+                let __t130 = v_V3480.clone();
+                rt::apply_direct(interp, "shen.+string?", &[__t130])?
             };
-            if match rt::is_truthy(interp, &__t154) {
+            if match rt::is_truthy(interp, &__t137) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 {
-                    let __t151 = {
-                        let __t150 = {
-                            let __t149 = {
-                                let __t148 = v_V3480.clone();
-                                rt::apply_direct(interp, "hdstr", &[__t148])?
+                    let __t134 = {
+                        let __t133 = {
+                            let __t132 = {
+                                let __t131 = v_V3480.clone();
+                                rt::hdstr(&__t131)?
                             };
-                            rt::apply_direct(interp, "string->n", &[__t149])?
+                            rt::string_to_n(&__t132)?
                         };
-                        rt::apply_direct(interp, "shen.alpha?", &[__t150])?
+                        rt::apply_direct(interp, "shen.alpha?", &[__t133])?
                     };
-                    if !match rt::is_truthy(interp, &__t151) {
+                    if !match rt::is_truthy(interp, &__t134) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok(Value::bool(false));
                     } else {
                         break Ok({
-                            let __t153 = {
-                                let __t152 = v_V3480.clone();
-                                rt::apply_direct(interp, "tlstr", &[__t152])?
+                            let __t136 = {
+                                let __t135 = v_V3480.clone();
+                                rt::tlstr(&__t135)?
                             };
-                            rt::apply_direct(interp, "shen.alphanums?", &[__t153])?
+                            aot_shen_x2e_alphanums_x3f_(interp, &[__t136])?
                         });
                     }
                 }
             } else {
                 {
-                    let __t146 = Value::bool(true);
-                    if match rt::is_truthy(interp, &__t146) {
+                    let __t129 = Value::bool(true);
+                    if match rt::is_truthy(interp, &__t129) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t145 = Value::str("implementation error in shen.analyse-symbol?");
-                            rt::apply_direct(interp, "simple-error", &[__t145])?
+                            let __t128 = Value::str("implementation error in shen.analyse-symbol?");
+                            rt::apply_direct(interp, "simple-error", &[__t128])?
                         });
                     } else {
                         break Err(ShenError::new("cond: no clause matched"));
@@ -1167,62 +1118,58 @@ pub fn aot_shen_x2e_alphanums_x3f_(interp: &mut Interp, args: &[Value]) -> ShenR
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t170 = {
-                let __t168 = Value::str("");
-                let __t169 = v_V3483.clone();
-                rt::eq(&__t168, &__t169)
-            };
-            if match rt::is_truthy(interp, &__t170) {
+            let __t151 = Value::bool((v_V3483.clone()).as_str() == Some(""));
+            if match rt::is_truthy(interp, &__t151) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::bool(true));
             } else {
                 {
-                    let __t167 = {
-                        let __t157 = v_V3483.clone();
-                        rt::apply_direct(interp, "shen.+string?", &[__t157])?
+                    let __t150 = {
+                        let __t140 = v_V3483.clone();
+                        rt::apply_direct(interp, "shen.+string?", &[__t140])?
                     };
-                    if match rt::is_truthy(interp, &__t167) {
+                    if match rt::is_truthy(interp, &__t150) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         {
                             let v_W3484 = {
-                                let __t159 = {
-                                    let __t158 = v_V3483.clone();
-                                    rt::apply_direct(interp, "hdstr", &[__t158])?
+                                let __t142 = {
+                                    let __t141 = v_V3483.clone();
+                                    rt::hdstr(&__t141)?
                                 };
-                                rt::apply_direct(interp, "string->n", &[__t159])?
+                                rt::string_to_n(&__t142)?
                             };
                             {
-                                let __t164 = {
-                                    let __t162 = {
-                                        let __t160 = v_W3484.clone();
-                                        rt::apply_direct(interp, "shen.alpha?", &[__t160])?
+                                let __t147 = {
+                                    let __t145 = {
+                                        let __t143 = v_W3484.clone();
+                                        rt::apply_direct(interp, "shen.alpha?", &[__t143])?
                                     };
-                                    if rt::is_truthy(interp, &__t162)? {
+                                    if rt::is_truthy(interp, &__t145)? {
                                         Value::bool(true)
                                     } else {
-                                        let __t163 = {
-                                            let __t161 = v_W3484.clone();
-                                            rt::apply_direct(interp, "shen.digit?", &[__t161])?
+                                        let __t146 = {
+                                            let __t144 = v_W3484.clone();
+                                            rt::apply_direct(interp, "shen.digit?", &[__t144])?
                                         };
-                                        Value::bool(rt::is_truthy(interp, &__t163)?)
+                                        Value::bool(rt::is_truthy(interp, &__t146)?)
                                     }
                                 };
-                                if !match rt::is_truthy(interp, &__t164) {
+                                if !match rt::is_truthy(interp, &__t147) {
                                     Ok(b) => b,
                                     Err(e) => break Err(e),
                                 } {
                                     break Ok(Value::bool(false));
                                 } else {
                                     {
-                                        let __t166 = {
-                                            let __t165 = v_V3483.clone();
-                                            rt::apply_direct(interp, "tlstr", &[__t165])?
+                                        let __t149 = {
+                                            let __t148 = v_V3483.clone();
+                                            rt::tlstr(&__t148)?
                                         };
-                                        v_V3483 = __t166;
+                                        v_V3483 = __t149;
                                         continue;
                                     }
                                 }
@@ -1230,15 +1177,15 @@ pub fn aot_shen_x2e_alphanums_x3f_(interp: &mut Interp, args: &[Value]) -> ShenR
                         }
                     } else {
                         {
-                            let __t156 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t156) {
+                            let __t139 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t139) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t155 =
+                                    let __t138 =
                                         Value::str("implementation error in shen.alphanums?");
-                                    rt::apply_direct(interp, "simple-error", &[__t155])?
+                                    rt::apply_direct(interp, "simple-error", &[__t138])?
                                 });
                             } else {
                                 break Err(ShenError::new("cond: no clause matched"));
@@ -1269,41 +1216,41 @@ pub fn aot_variable_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t181 = {
-                let __t179 = {
-                    let __t174 = v_V3485.clone();
-                    rt::apply_direct(interp, "boolean?", &[__t174])?
+            let __t162 = {
+                let __t160 = {
+                    let __t155 = v_V3485.clone();
+                    rt::is_boolean(interp, &__t155)
                 };
-                if rt::is_truthy(interp, &__t179)? {
+                if rt::is_truthy(interp, &__t160)? {
                     Value::bool(true)
                 } else {
-                    let __t180 = {
-                        let __t177 = {
-                            let __t175 = v_V3485.clone();
-                            rt::is_number(&__t175)
+                    let __t161 = {
+                        let __t158 = {
+                            let __t156 = v_V3485.clone();
+                            rt::is_number(&__t156)
                         };
-                        if rt::is_truthy(interp, &__t177)? {
+                        if rt::is_truthy(interp, &__t158)? {
                             Value::bool(true)
                         } else {
-                            let __t178 = {
-                                let __t176 = v_V3485.clone();
-                                rt::is_string(&__t176)
+                            let __t159 = {
+                                let __t157 = v_V3485.clone();
+                                rt::is_string(&__t157)
                             };
-                            Value::bool(rt::is_truthy(interp, &__t178)?)
+                            Value::bool(rt::is_truthy(interp, &__t159)?)
                         }
                     };
-                    Value::bool(rt::is_truthy(interp, &__t180)?)
+                    Value::bool(rt::is_truthy(interp, &__t161)?)
                 }
             };
-            if match rt::is_truthy(interp, &__t181) {
+            if match rt::is_truthy(interp, &__t162) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::bool(false));
             } else {
                 {
-                    let __t173 = Value::bool(true);
-                    if match rt::is_truthy(interp, &__t173) {
+                    let __t154 = Value::bool(true);
+                    if match rt::is_truthy(interp, &__t154) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
@@ -1311,16 +1258,12 @@ pub fn aot_variable_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
                             match (|| -> ShenResult<Value> {
                                 Ok({
                                     let v_W3486 = {
-                                        let __t171 = v_V3485.clone();
-                                        rt::apply_direct(interp, "str", &[__t171])?
+                                        let __t152 = v_V3485.clone();
+                                        rt::apply_direct(interp, "str", &[__t152])?
                                     };
                                     {
-                                        let __t172 = v_W3486.clone();
-                                        rt::apply_direct(
-                                            interp,
-                                            "shen.analyse-variable?",
-                                            &[__t172],
-                                        )?
+                                        let __t153 = v_W3486.clone();
+                                        aot_shen_x2e_analyse_x2d_variable_x3f_(interp, &[__t153])?
                                     }
                                 })
                             })() {
@@ -1373,51 +1316,51 @@ pub fn aot_shen_x2e_analyse_x2d_variable_x3f_(
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t191 = {
-                let __t184 = v_V3490.clone();
-                rt::apply_direct(interp, "shen.+string?", &[__t184])?
+            let __t172 = {
+                let __t165 = v_V3490.clone();
+                rt::apply_direct(interp, "shen.+string?", &[__t165])?
             };
-            if match rt::is_truthy(interp, &__t191) {
+            if match rt::is_truthy(interp, &__t172) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 {
-                    let __t188 = {
-                        let __t187 = {
-                            let __t186 = {
-                                let __t185 = v_V3490.clone();
-                                rt::apply_direct(interp, "hdstr", &[__t185])?
+                    let __t169 = {
+                        let __t168 = {
+                            let __t167 = {
+                                let __t166 = v_V3490.clone();
+                                rt::hdstr(&__t166)?
                             };
-                            rt::apply_direct(interp, "string->n", &[__t186])?
+                            rt::string_to_n(&__t167)?
                         };
-                        rt::apply_direct(interp, "shen.uppercase?", &[__t187])?
+                        rt::apply_direct(interp, "shen.uppercase?", &[__t168])?
                     };
-                    if !match rt::is_truthy(interp, &__t188) {
+                    if !match rt::is_truthy(interp, &__t169) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok(Value::bool(false));
                     } else {
                         break Ok({
-                            let __t190 = {
-                                let __t189 = v_V3490.clone();
-                                rt::apply_direct(interp, "tlstr", &[__t189])?
+                            let __t171 = {
+                                let __t170 = v_V3490.clone();
+                                rt::tlstr(&__t170)?
                             };
-                            rt::apply_direct(interp, "shen.alphanums?", &[__t190])?
+                            aot_shen_x2e_alphanums_x3f_(interp, &[__t171])?
                         });
                     }
                 }
             } else {
                 {
-                    let __t183 = Value::bool(true);
-                    if match rt::is_truthy(interp, &__t183) {
+                    let __t164 = Value::bool(true);
+                    if match rt::is_truthy(interp, &__t164) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t182 =
+                            let __t163 =
                                 Value::str("implementation error in shen.analyse-variable?");
-                            rt::apply_direct(interp, "simple-error", &[__t182])?
+                            rt::apply_direct(interp, "simple-error", &[__t163])?
                         });
                     } else {
                         break Err(ShenError::new("cond: no clause matched"));
@@ -1453,20 +1396,16 @@ pub fn aot_gensym(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t192 = v_V3491.clone();
-            let __t198 = {
-                let __t193 = Value::sym(interp.intern("shen.*gensym*"));
-                let __t197 = {
-                    let __t194 = Value::int(1i64);
-                    let __t196 = {
-                        let __t195 = Value::sym(interp.intern("shen.*gensym*"));
-                        rt::apply_direct(interp, "value", &[__t195])?
-                    };
-                    rt::add(&__t194, &__t196)?
+            let __t173 = v_V3491.clone();
+            let __t176 = {
+                let __v = {
+                    let __t174 = Value::int(1i64);
+                    let __t175 = rt::global_value(interp, "shen.*gensym*")?;
+                    rt::add(&__t174, &__t175)?
                 };
-                rt::apply_direct(interp, "set", &[__t193, __t197])?
+                rt::set_global(interp, "shen.*gensym*", __v)
             };
-            rt::apply_direct(interp, "concat", &[__t192, __t198])?
+            aot_concat(interp, &[__t173, __t176])?
         });
     }
 }
@@ -1491,18 +1430,18 @@ pub fn aot_concat(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t203 = {
-                let __t200 = {
-                    let __t199 = v_V3492.clone();
-                    rt::apply_direct(interp, "str", &[__t199])?
+            let __t181 = {
+                let __t178 = {
+                    let __t177 = v_V3492.clone();
+                    rt::apply_direct(interp, "str", &[__t177])?
                 };
-                let __t202 = {
-                    let __t201 = v_V3493.clone();
-                    rt::apply_direct(interp, "str", &[__t201])?
+                let __t180 = {
+                    let __t179 = v_V3493.clone();
+                    rt::apply_direct(interp, "str", &[__t179])?
                 };
-                rt::apply_direct(interp, "cn", &[__t200, __t202])?
+                rt::cn(&__t178, &__t180)?
             };
-            rt::apply_direct(interp, "intern", &[__t203])?
+            rt::intern(interp, &__t181)?
         });
     }
 }
@@ -1528,29 +1467,29 @@ pub fn aot__x40_p(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     loop {
         {
             let v_W3496 = {
-                let __t204 = Value::int(3i64);
-                rt::apply_direct(interp, "absvector", &[__t204])?
+                let __t182 = Value::int(3i64);
+                rt::apply_direct(interp, "absvector", &[__t182])?
             };
             {
                 let v_W3497 = {
-                    let __t205 = v_W3496.clone();
-                    let __t206 = Value::int(0i64);
-                    let __t207 = Value::sym(interp.intern("shen.tuple"));
-                    rt::apply_direct(interp, "address->", &[__t205, __t206, __t207])?
+                    let __t183 = v_W3496.clone();
+                    let __t184 = Value::int(0i64);
+                    let __t185 = Value::sym(interp.intern_static("shen.tuple"));
+                    rt::address_set(&__t183, &__t184, &__t185)?
                 };
                 {
                     let v_W3498 = {
-                        let __t208 = v_W3496.clone();
-                        let __t209 = Value::int(1i64);
-                        let __t210 = v_V3494.clone();
-                        rt::apply_direct(interp, "address->", &[__t208, __t209, __t210])?
+                        let __t186 = v_W3496.clone();
+                        let __t187 = Value::int(1i64);
+                        let __t188 = v_V3494.clone();
+                        rt::address_set(&__t186, &__t187, &__t188)?
                     };
                     {
                         let v_W3499 = {
-                            let __t211 = v_W3496.clone();
-                            let __t212 = Value::int(2i64);
-                            let __t213 = v_V3495.clone();
-                            rt::apply_direct(interp, "address->", &[__t211, __t212, __t213])?
+                            let __t189 = v_W3496.clone();
+                            let __t190 = Value::int(2i64);
+                            let __t191 = v_V3495.clone();
+                            rt::address_set(&__t189, &__t190, &__t191)?
                         };
                         break Ok(v_W3496.clone());
                     }
@@ -1578,9 +1517,9 @@ pub fn aot_fst(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t214 = v_V3500.clone();
-            let __t215 = Value::int(1i64);
-            rt::apply_direct(interp, "<-address", &[__t214, __t215])?
+            let __t192 = v_V3500.clone();
+            let __t193 = Value::int(1i64);
+            rt::address_ref(&__t192, &__t193)?
         });
     }
 }
@@ -1603,9 +1542,9 @@ pub fn aot_snd(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t216 = v_V3501.clone();
-            let __t217 = Value::int(2i64);
-            rt::apply_direct(interp, "<-address", &[__t216, __t217])?
+            let __t194 = v_V3501.clone();
+            let __t195 = Value::int(2i64);
+            rt::address_ref(&__t194, &__t195)?
         });
     }
 }
@@ -1630,23 +1569,23 @@ pub fn aot_tuple_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> 
         break Ok(
             match (|| -> ShenResult<Value> {
                 Ok({
-                    let __t223 = {
-                        let __t218 = v_V3502.clone();
-                        rt::is_absvector(&__t218)
+                    let __t199 = {
+                        let __t196 = v_V3502.clone();
+                        rt::is_absvector(&__t196)
                     };
-                    if !rt::is_truthy(interp, &__t223)? {
+                    if !rt::is_truthy(interp, &__t199)? {
                         Value::bool(false)
                     } else {
-                        let __t224 = {
-                            let __t219 = Value::sym(interp.intern("shen.tuple"));
-                            let __t222 = {
-                                let __t220 = v_V3502.clone();
-                                let __t221 = Value::int(0i64);
-                                rt::apply_direct(interp, "<-address", &[__t220, __t221])?
-                            };
-                            rt::eq(&__t219, &__t222)
-                        };
-                        Value::bool(rt::is_truthy(interp, &__t224)?)
+                        let __t200 = Value::bool(
+                            ({
+                                let __t197 = v_V3502.clone();
+                                let __t198 = Value::int(0i64);
+                                rt::address_ref(&__t197, &__t198)?
+                            })
+                            .as_sym()
+                                == Some(interp.intern_static("shen.tuple")),
+                        );
+                        Value::bool(rt::is_truthy(interp, &__t200)?)
                     }
                 })
             })() {
@@ -1692,51 +1631,47 @@ pub fn aot_append(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t237 = {
-                let __t235 = Value::nil();
-                let __t236 = v_V3508.clone();
-                rt::eq(&__t235, &__t236)
-            };
-            if match rt::is_truthy(interp, &__t237) {
+            let __t211 = Value::bool((v_V3508.clone()).is_nil());
+            if match rt::is_truthy(interp, &__t211) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(v_V3509.clone());
             } else {
                 {
-                    let __t234 = {
-                        let __t227 = v_V3508.clone();
-                        rt::is_cons(&__t227)
+                    let __t210 = {
+                        let __t203 = v_V3508.clone();
+                        rt::is_cons(&__t203)
                     };
-                    if match rt::is_truthy(interp, &__t234) {
+                    if match rt::is_truthy(interp, &__t210) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t229 = {
-                                let __t228 = v_V3508.clone();
-                                rt::hd(&__t228)?
+                            let __t205 = {
+                                let __t204 = v_V3508.clone();
+                                rt::hd(&__t204)?
                             };
-                            let __t233 = {
-                                let __t231 = {
-                                    let __t230 = v_V3508.clone();
-                                    rt::tl(&__t230)?
+                            let __t209 = {
+                                let __t207 = {
+                                    let __t206 = v_V3508.clone();
+                                    rt::tl(&__t206)?
                                 };
-                                let __t232 = v_V3509.clone();
-                                rt::apply_direct(interp, "append", &[__t231, __t232])?
+                                let __t208 = v_V3509.clone();
+                                aot_append(interp, &[__t207, __t208])?
                             };
-                            rt::cons(&__t229, &__t233)
+                            rt::cons(&__t205, &__t209)
                         });
                     } else {
                         {
-                            let __t226 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t226) {
+                            let __t202 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t202) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t225 = Value::str("attempt to append a non-list");
-                                    rt::apply_direct(interp, "simple-error", &[__t225])?
+                                    let __t201 = Value::str("attempt to append a non-list");
+                                    rt::apply_direct(interp, "simple-error", &[__t201])?
                                 });
                             } else {
                                 break Err(ShenError::new("cond: no clause matched"));
@@ -1770,46 +1705,45 @@ pub fn aot__x40_v(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     loop {
         {
             let v_W3512 = {
-                let __t238 = v_V3511.clone();
-                rt::apply_direct(interp, "limit", &[__t238])?
+                let __t212 = v_V3511.clone();
+                rt::apply_direct(interp, "limit", &[__t212])?
             };
             {
                 let v_W3513 = {
-                    let __t241 = {
-                        let __t239 = v_W3512.clone();
-                        let __t240 = Value::int(1i64);
-                        rt::add(&__t239, &__t240)?
+                    let __t215 = {
+                        let __t213 = v_W3512.clone();
+                        let __t214 = Value::int(1i64);
+                        rt::add(&__t213, &__t214)?
                     };
-                    rt::apply_direct(interp, "vector", &[__t241])?
+                    rt::apply_direct(interp, "vector", &[__t215])?
                 };
                 {
                     let v_W3514 = {
-                        let __t242 = v_W3513.clone();
-                        let __t243 = Value::int(1i64);
-                        let __t244 = v_V3510.clone();
-                        rt::apply_direct(interp, "vector->", &[__t242, __t243, __t244])?
+                        let __t216 = v_W3513.clone();
+                        let __t217 = Value::int(1i64);
+                        let __t218 = v_V3510.clone();
+                        rt::apply_direct(interp, "vector->", &[__t216, __t217, __t218])?
                     };
                     {
-                        let __t247 = {
-                            let __t245 = v_W3512.clone();
-                            let __t246 = Value::int(0i64);
-                            rt::eq(&__t245, &__t246)
+                        let __t221 = {
+                            let __t219 = v_W3512.clone();
+                            let __t220 = Value::int(0i64);
+                            rt::eq(&__t219, &__t220)
                         };
-                        if match rt::is_truthy(interp, &__t247) {
+                        if match rt::is_truthy(interp, &__t221) {
                             Ok(b) => b,
                             Err(e) => break Err(e),
                         } {
                             break Ok(v_W3514.clone());
                         } else {
                             break Ok({
-                                let __t248 = v_V3511.clone();
-                                let __t249 = Value::int(1i64);
-                                let __t250 = v_W3512.clone();
-                                let __t251 = v_W3514.clone();
-                                rt::apply_direct(
+                                let __t222 = v_V3511.clone();
+                                let __t223 = Value::int(1i64);
+                                let __t224 = v_W3512.clone();
+                                let __t225 = v_W3514.clone();
+                                aot_shen_x2e__x40_v_x2d_help(
                                     interp,
-                                    "shen.@v-help",
-                                    &[__t248, __t249, __t250, __t251],
+                                    &[__t222, __t223, __t224, __t225],
                                 )?
                             });
                         }
@@ -1844,64 +1778,59 @@ pub fn aot_shen_x2e__x40_v_x2d_help(interp: &mut Interp, args: &[Value]) -> Shen
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t273 = {
-                let __t265 = v_V3517.clone();
-                let __t266 = v_V3518.clone();
-                rt::eq(&__t265, &__t266)
+            let __t247 = {
+                let __t239 = v_V3517.clone();
+                let __t240 = v_V3518.clone();
+                rt::eq(&__t239, &__t240)
             };
-            if match rt::is_truthy(interp, &__t273) {
+            if match rt::is_truthy(interp, &__t247) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t267 = v_V3516.clone();
-                    let __t268 = v_V3519.clone();
-                    let __t269 = v_V3518.clone();
-                    let __t272 = {
-                        let __t270 = v_V3518.clone();
-                        let __t271 = Value::int(1i64);
-                        rt::add(&__t270, &__t271)?
+                    let __t241 = v_V3516.clone();
+                    let __t242 = v_V3519.clone();
+                    let __t243 = v_V3518.clone();
+                    let __t246 = {
+                        let __t244 = v_V3518.clone();
+                        let __t245 = Value::int(1i64);
+                        rt::add(&__t244, &__t245)?
                     };
-                    rt::apply_direct(
-                        interp,
-                        "shen.copyfromvector",
-                        &[__t267, __t268, __t269, __t272],
-                    )?
+                    aot_shen_x2e_copyfromvector(interp, &[__t241, __t242, __t243, __t246])?
                 });
             } else {
                 {
-                    let __t264 = Value::bool(true);
-                    if match rt::is_truthy(interp, &__t264) {
+                    let __t238 = Value::bool(true);
+                    if match rt::is_truthy(interp, &__t238) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         {
-                            let __t252 = v_V3516.clone();
-                            let __t255 = {
-                                let __t253 = v_V3517.clone();
-                                let __t254 = Value::int(1i64);
-                                rt::add(&__t253, &__t254)?
+                            let __t226 = v_V3516.clone();
+                            let __t229 = {
+                                let __t227 = v_V3517.clone();
+                                let __t228 = Value::int(1i64);
+                                rt::add(&__t227, &__t228)?
                             };
-                            let __t256 = v_V3518.clone();
-                            let __t263 = {
-                                let __t257 = v_V3516.clone();
-                                let __t258 = v_V3519.clone();
-                                let __t259 = v_V3517.clone();
-                                let __t262 = {
-                                    let __t260 = v_V3517.clone();
-                                    let __t261 = Value::int(1i64);
-                                    rt::add(&__t260, &__t261)?
+                            let __t230 = v_V3518.clone();
+                            let __t237 = {
+                                let __t231 = v_V3516.clone();
+                                let __t232 = v_V3519.clone();
+                                let __t233 = v_V3517.clone();
+                                let __t236 = {
+                                    let __t234 = v_V3517.clone();
+                                    let __t235 = Value::int(1i64);
+                                    rt::add(&__t234, &__t235)?
                                 };
-                                rt::apply_direct(
+                                aot_shen_x2e_copyfromvector(
                                     interp,
-                                    "shen.copyfromvector",
-                                    &[__t257, __t258, __t259, __t262],
+                                    &[__t231, __t232, __t233, __t236],
                                 )?
                             };
-                            v_V3516 = __t252;
-                            v_V3517 = __t255;
-                            v_V3518 = __t256;
-                            v_V3519 = __t263;
+                            v_V3516 = __t226;
+                            v_V3517 = __t229;
+                            v_V3518 = __t230;
+                            v_V3519 = __t237;
                             continue;
                         }
                     } else {
@@ -1939,14 +1868,14 @@ pub fn aot_shen_x2e_copyfromvector(interp: &mut Interp, args: &[Value]) -> ShenR
         break Ok(
             match (|| -> ShenResult<Value> {
                 Ok({
-                    let __t274 = v_V3521.clone();
-                    let __t275 = v_V3523.clone();
-                    let __t278 = {
-                        let __t276 = v_V3520.clone();
-                        let __t277 = v_V3522.clone();
-                        rt::apply_direct(interp, "<-vector", &[__t276, __t277])?
+                    let __t248 = v_V3521.clone();
+                    let __t249 = v_V3523.clone();
+                    let __t252 = {
+                        let __t250 = v_V3520.clone();
+                        let __t251 = v_V3522.clone();
+                        rt::apply_direct(interp, "<-vector", &[__t250, __t251])?
                     };
-                    rt::apply_direct(interp, "vector->", &[__t274, __t275, __t278])?
+                    rt::apply_direct(interp, "vector->", &[__t248, __t249, __t252])?
                 })
             })() {
                 Ok(v) => v,
@@ -1989,37 +1918,26 @@ pub fn aot_hdv(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     let mut v_V3525 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
-        break Ok(
-            match (|| -> ShenResult<Value> {
-                Ok({
-                    let __t279 = v_V3525.clone();
-                    let __t280 = Value::int(1i64);
-                    rt::apply_direct(interp, "<-vector", &[__t279, __t280])?
-                })
-            })() {
-                Ok(v) => v,
-                Err(e) => {
-                    let __h = {
-                        rt::make_aot_closure(
-                            "<lambda>",
-                            1,
-                            move |interp, args| {
-                                let v_Z3526 = args[0].clone();
-                                Ok({
-                                    let __t281 =
-                                        Value::str("hdv needs a non-empty vector as an argument\n");
-                                    rt::apply_direct(interp, "simple-error", &[__t281])?
-                                })
-                            },
-                            Vec::new(),
-                            interp,
-                        )
-                    };
-                    let __err = Value::err(e.message.clone());
-                    rt::apply_value(interp, __h, &[__err])?
-                }
-            },
-        );
+        break Ok({
+            let __x = v_V3525.clone();
+            let __n = Value::int(1i64);
+            let __h = {
+                rt::make_aot_closure(
+                    "<freeze>",
+                    0,
+                    move |interp, _args| {
+                        Ok({
+                            let __t253 =
+                                Value::str("hdv needs a non-empty vector as an argument\n");
+                            rt::apply_direct(interp, "simple-error", &[__t253])?
+                        })
+                    },
+                    Vec::new(),
+                    interp,
+                )
+            };
+            rt::apply_direct(interp, "<-vector/or", &[__x, __n, __h])?
+        });
     }
 }
 
@@ -2042,64 +1960,63 @@ pub fn aot_tlv(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     loop {
         {
             let v_W3528 = {
-                let __t282 = v_V3527.clone();
-                rt::apply_direct(interp, "limit", &[__t282])?
+                let __t254 = v_V3527.clone();
+                rt::apply_direct(interp, "limit", &[__t254])?
             };
             {
-                let __t285 = {
-                    let __t283 = v_W3528.clone();
-                    let __t284 = Value::int(0i64);
-                    rt::eq(&__t283, &__t284)
+                let __t257 = {
+                    let __t255 = v_W3528.clone();
+                    let __t256 = Value::int(0i64);
+                    rt::eq(&__t255, &__t256)
                 };
-                if match rt::is_truthy(interp, &__t285) {
+                if match rt::is_truthy(interp, &__t257) {
                     Ok(b) => b,
                     Err(e) => break Err(e),
                 } {
                     break Ok({
-                        let __t286 = Value::str("cannot take the tail of the empty vector\n");
-                        rt::apply_direct(interp, "simple-error", &[__t286])?
+                        let __t258 = Value::str("cannot take the tail of the empty vector\n");
+                        rt::apply_direct(interp, "simple-error", &[__t258])?
                     });
                 } else {
                     {
-                        let __t289 = {
-                            let __t287 = v_W3528.clone();
-                            let __t288 = Value::int(1i64);
-                            rt::eq(&__t287, &__t288)
+                        let __t261 = {
+                            let __t259 = v_W3528.clone();
+                            let __t260 = Value::int(1i64);
+                            rt::eq(&__t259, &__t260)
                         };
-                        if match rt::is_truthy(interp, &__t289) {
+                        if match rt::is_truthy(interp, &__t261) {
                             Ok(b) => b,
                             Err(e) => break Err(e),
                         } {
                             break Ok({
-                                let __t290 = Value::int(0i64);
-                                rt::apply_direct(interp, "vector", &[__t290])?
+                                let __t262 = Value::int(0i64);
+                                rt::apply_direct(interp, "vector", &[__t262])?
                             });
                         } else {
                             {
                                 let v_W3529 = {
-                                    let __t293 = {
-                                        let __t291 = v_W3528.clone();
-                                        let __t292 = Value::int(1i64);
-                                        rt::sub(&__t291, &__t292)?
+                                    let __t265 = {
+                                        let __t263 = v_W3528.clone();
+                                        let __t264 = Value::int(1i64);
+                                        rt::sub(&__t263, &__t264)?
                                     };
-                                    rt::apply_direct(interp, "vector", &[__t293])?
+                                    rt::apply_direct(interp, "vector", &[__t265])?
                                 };
                                 break Ok({
-                                    let __t294 = v_V3527.clone();
-                                    let __t295 = Value::int(2i64);
-                                    let __t296 = v_W3528.clone();
-                                    let __t300 = {
-                                        let __t299 = {
-                                            let __t297 = v_W3528.clone();
-                                            let __t298 = Value::int(1i64);
-                                            rt::sub(&__t297, &__t298)?
+                                    let __t266 = v_V3527.clone();
+                                    let __t267 = Value::int(2i64);
+                                    let __t268 = v_W3528.clone();
+                                    let __t272 = {
+                                        let __t271 = {
+                                            let __t269 = v_W3528.clone();
+                                            let __t270 = Value::int(1i64);
+                                            rt::sub(&__t269, &__t270)?
                                         };
-                                        rt::apply_direct(interp, "vector", &[__t299])?
+                                        rt::apply_direct(interp, "vector", &[__t271])?
                                     };
-                                    rt::apply_direct(
+                                    aot_shen_x2e_tlv_x2d_help(
                                         interp,
-                                        "shen.tlv-help",
-                                        &[__t294, __t295, __t296, __t300],
+                                        &[__t266, __t267, __t268, __t272],
                                     )?
                                 });
                             }
@@ -2135,64 +2052,59 @@ pub fn aot_shen_x2e_tlv_x2d_help(interp: &mut Interp, args: &[Value]) -> ShenRes
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t322 = {
-                let __t314 = v_V3532.clone();
-                let __t315 = v_V3533.clone();
-                rt::eq(&__t314, &__t315)
+            let __t294 = {
+                let __t286 = v_V3532.clone();
+                let __t287 = v_V3533.clone();
+                rt::eq(&__t286, &__t287)
             };
-            if match rt::is_truthy(interp, &__t322) {
+            if match rt::is_truthy(interp, &__t294) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t316 = v_V3531.clone();
-                    let __t317 = v_V3534.clone();
-                    let __t318 = v_V3533.clone();
-                    let __t321 = {
-                        let __t319 = v_V3533.clone();
-                        let __t320 = Value::int(1i64);
-                        rt::sub(&__t319, &__t320)?
+                    let __t288 = v_V3531.clone();
+                    let __t289 = v_V3534.clone();
+                    let __t290 = v_V3533.clone();
+                    let __t293 = {
+                        let __t291 = v_V3533.clone();
+                        let __t292 = Value::int(1i64);
+                        rt::sub(&__t291, &__t292)?
                     };
-                    rt::apply_direct(
-                        interp,
-                        "shen.copyfromvector",
-                        &[__t316, __t317, __t318, __t321],
-                    )?
+                    aot_shen_x2e_copyfromvector(interp, &[__t288, __t289, __t290, __t293])?
                 });
             } else {
                 {
-                    let __t313 = Value::bool(true);
-                    if match rt::is_truthy(interp, &__t313) {
+                    let __t285 = Value::bool(true);
+                    if match rt::is_truthy(interp, &__t285) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         {
-                            let __t301 = v_V3531.clone();
-                            let __t304 = {
-                                let __t302 = v_V3532.clone();
-                                let __t303 = Value::int(1i64);
-                                rt::add(&__t302, &__t303)?
+                            let __t273 = v_V3531.clone();
+                            let __t276 = {
+                                let __t274 = v_V3532.clone();
+                                let __t275 = Value::int(1i64);
+                                rt::add(&__t274, &__t275)?
                             };
-                            let __t305 = v_V3533.clone();
-                            let __t312 = {
-                                let __t306 = v_V3531.clone();
-                                let __t307 = v_V3534.clone();
-                                let __t308 = v_V3532.clone();
-                                let __t311 = {
-                                    let __t309 = v_V3532.clone();
-                                    let __t310 = Value::int(1i64);
-                                    rt::sub(&__t309, &__t310)?
+                            let __t277 = v_V3533.clone();
+                            let __t284 = {
+                                let __t278 = v_V3531.clone();
+                                let __t279 = v_V3534.clone();
+                                let __t280 = v_V3532.clone();
+                                let __t283 = {
+                                    let __t281 = v_V3532.clone();
+                                    let __t282 = Value::int(1i64);
+                                    rt::sub(&__t281, &__t282)?
                                 };
-                                rt::apply_direct(
+                                aot_shen_x2e_copyfromvector(
                                     interp,
-                                    "shen.copyfromvector",
-                                    &[__t306, __t307, __t308, __t311],
+                                    &[__t278, __t279, __t280, __t283],
                                 )?
                             };
-                            v_V3531 = __t301;
-                            v_V3532 = __t304;
-                            v_V3533 = __t305;
-                            v_V3534 = __t312;
+                            v_V3531 = __t273;
+                            v_V3532 = __t276;
+                            v_V3533 = __t277;
+                            v_V3534 = __t284;
                             continue;
                         }
                     } else {
@@ -2224,94 +2136,90 @@ pub fn aot_assoc(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t345 = {
-                let __t343 = Value::nil();
-                let __t344 = v_V3547.clone();
-                rt::eq(&__t343, &__t344)
-            };
-            if match rt::is_truthy(interp, &__t345) {
+            let __t315 = Value::bool((v_V3547.clone()).is_nil());
+            if match rt::is_truthy(interp, &__t315) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::nil());
             } else {
                 {
-                    let __t342 = {
-                        let __t339 = {
-                            let __t330 = v_V3547.clone();
-                            rt::is_cons(&__t330)
+                    let __t314 = {
+                        let __t311 = {
+                            let __t302 = v_V3547.clone();
+                            rt::is_cons(&__t302)
                         };
-                        if !rt::is_truthy(interp, &__t339)? {
+                        if !rt::is_truthy(interp, &__t311)? {
                             Value::bool(false)
                         } else {
-                            let __t340 = {
-                                let __t337 = {
-                                    let __t332 = {
-                                        let __t331 = v_V3547.clone();
-                                        rt::hd(&__t331)?
+                            let __t312 = {
+                                let __t309 = {
+                                    let __t304 = {
+                                        let __t303 = v_V3547.clone();
+                                        rt::hd(&__t303)?
                                     };
-                                    rt::is_cons(&__t332)
+                                    rt::is_cons(&__t304)
                                 };
-                                if !rt::is_truthy(interp, &__t337)? {
+                                if !rt::is_truthy(interp, &__t309)? {
                                     Value::bool(false)
                                 } else {
-                                    let __t338 = {
-                                        let __t333 = v_V3546.clone();
-                                        let __t336 = {
-                                            let __t335 = {
-                                                let __t334 = v_V3547.clone();
-                                                rt::hd(&__t334)?
+                                    let __t310 = {
+                                        let __t305 = v_V3546.clone();
+                                        let __t308 = {
+                                            let __t307 = {
+                                                let __t306 = v_V3547.clone();
+                                                rt::hd(&__t306)?
                                             };
-                                            rt::hd(&__t335)?
+                                            rt::hd(&__t307)?
                                         };
-                                        rt::eq(&__t333, &__t336)
+                                        rt::eq(&__t305, &__t308)
                                     };
-                                    Value::bool(rt::is_truthy(interp, &__t338)?)
+                                    Value::bool(rt::is_truthy(interp, &__t310)?)
                                 }
                             };
-                            Value::bool(rt::is_truthy(interp, &__t340)?)
+                            Value::bool(rt::is_truthy(interp, &__t312)?)
                         }
                     };
-                    if match rt::is_truthy(interp, &__t342) {
+                    if match rt::is_truthy(interp, &__t314) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t341 = v_V3547.clone();
-                            rt::hd(&__t341)?
+                            let __t313 = v_V3547.clone();
+                            rt::hd(&__t313)?
                         });
                     } else {
                         {
-                            let __t329 = {
-                                let __t325 = v_V3547.clone();
-                                rt::is_cons(&__t325)
+                            let __t301 = {
+                                let __t297 = v_V3547.clone();
+                                rt::is_cons(&__t297)
                             };
-                            if match rt::is_truthy(interp, &__t329) {
+                            if match rt::is_truthy(interp, &__t301) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 {
-                                    let __t326 = v_V3546.clone();
-                                    let __t328 = {
-                                        let __t327 = v_V3547.clone();
-                                        rt::tl(&__t327)?
+                                    let __t298 = v_V3546.clone();
+                                    let __t300 = {
+                                        let __t299 = v_V3547.clone();
+                                        rt::tl(&__t299)?
                                     };
-                                    v_V3546 = __t326;
-                                    v_V3547 = __t328;
+                                    v_V3546 = __t298;
+                                    v_V3547 = __t300;
                                     continue;
                                 }
                             } else {
                                 {
-                                    let __t324 = Value::bool(true);
-                                    if match rt::is_truthy(interp, &__t324) {
+                                    let __t296 = Value::bool(true);
+                                    if match rt::is_truthy(interp, &__t296) {
                                         Ok(b) => b,
                                         Err(e) => break Err(e),
                                     } {
                                         break Ok({
-                                            let __t323 = Value::str(
+                                            let __t295 = Value::str(
                                                 "attempt to search a non-list with assoc\n",
                                             );
-                                            rt::apply_direct(interp, "simple-error", &[__t323])?
+                                            rt::apply_direct(interp, "simple-error", &[__t295])?
                                         });
                                     } else {
                                         break Err(ShenError::new("cond: no clause matched"));
@@ -2344,32 +2252,32 @@ pub fn aot_boolean_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t352 = {
-                let __t350 = Value::bool(true);
-                let __t351 = v_V3550.clone();
-                rt::eq(&__t350, &__t351)
+            let __t322 = {
+                let __t320 = Value::bool(true);
+                let __t321 = v_V3550.clone();
+                rt::eq(&__t320, &__t321)
             };
-            if match rt::is_truthy(interp, &__t352) {
+            if match rt::is_truthy(interp, &__t322) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::bool(true));
             } else {
                 {
-                    let __t349 = {
-                        let __t347 = Value::bool(false);
-                        let __t348 = v_V3550.clone();
-                        rt::eq(&__t347, &__t348)
+                    let __t319 = {
+                        let __t317 = Value::bool(false);
+                        let __t318 = v_V3550.clone();
+                        rt::eq(&__t317, &__t318)
                     };
-                    if match rt::is_truthy(interp, &__t349) {
+                    if match rt::is_truthy(interp, &__t319) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok(Value::bool(true));
                     } else {
                         {
-                            let __t346 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t346) {
+                            let __t316 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t316) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
@@ -2403,36 +2311,36 @@ pub fn aot_nl(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t361 = {
-                let __t359 = Value::int(0i64);
-                let __t360 = v_V3551.clone();
-                rt::eq(&__t359, &__t360)
+            let __t331 = {
+                let __t329 = Value::int(0i64);
+                let __t330 = v_V3551.clone();
+                rt::eq(&__t329, &__t330)
             };
-            if match rt::is_truthy(interp, &__t361) {
+            if match rt::is_truthy(interp, &__t331) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::int(0i64));
             } else {
                 {
-                    let __t358 = Value::bool(true);
-                    if match rt::is_truthy(interp, &__t358) {
+                    let __t328 = Value::bool(true);
+                    if match rt::is_truthy(interp, &__t328) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         {
                             let _ = {
-                                let __t353 = Value::str("\n");
-                                let __t354 = { rt::apply_direct(interp, "stoutput", &[])? };
-                                rt::apply_direct(interp, "pr", &[__t353, __t354])?
+                                let __t323 = Value::str("\n");
+                                let __t324 = { aot_stoutput(interp, &[])? };
+                                rt::apply_direct(interp, "pr", &[__t323, __t324])?
                             };
                             {
-                                let __t357 = {
-                                    let __t355 = v_V3551.clone();
-                                    let __t356 = Value::int(1i64);
-                                    rt::sub(&__t355, &__t356)?
+                                let __t327 = {
+                                    let __t325 = v_V3551.clone();
+                                    let __t326 = Value::int(1i64);
+                                    rt::sub(&__t325, &__t326)?
                                 };
-                                v_V3551 = __t357;
+                                v_V3551 = __t327;
                                 continue;
                             }
                         }
@@ -2465,79 +2373,75 @@ pub fn aot_difference(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> 
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t381 = {
-                let __t379 = Value::nil();
-                let __t380 = v_V3558.clone();
-                rt::eq(&__t379, &__t380)
-            };
-            if match rt::is_truthy(interp, &__t381) {
+            let __t349 = Value::bool((v_V3558.clone()).is_nil());
+            if match rt::is_truthy(interp, &__t349) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::nil());
             } else {
                 {
-                    let __t378 = {
-                        let __t364 = v_V3558.clone();
-                        rt::is_cons(&__t364)
+                    let __t348 = {
+                        let __t334 = v_V3558.clone();
+                        rt::is_cons(&__t334)
                     };
-                    if match rt::is_truthy(interp, &__t378) {
+                    if match rt::is_truthy(interp, &__t348) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         {
-                            let __t368 = {
-                                let __t366 = {
-                                    let __t365 = v_V3558.clone();
-                                    rt::hd(&__t365)?
+                            let __t338 = {
+                                let __t336 = {
+                                    let __t335 = v_V3558.clone();
+                                    rt::hd(&__t335)?
                                 };
-                                let __t367 = v_V3559.clone();
-                                rt::apply_direct(interp, "element?", &[__t366, __t367])?
+                                let __t337 = v_V3559.clone();
+                                rt::apply_direct(interp, "element?", &[__t336, __t337])?
                             };
-                            if match rt::is_truthy(interp, &__t368) {
+                            if match rt::is_truthy(interp, &__t338) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 {
-                                    let __t370 = {
-                                        let __t369 = v_V3558.clone();
-                                        rt::tl(&__t369)?
+                                    let __t340 = {
+                                        let __t339 = v_V3558.clone();
+                                        rt::tl(&__t339)?
                                     };
-                                    let __t371 = v_V3559.clone();
-                                    v_V3558 = __t370;
-                                    v_V3559 = __t371;
+                                    let __t341 = v_V3559.clone();
+                                    v_V3558 = __t340;
+                                    v_V3559 = __t341;
                                     continue;
                                 }
                             } else {
                                 break Ok({
-                                    let __t373 = {
-                                        let __t372 = v_V3558.clone();
-                                        rt::hd(&__t372)?
+                                    let __t343 = {
+                                        let __t342 = v_V3558.clone();
+                                        rt::hd(&__t342)?
                                     };
-                                    let __t377 = {
-                                        let __t375 = {
-                                            let __t374 = v_V3558.clone();
-                                            rt::tl(&__t374)?
+                                    let __t347 = {
+                                        let __t345 = {
+                                            let __t344 = v_V3558.clone();
+                                            rt::tl(&__t344)?
                                         };
-                                        let __t376 = v_V3559.clone();
-                                        rt::apply_direct(interp, "difference", &[__t375, __t376])?
+                                        let __t346 = v_V3559.clone();
+                                        aot_difference(interp, &[__t345, __t346])?
                                     };
-                                    rt::cons(&__t373, &__t377)
+                                    rt::cons(&__t343, &__t347)
                                 });
                             }
                         }
                     } else {
                         {
-                            let __t363 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t363) {
+                            let __t333 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t333) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t362 = Value::str(
+                                    let __t332 = Value::str(
                                         "attempt to find the difference with a non-list\n",
                                     );
-                                    rt::apply_direct(interp, "simple-error", &[__t362])?
+                                    rt::apply_direct(interp, "simple-error", &[__t332])?
                                 });
                             } else {
                                 break Err(ShenError::new("cond: no clause matched"));
@@ -2593,74 +2497,70 @@ pub fn aot_element_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t398 = {
-                let __t396 = Value::nil();
-                let __t397 = v_V3574.clone();
-                rt::eq(&__t396, &__t397)
-            };
-            if match rt::is_truthy(interp, &__t398) {
+            let __t364 = Value::bool((v_V3574.clone()).is_nil());
+            if match rt::is_truthy(interp, &__t364) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::bool(false));
             } else {
                 {
-                    let __t395 = {
-                        let __t393 = {
-                            let __t389 = v_V3574.clone();
-                            rt::is_cons(&__t389)
+                    let __t363 = {
+                        let __t361 = {
+                            let __t357 = v_V3574.clone();
+                            rt::is_cons(&__t357)
                         };
-                        if !rt::is_truthy(interp, &__t393)? {
+                        if !rt::is_truthy(interp, &__t361)? {
                             Value::bool(false)
                         } else {
-                            let __t394 = {
-                                let __t390 = v_V3573.clone();
-                                let __t392 = {
-                                    let __t391 = v_V3574.clone();
-                                    rt::hd(&__t391)?
+                            let __t362 = {
+                                let __t358 = v_V3573.clone();
+                                let __t360 = {
+                                    let __t359 = v_V3574.clone();
+                                    rt::hd(&__t359)?
                                 };
-                                rt::eq(&__t390, &__t392)
+                                rt::eq(&__t358, &__t360)
                             };
-                            Value::bool(rt::is_truthy(interp, &__t394)?)
+                            Value::bool(rt::is_truthy(interp, &__t362)?)
                         }
                     };
-                    if match rt::is_truthy(interp, &__t395) {
+                    if match rt::is_truthy(interp, &__t363) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok(Value::bool(true));
                     } else {
                         {
-                            let __t388 = {
-                                let __t384 = v_V3574.clone();
-                                rt::is_cons(&__t384)
+                            let __t356 = {
+                                let __t352 = v_V3574.clone();
+                                rt::is_cons(&__t352)
                             };
-                            if match rt::is_truthy(interp, &__t388) {
+                            if match rt::is_truthy(interp, &__t356) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 {
-                                    let __t385 = v_V3573.clone();
-                                    let __t387 = {
-                                        let __t386 = v_V3574.clone();
-                                        rt::tl(&__t386)?
+                                    let __t353 = v_V3573.clone();
+                                    let __t355 = {
+                                        let __t354 = v_V3574.clone();
+                                        rt::tl(&__t354)?
                                     };
-                                    v_V3573 = __t385;
-                                    v_V3574 = __t387;
+                                    v_V3573 = __t353;
+                                    v_V3574 = __t355;
                                     continue;
                                 }
                             } else {
                                 {
-                                    let __t383 = Value::bool(true);
-                                    if match rt::is_truthy(interp, &__t383) {
+                                    let __t351 = Value::bool(true);
+                                    if match rt::is_truthy(interp, &__t351) {
                                         Ok(b) => b,
                                         Err(e) => break Err(e),
                                     } {
                                         break Ok({
-                                            let __t382 = Value::str(
+                                            let __t350 = Value::str(
                                                 "attempt to find an element in a non-list\n",
                                             );
-                                            rt::apply_direct(interp, "simple-error", &[__t382])?
+                                            rt::apply_direct(interp, "simple-error", &[__t350])?
                                         });
                                     } else {
                                         break Err(ShenError::new("cond: no clause matched"));
@@ -2693,20 +2593,16 @@ pub fn aot_empty_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> 
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t402 = {
-                let __t400 = Value::nil();
-                let __t401 = v_V3577.clone();
-                rt::eq(&__t400, &__t401)
-            };
-            if match rt::is_truthy(interp, &__t402) {
+            let __t366 = Value::bool((v_V3577.clone()).is_nil());
+            if match rt::is_truthy(interp, &__t366) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::bool(true));
             } else {
                 {
-                    let __t399 = Value::bool(true);
-                    if match rt::is_truthy(interp, &__t399) {
+                    let __t365 = Value::bool(true);
+                    if match rt::is_truthy(interp, &__t365) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
@@ -2740,13 +2636,13 @@ pub fn aot_fix(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t403 = v_V3578.clone();
-            let __t404 = v_V3579.clone();
-            let __t406 = {
-                let __t405 = v_V3579.clone();
-                rt::apply_value(interp, v_V3578.clone(), &[__t405])?
+            let __t367 = v_V3578.clone();
+            let __t368 = v_V3579.clone();
+            let __t370 = {
+                let __t369 = v_V3579.clone();
+                rt::apply_value(interp, v_V3578.clone(), &[__t369])?
             };
-            rt::apply_direct(interp, "shen.fix-help", &[__t403, __t404, __t406])?
+            aot_shen_x2e_fix_x2d_help(interp, &[__t367, __t368, __t370])?
         });
     }
 }
@@ -2773,33 +2669,33 @@ pub fn aot_shen_x2e_fix_x2d_help(interp: &mut Interp, args: &[Value]) -> ShenRes
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t414 = {
-                let __t412 = v_V3586.clone();
-                let __t413 = v_V3587.clone();
-                rt::eq(&__t412, &__t413)
+            let __t378 = {
+                let __t376 = v_V3586.clone();
+                let __t377 = v_V3587.clone();
+                rt::eq(&__t376, &__t377)
             };
-            if match rt::is_truthy(interp, &__t414) {
+            if match rt::is_truthy(interp, &__t378) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(v_V3587.clone());
             } else {
                 {
-                    let __t411 = Value::bool(true);
-                    if match rt::is_truthy(interp, &__t411) {
+                    let __t375 = Value::bool(true);
+                    if match rt::is_truthy(interp, &__t375) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         {
-                            let __t407 = v_V3585.clone();
-                            let __t408 = v_V3587.clone();
-                            let __t410 = {
-                                let __t409 = v_V3587.clone();
-                                rt::apply_value(interp, v_V3585.clone(), &[__t409])?
+                            let __t371 = v_V3585.clone();
+                            let __t372 = v_V3587.clone();
+                            let __t374 = {
+                                let __t373 = v_V3587.clone();
+                                rt::apply_value(interp, v_V3585.clone(), &[__t373])?
                             };
-                            v_V3585 = __t407;
-                            v_V3586 = __t408;
-                            v_V3587 = __t410;
+                            v_V3585 = __t371;
+                            v_V3586 = __t372;
+                            v_V3587 = __t374;
                             continue;
                         }
                     } else {
@@ -2836,55 +2732,43 @@ pub fn aot_put(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     loop {
         {
             let v_W3592 = {
-                let __t415 = v_V3588.clone();
-                let __t417 = {
-                    let __t416 = v_V3591.clone();
-                    rt::apply_direct(interp, "limit", &[__t416])?
+                let __t379 = v_V3588.clone();
+                let __t381 = {
+                    let __t380 = v_V3591.clone();
+                    rt::apply_direct(interp, "limit", &[__t380])?
                 };
-                rt::apply_direct(interp, "hash", &[__t415, __t417])?
+                rt::apply_direct(interp, "hash", &[__t379, __t381])?
             };
             {
-                let v_W3593 = match (|| -> ShenResult<Value> {
-                    Ok({
-                        let __t418 = v_V3591.clone();
-                        let __t419 = v_W3592.clone();
-                        rt::apply_direct(interp, "<-vector", &[__t418, __t419])?
-                    })
-                })() {
-                    Ok(v) => v,
-                    Err(e) => {
-                        let __h = {
-                            rt::make_aot_closure(
-                                "<lambda>",
-                                1,
-                                move |interp, args| {
-                                    let v_Z3594 = args[0].clone();
-                                    Ok(Value::nil())
-                                },
-                                Vec::new(),
-                                interp,
-                            )
-                        };
-                        let __err = Value::err(e.message.clone());
-                        rt::apply_value(interp, __h, &[__err])?
-                    }
+                let v_W3593 = {
+                    let __x = v_V3591.clone();
+                    let __n = v_W3592.clone();
+                    let __h = {
+                        rt::make_aot_closure(
+                            "<freeze>",
+                            0,
+                            move |interp, _args| Ok(Value::nil()),
+                            Vec::new(),
+                            interp,
+                        )
+                    };
+                    rt::apply_direct(interp, "<-vector/or", &[__x, __n, __h])?
                 };
                 {
                     let v_W3595 = {
-                        let __t420 = v_V3591.clone();
-                        let __t421 = v_W3592.clone();
-                        let __t426 = {
-                            let __t422 = v_V3588.clone();
-                            let __t423 = v_V3589.clone();
-                            let __t424 = v_V3590.clone();
-                            let __t425 = v_W3593.clone();
-                            rt::apply_direct(
+                        let __t382 = v_V3591.clone();
+                        let __t383 = v_W3592.clone();
+                        let __t388 = {
+                            let __t384 = v_V3588.clone();
+                            let __t385 = v_V3589.clone();
+                            let __t386 = v_V3590.clone();
+                            let __t387 = v_W3593.clone();
+                            aot_shen_x2e_change_x2d_pointer_x2d_value(
                                 interp,
-                                "shen.change-pointer-value",
-                                &[__t422, __t423, __t424, __t425],
+                                &[__t384, __t385, __t386, __t387],
                             )?
                         };
-                        rt::apply_direct(interp, "vector->", &[__t420, __t421, __t426])?
+                        rt::apply_direct(interp, "vector->", &[__t382, __t383, __t388])?
                     };
                     break Ok(v_V3590.clone());
                 }
@@ -2916,54 +2800,39 @@ pub fn aot_unput(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     loop {
         {
             let v_W3599 = {
-                let __t427 = v_V3596.clone();
-                let __t429 = {
-                    let __t428 = v_V3598.clone();
-                    rt::apply_direct(interp, "limit", &[__t428])?
+                let __t389 = v_V3596.clone();
+                let __t391 = {
+                    let __t390 = v_V3598.clone();
+                    rt::apply_direct(interp, "limit", &[__t390])?
                 };
-                rt::apply_direct(interp, "hash", &[__t427, __t429])?
+                rt::apply_direct(interp, "hash", &[__t389, __t391])?
             };
             {
-                let v_W3600 = match (|| -> ShenResult<Value> {
-                    Ok({
-                        let __t430 = v_V3598.clone();
-                        let __t431 = v_W3599.clone();
-                        rt::apply_direct(interp, "<-vector", &[__t430, __t431])?
-                    })
-                })() {
-                    Ok(v) => v,
-                    Err(e) => {
-                        let __h = {
-                            rt::make_aot_closure(
-                                "<lambda>",
-                                1,
-                                move |interp, args| {
-                                    let v_Z3601 = args[0].clone();
-                                    Ok(Value::nil())
-                                },
-                                Vec::new(),
-                                interp,
-                            )
-                        };
-                        let __err = Value::err(e.message.clone());
-                        rt::apply_value(interp, __h, &[__err])?
-                    }
+                let v_W3600 = {
+                    let __x = v_V3598.clone();
+                    let __n = v_W3599.clone();
+                    let __h = {
+                        rt::make_aot_closure(
+                            "<freeze>",
+                            0,
+                            move |interp, _args| Ok(Value::nil()),
+                            Vec::new(),
+                            interp,
+                        )
+                    };
+                    rt::apply_direct(interp, "<-vector/or", &[__x, __n, __h])?
                 };
                 {
                     let v_W3602 = {
-                        let __t432 = v_V3598.clone();
-                        let __t433 = v_W3599.clone();
-                        let __t437 = {
-                            let __t434 = v_V3596.clone();
-                            let __t435 = v_V3597.clone();
-                            let __t436 = v_W3600.clone();
-                            rt::apply_direct(
-                                interp,
-                                "shen.remove-pointer",
-                                &[__t434, __t435, __t436],
-                            )?
+                        let __t392 = v_V3598.clone();
+                        let __t393 = v_W3599.clone();
+                        let __t397 = {
+                            let __t394 = v_V3596.clone();
+                            let __t395 = v_V3597.clone();
+                            let __t396 = v_W3600.clone();
+                            aot_shen_x2e_remove_x2d_pointer(interp, &[__t394, __t395, __t396])?
                         };
-                        rt::apply_direct(interp, "vector->", &[__t432, __t433, __t437])?
+                        rt::apply_direct(interp, "vector->", &[__t392, __t393, __t397])?
                     };
                     break Ok(v_V3596.clone());
                 }
@@ -2994,205 +2863,199 @@ pub fn aot_shen_x2e_remove_x2d_pointer(interp: &mut Interp, args: &[Value]) -> S
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t492 = {
-                let __t490 = Value::nil();
-                let __t491 = v_V3615.clone();
-                rt::eq(&__t490, &__t491)
-            };
-            if match rt::is_truthy(interp, &__t492) {
+            let __t448 = Value::bool((v_V3615.clone()).is_nil());
+            if match rt::is_truthy(interp, &__t448) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::nil());
             } else {
                 {
-                    let __t489 = {
-                        let __t486 = {
-                            let __t449 = v_V3615.clone();
-                            rt::is_cons(&__t449)
+                    let __t447 = {
+                        let __t444 = {
+                            let __t409 = v_V3615.clone();
+                            rt::is_cons(&__t409)
                         };
-                        if !rt::is_truthy(interp, &__t486)? {
+                        if !rt::is_truthy(interp, &__t444)? {
                             Value::bool(false)
                         } else {
-                            let __t487 = {
-                                let __t484 = {
-                                    let __t451 = {
-                                        let __t450 = v_V3615.clone();
-                                        rt::hd(&__t450)?
+                            let __t445 = {
+                                let __t442 = {
+                                    let __t411 = {
+                                        let __t410 = v_V3615.clone();
+                                        rt::hd(&__t410)?
                                     };
-                                    rt::is_cons(&__t451)
+                                    rt::is_cons(&__t411)
                                 };
-                                if !rt::is_truthy(interp, &__t484)? {
+                                if !rt::is_truthy(interp, &__t442)? {
                                     Value::bool(false)
                                 } else {
-                                    let __t485 = {
-                                        let __t482 = {
-                                            let __t454 = {
-                                                let __t453 = {
-                                                    let __t452 = v_V3615.clone();
-                                                    rt::hd(&__t452)?
+                                    let __t443 = {
+                                        let __t440 = {
+                                            let __t414 = {
+                                                let __t413 = {
+                                                    let __t412 = v_V3615.clone();
+                                                    rt::hd(&__t412)?
                                                 };
-                                                rt::hd(&__t453)?
+                                                rt::hd(&__t413)?
                                             };
-                                            rt::is_cons(&__t454)
+                                            rt::is_cons(&__t414)
                                         };
-                                        if !rt::is_truthy(interp, &__t482)? {
+                                        if !rt::is_truthy(interp, &__t440)? {
                                             Value::bool(false)
                                         } else {
-                                            let __t483 = {
-                                                let __t480 = {
-                                                    let __t458 = {
-                                                        let __t457 = {
-                                                            let __t456 = {
-                                                                let __t455 = v_V3615.clone();
-                                                                rt::hd(&__t455)?
+                                            let __t441 = {
+                                                let __t438 = {
+                                                    let __t418 = {
+                                                        let __t417 = {
+                                                            let __t416 = {
+                                                                let __t415 = v_V3615.clone();
+                                                                rt::hd(&__t415)?
                                                             };
-                                                            rt::hd(&__t456)?
+                                                            rt::hd(&__t416)?
                                                         };
-                                                        rt::tl(&__t457)?
+                                                        rt::tl(&__t417)?
                                                     };
-                                                    rt::is_cons(&__t458)
+                                                    rt::is_cons(&__t418)
                                                 };
-                                                if !rt::is_truthy(interp, &__t480)? {
+                                                if !rt::is_truthy(interp, &__t438)? {
                                                     Value::bool(false)
                                                 } else {
-                                                    let __t481 = {
-                                                        let __t478 = {
-                                                            let __t459 = Value::nil();
-                                                            let __t464 = {
-                                                                let __t463 = {
-                                                                    let __t462 = {
-                                                                        let __t461 = {
-                                                                            let __t460 =
+                                                    let __t439 = {
+                                                        let __t436 = Value::bool(
+                                                            ({
+                                                                let __t422 = {
+                                                                    let __t421 = {
+                                                                        let __t420 = {
+                                                                            let __t419 =
                                                                                 v_V3615.clone();
-                                                                            rt::hd(&__t460)?
+                                                                            rt::hd(&__t419)?
                                                                         };
-                                                                        rt::hd(&__t461)?
+                                                                        rt::hd(&__t420)?
                                                                     };
-                                                                    rt::tl(&__t462)?
+                                                                    rt::tl(&__t421)?
                                                                 };
-                                                                rt::tl(&__t463)?
-                                                            };
-                                                            rt::eq(&__t459, &__t464)
-                                                        };
-                                                        if !rt::is_truthy(interp, &__t478)? {
+                                                                rt::tl(&__t422)?
+                                                            })
+                                                            .is_nil(),
+                                                        );
+                                                        if !rt::is_truthy(interp, &__t436)? {
                                                             Value::bool(false)
                                                         } else {
-                                                            let __t479 = {
-                                                                let __t476 = {
-                                                                    let __t465 = v_V3614.clone();
-                                                                    let __t470 = {
-                                                                        let __t469 = {
-                                                                            let __t468 = {
-                                                                                let __t467 = {
-                                                                                    let __t466 =
+                                                            let __t437 = {
+                                                                let __t434 = {
+                                                                    let __t423 = v_V3614.clone();
+                                                                    let __t428 = {
+                                                                        let __t427 = {
+                                                                            let __t426 = {
+                                                                                let __t425 = {
+                                                                                    let __t424 =
                                                                                         v_V3615
                                                                                             .clone(
                                                                                             );
-                                                                                    rt::hd(&__t466)?
+                                                                                    rt::hd(&__t424)?
                                                                                 };
-                                                                                rt::hd(&__t467)?
+                                                                                rt::hd(&__t425)?
                                                                             };
-                                                                            rt::tl(&__t468)?
+                                                                            rt::tl(&__t426)?
                                                                         };
-                                                                        rt::hd(&__t469)?
+                                                                        rt::hd(&__t427)?
                                                                     };
-                                                                    rt::eq(&__t465, &__t470)
+                                                                    rt::eq(&__t423, &__t428)
                                                                 };
-                                                                if !rt::is_truthy(interp, &__t476)?
+                                                                if !rt::is_truthy(interp, &__t434)?
                                                                 {
                                                                     Value::bool(false)
                                                                 } else {
-                                                                    let __t477 = {
-                                                                        let __t471 =
+                                                                    let __t435 = {
+                                                                        let __t429 =
                                                                             v_V3613.clone();
-                                                                        let __t475 = {
-                                                                            let __t474 = {
-                                                                                let __t473 = {
-                                                                                    let __t472 =
+                                                                        let __t433 = {
+                                                                            let __t432 = {
+                                                                                let __t431 = {
+                                                                                    let __t430 =
                                                                                         v_V3615
                                                                                             .clone(
                                                                                             );
-                                                                                    rt::hd(&__t472)?
+                                                                                    rt::hd(&__t430)?
                                                                                 };
-                                                                                rt::hd(&__t473)?
+                                                                                rt::hd(&__t431)?
                                                                             };
-                                                                            rt::hd(&__t474)?
+                                                                            rt::hd(&__t432)?
                                                                         };
-                                                                        rt::eq(&__t471, &__t475)
+                                                                        rt::eq(&__t429, &__t433)
                                                                     };
                                                                     Value::bool(rt::is_truthy(
-                                                                        interp, &__t477,
+                                                                        interp, &__t435,
                                                                     )?)
                                                                 }
                                                             };
                                                             Value::bool(rt::is_truthy(
-                                                                interp, &__t479,
+                                                                interp, &__t437,
                                                             )?)
                                                         }
                                                     };
-                                                    Value::bool(rt::is_truthy(interp, &__t481)?)
+                                                    Value::bool(rt::is_truthy(interp, &__t439)?)
                                                 }
                                             };
-                                            Value::bool(rt::is_truthy(interp, &__t483)?)
+                                            Value::bool(rt::is_truthy(interp, &__t441)?)
                                         }
                                     };
-                                    Value::bool(rt::is_truthy(interp, &__t485)?)
+                                    Value::bool(rt::is_truthy(interp, &__t443)?)
                                 }
                             };
-                            Value::bool(rt::is_truthy(interp, &__t487)?)
+                            Value::bool(rt::is_truthy(interp, &__t445)?)
                         }
                     };
-                    if match rt::is_truthy(interp, &__t489) {
+                    if match rt::is_truthy(interp, &__t447) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t488 = v_V3615.clone();
-                            rt::tl(&__t488)?
+                            let __t446 = v_V3615.clone();
+                            rt::tl(&__t446)?
                         });
                     } else {
                         {
-                            let __t448 = {
-                                let __t440 = v_V3615.clone();
-                                rt::is_cons(&__t440)
+                            let __t408 = {
+                                let __t400 = v_V3615.clone();
+                                rt::is_cons(&__t400)
                             };
-                            if match rt::is_truthy(interp, &__t448) {
+                            if match rt::is_truthy(interp, &__t408) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t442 = {
-                                        let __t441 = v_V3615.clone();
-                                        rt::hd(&__t441)?
+                                    let __t402 = {
+                                        let __t401 = v_V3615.clone();
+                                        rt::hd(&__t401)?
                                     };
-                                    let __t447 = {
-                                        let __t443 = v_V3613.clone();
-                                        let __t444 = v_V3614.clone();
-                                        let __t446 = {
-                                            let __t445 = v_V3615.clone();
-                                            rt::tl(&__t445)?
+                                    let __t407 = {
+                                        let __t403 = v_V3613.clone();
+                                        let __t404 = v_V3614.clone();
+                                        let __t406 = {
+                                            let __t405 = v_V3615.clone();
+                                            rt::tl(&__t405)?
                                         };
-                                        rt::apply_direct(
+                                        aot_shen_x2e_remove_x2d_pointer(
                                             interp,
-                                            "shen.remove-pointer",
-                                            &[__t443, __t444, __t446],
+                                            &[__t403, __t404, __t406],
                                         )?
                                     };
-                                    rt::cons(&__t442, &__t447)
+                                    rt::cons(&__t402, &__t407)
                                 });
                             } else {
                                 {
-                                    let __t439 = Value::bool(true);
-                                    if match rt::is_truthy(interp, &__t439) {
+                                    let __t399 = Value::bool(true);
+                                    if match rt::is_truthy(interp, &__t399) {
                                         Ok(b) => b,
                                         Err(e) => break Err(e),
                                     } {
                                         break Ok({
-                                            let __t438 = Value::str(
+                                            let __t398 = Value::str(
                                                 "implementation error in shen.remove-pointer",
                                             );
-                                            rt::apply_direct(interp, "simple-error", &[__t438])?
+                                            rt::apply_direct(interp, "simple-error", &[__t398])?
                                         });
                                     } else {
                                         break Err(ShenError::new("cond: no clause matched"));
@@ -3234,236 +3097,230 @@ pub fn aot_shen_x2e_change_x2d_pointer_x2d_value(
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t562 = {
-                let __t552 = Value::nil();
-                let __t553 = v_V3631.clone();
-                rt::eq(&__t552, &__t553)
-            };
-            if match rt::is_truthy(interp, &__t562) {
+            let __t514 = Value::bool((v_V3631.clone()).is_nil());
+            if match rt::is_truthy(interp, &__t514) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t560 = {
-                        let __t558 = {
-                            let __t554 = v_V3628.clone();
-                            let __t557 = {
-                                let __t555 = v_V3629.clone();
-                                let __t556 = Value::nil();
-                                rt::cons(&__t555, &__t556)
+                    let __t512 = {
+                        let __t510 = {
+                            let __t506 = v_V3628.clone();
+                            let __t509 = {
+                                let __t507 = v_V3629.clone();
+                                let __t508 = Value::nil();
+                                rt::cons(&__t507, &__t508)
                             };
-                            rt::cons(&__t554, &__t557)
+                            rt::cons(&__t506, &__t509)
                         };
-                        let __t559 = v_V3630.clone();
-                        rt::cons(&__t558, &__t559)
+                        let __t511 = v_V3630.clone();
+                        rt::cons(&__t510, &__t511)
                     };
-                    let __t561 = Value::nil();
-                    rt::cons(&__t560, &__t561)
+                    let __t513 = Value::nil();
+                    rt::cons(&__t512, &__t513)
                 });
             } else {
                 {
-                    let __t551 = {
-                        let __t542 = {
-                            let __t505 = v_V3631.clone();
-                            rt::is_cons(&__t505)
+                    let __t505 = {
+                        let __t496 = {
+                            let __t461 = v_V3631.clone();
+                            rt::is_cons(&__t461)
                         };
-                        if !rt::is_truthy(interp, &__t542)? {
+                        if !rt::is_truthy(interp, &__t496)? {
                             Value::bool(false)
                         } else {
-                            let __t543 = {
-                                let __t540 = {
-                                    let __t507 = {
-                                        let __t506 = v_V3631.clone();
-                                        rt::hd(&__t506)?
+                            let __t497 = {
+                                let __t494 = {
+                                    let __t463 = {
+                                        let __t462 = v_V3631.clone();
+                                        rt::hd(&__t462)?
                                     };
-                                    rt::is_cons(&__t507)
+                                    rt::is_cons(&__t463)
                                 };
-                                if !rt::is_truthy(interp, &__t540)? {
+                                if !rt::is_truthy(interp, &__t494)? {
                                     Value::bool(false)
                                 } else {
-                                    let __t541 = {
-                                        let __t538 = {
-                                            let __t510 = {
-                                                let __t509 = {
-                                                    let __t508 = v_V3631.clone();
-                                                    rt::hd(&__t508)?
+                                    let __t495 = {
+                                        let __t492 = {
+                                            let __t466 = {
+                                                let __t465 = {
+                                                    let __t464 = v_V3631.clone();
+                                                    rt::hd(&__t464)?
                                                 };
-                                                rt::hd(&__t509)?
+                                                rt::hd(&__t465)?
                                             };
-                                            rt::is_cons(&__t510)
+                                            rt::is_cons(&__t466)
                                         };
-                                        if !rt::is_truthy(interp, &__t538)? {
+                                        if !rt::is_truthy(interp, &__t492)? {
                                             Value::bool(false)
                                         } else {
-                                            let __t539 = {
-                                                let __t536 = {
-                                                    let __t514 = {
-                                                        let __t513 = {
-                                                            let __t512 = {
-                                                                let __t511 = v_V3631.clone();
-                                                                rt::hd(&__t511)?
+                                            let __t493 = {
+                                                let __t490 = {
+                                                    let __t470 = {
+                                                        let __t469 = {
+                                                            let __t468 = {
+                                                                let __t467 = v_V3631.clone();
+                                                                rt::hd(&__t467)?
                                                             };
-                                                            rt::hd(&__t512)?
+                                                            rt::hd(&__t468)?
                                                         };
-                                                        rt::tl(&__t513)?
+                                                        rt::tl(&__t469)?
                                                     };
-                                                    rt::is_cons(&__t514)
+                                                    rt::is_cons(&__t470)
                                                 };
-                                                if !rt::is_truthy(interp, &__t536)? {
+                                                if !rt::is_truthy(interp, &__t490)? {
                                                     Value::bool(false)
                                                 } else {
-                                                    let __t537 = {
-                                                        let __t534 = {
-                                                            let __t515 = Value::nil();
-                                                            let __t520 = {
-                                                                let __t519 = {
-                                                                    let __t518 = {
-                                                                        let __t517 = {
-                                                                            let __t516 =
+                                                    let __t491 = {
+                                                        let __t488 = Value::bool(
+                                                            ({
+                                                                let __t474 = {
+                                                                    let __t473 = {
+                                                                        let __t472 = {
+                                                                            let __t471 =
                                                                                 v_V3631.clone();
-                                                                            rt::hd(&__t516)?
+                                                                            rt::hd(&__t471)?
                                                                         };
-                                                                        rt::hd(&__t517)?
+                                                                        rt::hd(&__t472)?
                                                                     };
-                                                                    rt::tl(&__t518)?
+                                                                    rt::tl(&__t473)?
                                                                 };
-                                                                rt::tl(&__t519)?
-                                                            };
-                                                            rt::eq(&__t515, &__t520)
-                                                        };
-                                                        if !rt::is_truthy(interp, &__t534)? {
+                                                                rt::tl(&__t474)?
+                                                            })
+                                                            .is_nil(),
+                                                        );
+                                                        if !rt::is_truthy(interp, &__t488)? {
                                                             Value::bool(false)
                                                         } else {
-                                                            let __t535 = {
-                                                                let __t532 = {
-                                                                    let __t521 = v_V3629.clone();
-                                                                    let __t526 = {
-                                                                        let __t525 = {
-                                                                            let __t524 = {
-                                                                                let __t523 = {
-                                                                                    let __t522 =
+                                                            let __t489 = {
+                                                                let __t486 = {
+                                                                    let __t475 = v_V3629.clone();
+                                                                    let __t480 = {
+                                                                        let __t479 = {
+                                                                            let __t478 = {
+                                                                                let __t477 = {
+                                                                                    let __t476 =
                                                                                         v_V3631
                                                                                             .clone(
                                                                                             );
-                                                                                    rt::hd(&__t522)?
+                                                                                    rt::hd(&__t476)?
                                                                                 };
-                                                                                rt::hd(&__t523)?
+                                                                                rt::hd(&__t477)?
                                                                             };
-                                                                            rt::tl(&__t524)?
+                                                                            rt::tl(&__t478)?
                                                                         };
-                                                                        rt::hd(&__t525)?
+                                                                        rt::hd(&__t479)?
                                                                     };
-                                                                    rt::eq(&__t521, &__t526)
+                                                                    rt::eq(&__t475, &__t480)
                                                                 };
-                                                                if !rt::is_truthy(interp, &__t532)?
+                                                                if !rt::is_truthy(interp, &__t486)?
                                                                 {
                                                                     Value::bool(false)
                                                                 } else {
-                                                                    let __t533 = {
-                                                                        let __t527 =
+                                                                    let __t487 = {
+                                                                        let __t481 =
                                                                             v_V3628.clone();
-                                                                        let __t531 = {
-                                                                            let __t530 = {
-                                                                                let __t529 = {
-                                                                                    let __t528 =
+                                                                        let __t485 = {
+                                                                            let __t484 = {
+                                                                                let __t483 = {
+                                                                                    let __t482 =
                                                                                         v_V3631
                                                                                             .clone(
                                                                                             );
-                                                                                    rt::hd(&__t528)?
+                                                                                    rt::hd(&__t482)?
                                                                                 };
-                                                                                rt::hd(&__t529)?
+                                                                                rt::hd(&__t483)?
                                                                             };
-                                                                            rt::hd(&__t530)?
+                                                                            rt::hd(&__t484)?
                                                                         };
-                                                                        rt::eq(&__t527, &__t531)
+                                                                        rt::eq(&__t481, &__t485)
                                                                     };
                                                                     Value::bool(rt::is_truthy(
-                                                                        interp, &__t533,
+                                                                        interp, &__t487,
                                                                     )?)
                                                                 }
                                                             };
                                                             Value::bool(rt::is_truthy(
-                                                                interp, &__t535,
+                                                                interp, &__t489,
                                                             )?)
                                                         }
                                                     };
-                                                    Value::bool(rt::is_truthy(interp, &__t537)?)
+                                                    Value::bool(rt::is_truthy(interp, &__t491)?)
                                                 }
                                             };
-                                            Value::bool(rt::is_truthy(interp, &__t539)?)
+                                            Value::bool(rt::is_truthy(interp, &__t493)?)
                                         }
                                     };
-                                    Value::bool(rt::is_truthy(interp, &__t541)?)
+                                    Value::bool(rt::is_truthy(interp, &__t495)?)
                                 }
                             };
-                            Value::bool(rt::is_truthy(interp, &__t543)?)
+                            Value::bool(rt::is_truthy(interp, &__t497)?)
                         }
                     };
-                    if match rt::is_truthy(interp, &__t551) {
+                    if match rt::is_truthy(interp, &__t505) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t548 = {
-                                let __t546 = {
-                                    let __t545 = {
-                                        let __t544 = v_V3631.clone();
-                                        rt::hd(&__t544)?
+                            let __t502 = {
+                                let __t500 = {
+                                    let __t499 = {
+                                        let __t498 = v_V3631.clone();
+                                        rt::hd(&__t498)?
                                     };
-                                    rt::hd(&__t545)?
+                                    rt::hd(&__t499)?
                                 };
-                                let __t547 = v_V3630.clone();
-                                rt::cons(&__t546, &__t547)
+                                let __t501 = v_V3630.clone();
+                                rt::cons(&__t500, &__t501)
                             };
-                            let __t550 = {
-                                let __t549 = v_V3631.clone();
-                                rt::tl(&__t549)?
+                            let __t504 = {
+                                let __t503 = v_V3631.clone();
+                                rt::tl(&__t503)?
                             };
-                            rt::cons(&__t548, &__t550)
+                            rt::cons(&__t502, &__t504)
                         });
                     } else {
                         {
-                            let __t504 = {
-                                let __t495 = v_V3631.clone();
-                                rt::is_cons(&__t495)
+                            let __t460 = {
+                                let __t451 = v_V3631.clone();
+                                rt::is_cons(&__t451)
                             };
-                            if match rt::is_truthy(interp, &__t504) {
+                            if match rt::is_truthy(interp, &__t460) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t497 = {
-                                        let __t496 = v_V3631.clone();
-                                        rt::hd(&__t496)?
+                                    let __t453 = {
+                                        let __t452 = v_V3631.clone();
+                                        rt::hd(&__t452)?
                                     };
-                                    let __t503 = {
-                                        let __t498 = v_V3628.clone();
-                                        let __t499 = v_V3629.clone();
-                                        let __t500 = v_V3630.clone();
-                                        let __t502 = {
-                                            let __t501 = v_V3631.clone();
-                                            rt::tl(&__t501)?
+                                    let __t459 = {
+                                        let __t454 = v_V3628.clone();
+                                        let __t455 = v_V3629.clone();
+                                        let __t456 = v_V3630.clone();
+                                        let __t458 = {
+                                            let __t457 = v_V3631.clone();
+                                            rt::tl(&__t457)?
                                         };
-                                        rt::apply_direct(
+                                        aot_shen_x2e_change_x2d_pointer_x2d_value(
                                             interp,
-                                            "shen.change-pointer-value",
-                                            &[__t498, __t499, __t500, __t502],
+                                            &[__t454, __t455, __t456, __t458],
                                         )?
                                     };
-                                    rt::cons(&__t497, &__t503)
+                                    rt::cons(&__t453, &__t459)
                                 });
                             } else {
                                 {
-                                    let __t494 = Value::bool(true);
-                                    if match rt::is_truthy(interp, &__t494) {
+                                    let __t450 = Value::bool(true);
+                                    if match rt::is_truthy(interp, &__t450) {
                                         Ok(b) => b,
                                         Err(e) => break Err(e),
                                     } {
                                         break Ok({
-                                            let __t493 = Value::str(
+                                            let __t449 = Value::str(
                                                 "implementation error in shen.change-pointer-value",
                                             );
-                                            rt::apply_direct(interp, "simple-error", &[__t493])?
+                                            rt::apply_direct(interp, "simple-error", &[__t449])?
                                         });
                                     } else {
                                         break Err(ShenError::new("cond: no clause matched"));
@@ -3508,124 +3365,116 @@ pub fn aot_get(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     loop {
         {
             let v_W3635 = {
-                let __t563 = v_V3632.clone();
-                let __t565 = {
-                    let __t564 = v_V3634.clone();
-                    rt::apply_direct(interp, "limit", &[__t564])?
+                let __t515 = v_V3632.clone();
+                let __t517 = {
+                    let __t516 = v_V3634.clone();
+                    rt::apply_direct(interp, "limit", &[__t516])?
                 };
-                rt::apply_direct(interp, "hash", &[__t563, __t565])?
+                rt::apply_direct(interp, "hash", &[__t515, __t517])?
             };
             {
-                let v_W3636 = match (|| -> ShenResult<Value> {
-                    Ok({
-                        let __t566 = v_V3634.clone();
-                        let __t567 = v_W3635.clone();
-                        rt::apply_direct(interp, "<-vector", &[__t566, __t567])?
-                    })
-                })() {
-                    Ok(v) => v,
-                    Err(e) => {
-                        let __h = {
-                            let v_V3632 = v_V3632.clone();
-                            let v_V3633 = v_V3633.clone();
-                            rt::make_aot_closure(
-                                "<lambda>",
-                                1,
-                                move |interp, args| {
-                                    let v_Z3637 = args[0].clone();
-                                    Ok({
-                                        let __t576 = {
-                                            let __t568 = v_V3632.clone();
-                                            let __t574 = {
-                                                let __t569 = Value::str(" has no attributes: ");
-                                                let __t573 = {
-                                                    let __t570 = v_V3633.clone();
-                                                    let __t571 = Value::str("\n");
-                                                    let __t572 =
-                                                        Value::sym(interp.intern("shen.s"));
-                                                    rt::apply_direct(
-                                                        interp,
-                                                        "shen.app",
-                                                        &[__t570, __t571, __t572],
-                                                    )?
-                                                };
-                                                rt::apply_direct(interp, "cn", &[__t569, __t573])?
+                let v_W3636 = {
+                    let __x = v_V3634.clone();
+                    let __n = v_W3635.clone();
+                    let __h = {
+                        let v_V3632 = v_V3632.clone();
+                        let v_V3633 = v_V3633.clone();
+                        rt::make_aot_closure(
+                            "<freeze>",
+                            0,
+                            move |interp, _args| {
+                                Ok({
+                                    let __t526 = {
+                                        let __t518 = v_V3632.clone();
+                                        let __t524 = {
+                                            let __t519 = Value::str(" has no attributes: ");
+                                            let __t523 = {
+                                                let __t520 = v_V3633.clone();
+                                                let __t521 = Value::str("\n");
+                                                let __t522 =
+                                                    Value::sym(interp.intern_static("shen.s"));
+                                                rt::apply_direct(
+                                                    interp,
+                                                    "shen.app",
+                                                    &[__t520, __t521, __t522],
+                                                )?
                                             };
-                                            let __t575 = Value::sym(interp.intern("shen.a"));
-                                            rt::apply_direct(
-                                                interp,
-                                                "shen.app",
-                                                &[__t568, __t574, __t575],
-                                            )?
+                                            rt::cn(&__t519, &__t523)?
                                         };
-                                        rt::apply_direct(interp, "simple-error", &[__t576])?
-                                    })
-                                },
-                                vec![v_V3632, v_V3633],
-                                interp,
-                            )
-                        };
-                        let __err = Value::err(e.message.clone());
-                        rt::apply_value(interp, __h, &[__err])?
-                    }
+                                        let __t525 = Value::sym(interp.intern_static("shen.a"));
+                                        rt::apply_direct(
+                                            interp,
+                                            "shen.app",
+                                            &[__t518, __t524, __t525],
+                                        )?
+                                    };
+                                    rt::apply_direct(interp, "simple-error", &[__t526])?
+                                })
+                            },
+                            vec![v_V3632, v_V3633],
+                            interp,
+                        )
+                    };
+                    rt::apply_direct(interp, "<-vector/or", &[__x, __n, __h])?
                 };
                 {
                     let v_W3638 = {
-                        let __t581 = {
-                            let __t577 = v_V3632.clone();
-                            let __t580 = {
-                                let __t578 = v_V3633.clone();
-                                let __t579 = Value::nil();
-                                rt::cons(&__t578, &__t579)
+                        let __t531 = {
+                            let __t527 = v_V3632.clone();
+                            let __t530 = {
+                                let __t528 = v_V3633.clone();
+                                let __t529 = Value::nil();
+                                rt::cons(&__t528, &__t529)
                             };
-                            rt::cons(&__t577, &__t580)
+                            rt::cons(&__t527, &__t530)
                         };
-                        let __t582 = v_W3636.clone();
-                        rt::apply_direct(interp, "assoc", &[__t581, __t582])?
+                        let __t532 = v_W3636.clone();
+                        aot_assoc(interp, &[__t531, __t532])?
                     };
                     {
-                        let __t584 = {
-                            let __t583 = v_W3638.clone();
-                            rt::apply_direct(interp, "empty?", &[__t583])?
+                        let __t534 = {
+                            let __t533 = v_W3638.clone();
+                            rt::is_empty(&__t533)
                         };
-                        if match rt::is_truthy(interp, &__t584) {
+                        if match rt::is_truthy(interp, &__t534) {
                             Ok(b) => b,
                             Err(e) => break Err(e),
                         } {
                             break Ok({
-                                let __t595 = {
-                                    let __t585 = Value::str("attribute ");
-                                    let __t594 = {
-                                        let __t586 = v_V3633.clone();
-                                        let __t592 = {
-                                            let __t587 = Value::str(" not found for ");
-                                            let __t591 = {
-                                                let __t588 = v_V3632.clone();
-                                                let __t589 = Value::str("\n");
-                                                let __t590 = Value::sym(interp.intern("shen.s"));
+                                let __t545 = {
+                                    let __t535 = Value::str("attribute ");
+                                    let __t544 = {
+                                        let __t536 = v_V3633.clone();
+                                        let __t542 = {
+                                            let __t537 = Value::str(" not found for ");
+                                            let __t541 = {
+                                                let __t538 = v_V3632.clone();
+                                                let __t539 = Value::str("\n");
+                                                let __t540 =
+                                                    Value::sym(interp.intern_static("shen.s"));
                                                 rt::apply_direct(
                                                     interp,
                                                     "shen.app",
-                                                    &[__t588, __t589, __t590],
+                                                    &[__t538, __t539, __t540],
                                                 )?
                                             };
-                                            rt::apply_direct(interp, "cn", &[__t587, __t591])?
+                                            rt::cn(&__t537, &__t541)?
                                         };
-                                        let __t593 = Value::sym(interp.intern("shen.s"));
+                                        let __t543 = Value::sym(interp.intern_static("shen.s"));
                                         rt::apply_direct(
                                             interp,
                                             "shen.app",
-                                            &[__t586, __t592, __t593],
+                                            &[__t536, __t542, __t543],
                                         )?
                                     };
-                                    rt::apply_direct(interp, "cn", &[__t585, __t594])?
+                                    rt::cn(&__t535, &__t544)?
                                 };
-                                rt::apply_direct(interp, "simple-error", &[__t595])?
+                                rt::apply_direct(interp, "simple-error", &[__t545])?
                             });
                         } else {
                             break Ok({
-                                let __t596 = v_W3638.clone();
-                                rt::tl(&__t596)?
+                                let __t546 = v_W3638.clone();
+                                rt::tl(&__t546)?
                             });
                         }
                     }
@@ -3656,20 +3505,20 @@ pub fn aot_hash(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     loop {
         {
             let v_W3641 = {
-                let __t598 = {
-                    let __t597 = v_V3639.clone();
-                    rt::apply_direct(interp, "shen.hashkey", &[__t597])?
+                let __t548 = {
+                    let __t547 = v_V3639.clone();
+                    aot_shen_x2e_hashkey(interp, &[__t547])?
                 };
-                let __t599 = v_V3640.clone();
-                rt::apply_direct(interp, "shen.mod", &[__t598, __t599])?
+                let __t549 = v_V3640.clone();
+                aot_shen_x2e_mod(interp, &[__t548, __t549])?
             };
             {
-                let __t602 = {
-                    let __t600 = v_W3641.clone();
-                    let __t601 = Value::int(0i64);
-                    rt::eq(&__t600, &__t601)
+                let __t552 = {
+                    let __t550 = v_W3641.clone();
+                    let __t551 = Value::int(0i64);
+                    rt::eq(&__t550, &__t551)
                 };
-                if match rt::is_truthy(interp, &__t602) {
+                if match rt::is_truthy(interp, &__t552) {
                     Ok(b) => b,
                     Err(e) => break Err(e),
                 } {
@@ -3701,31 +3550,31 @@ pub fn aot_shen_x2e_hashkey(interp: &mut Interp, args: &[Value]) -> ShenResult<V
     loop {
         {
             let v_W3643 = {
-                let __t604 = {
+                let __t554 = {
                     rt::make_aot_closure(
                         "<lambda>",
                         1,
                         move |interp, args| {
                             let v_Z3644 = args[0].clone();
                             Ok({
-                                let __t603 = v_Z3644.clone();
-                                rt::apply_direct(interp, "string->n", &[__t603])?
+                                let __t553 = v_Z3644.clone();
+                                rt::string_to_n(&__t553)?
                             })
                         },
                         Vec::new(),
                         interp,
                     )
                 };
-                let __t606 = {
-                    let __t605 = v_V3642.clone();
-                    rt::apply_direct(interp, "explode", &[__t605])?
+                let __t556 = {
+                    let __t555 = v_V3642.clone();
+                    aot_explode(interp, &[__t555])?
                 };
-                rt::apply_direct(interp, "map", &[__t604, __t606])?
+                aot_map(interp, &[__t554, __t556])?
             };
             break Ok({
-                let __t607 = v_W3643.clone();
-                let __t608 = Value::int(1i64);
-                rt::apply_direct(interp, "shen.prodbutzero", &[__t607, __t608])?
+                let __t557 = v_W3643.clone();
+                let __t558 = Value::int(1i64);
+                aot_shen_x2e_prodbutzero(interp, &[__t557, __t558])?
             });
         }
     }
@@ -3751,119 +3600,115 @@ pub fn aot_shen_x2e_prodbutzero(interp: &mut Interp, args: &[Value]) -> ShenResu
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t640 = {
-                let __t638 = Value::nil();
-                let __t639 = v_V3645.clone();
-                rt::eq(&__t638, &__t639)
-            };
-            if match rt::is_truthy(interp, &__t640) {
+            let __t588 = Value::bool((v_V3645.clone()).is_nil());
+            if match rt::is_truthy(interp, &__t588) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(v_V3646.clone());
             } else {
                 {
-                    let __t637 = {
-                        let __t632 = {
-                            let __t628 = v_V3645.clone();
-                            rt::is_cons(&__t628)
+                    let __t587 = {
+                        let __t582 = {
+                            let __t578 = v_V3645.clone();
+                            rt::is_cons(&__t578)
                         };
-                        if !rt::is_truthy(interp, &__t632)? {
+                        if !rt::is_truthy(interp, &__t582)? {
                             Value::bool(false)
                         } else {
-                            let __t633 = {
-                                let __t629 = Value::int(0i64);
-                                let __t631 = {
-                                    let __t630 = v_V3645.clone();
-                                    rt::hd(&__t630)?
+                            let __t583 = {
+                                let __t579 = Value::int(0i64);
+                                let __t581 = {
+                                    let __t580 = v_V3645.clone();
+                                    rt::hd(&__t580)?
                                 };
-                                rt::eq(&__t629, &__t631)
+                                rt::eq(&__t579, &__t581)
                             };
-                            Value::bool(rt::is_truthy(interp, &__t633)?)
+                            Value::bool(rt::is_truthy(interp, &__t583)?)
                         }
                     };
-                    if match rt::is_truthy(interp, &__t637) {
+                    if match rt::is_truthy(interp, &__t587) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         {
-                            let __t635 = {
-                                let __t634 = v_V3645.clone();
-                                rt::tl(&__t634)?
+                            let __t585 = {
+                                let __t584 = v_V3645.clone();
+                                rt::tl(&__t584)?
                             };
-                            let __t636 = v_V3646.clone();
-                            v_V3645 = __t635;
-                            v_V3646 = __t636;
+                            let __t586 = v_V3646.clone();
+                            v_V3645 = __t585;
+                            v_V3646 = __t586;
                             continue;
                         }
                     } else {
                         {
-                            let __t627 = {
-                                let __t611 = v_V3645.clone();
-                                rt::is_cons(&__t611)
+                            let __t577 = {
+                                let __t561 = v_V3645.clone();
+                                rt::is_cons(&__t561)
                             };
-                            if match rt::is_truthy(interp, &__t627) {
+                            if match rt::is_truthy(interp, &__t577) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 {
-                                    let __t614 = {
-                                        let __t612 = v_V3646.clone();
-                                        let __t613 = Value::int(10000000000i64);
-                                        rt::gt(&__t612, &__t613)?
+                                    let __t564 = {
+                                        let __t562 = v_V3646.clone();
+                                        let __t563 = Value::int(10000000000i64);
+                                        rt::gt(&__t562, &__t563)?
                                     };
-                                    if match rt::is_truthy(interp, &__t614) {
+                                    if match rt::is_truthy(interp, &__t564) {
                                         Ok(b) => b,
                                         Err(e) => break Err(e),
                                     } {
                                         {
-                                            let __t616 = {
-                                                let __t615 = v_V3645.clone();
-                                                rt::tl(&__t615)?
+                                            let __t566 = {
+                                                let __t565 = v_V3645.clone();
+                                                rt::tl(&__t565)?
                                             };
-                                            let __t620 = {
-                                                let __t617 = v_V3646.clone();
-                                                let __t619 = {
-                                                    let __t618 = v_V3645.clone();
-                                                    rt::hd(&__t618)?
+                                            let __t570 = {
+                                                let __t567 = v_V3646.clone();
+                                                let __t569 = {
+                                                    let __t568 = v_V3645.clone();
+                                                    rt::hd(&__t568)?
                                                 };
-                                                rt::add(&__t617, &__t619)?
+                                                rt::add(&__t567, &__t569)?
                                             };
-                                            v_V3645 = __t616;
-                                            v_V3646 = __t620;
+                                            v_V3645 = __t566;
+                                            v_V3646 = __t570;
                                             continue;
                                         }
                                     } else {
                                         {
-                                            let __t622 = {
-                                                let __t621 = v_V3645.clone();
-                                                rt::tl(&__t621)?
+                                            let __t572 = {
+                                                let __t571 = v_V3645.clone();
+                                                rt::tl(&__t571)?
                                             };
-                                            let __t626 = {
-                                                let __t623 = v_V3646.clone();
-                                                let __t625 = {
-                                                    let __t624 = v_V3645.clone();
-                                                    rt::hd(&__t624)?
+                                            let __t576 = {
+                                                let __t573 = v_V3646.clone();
+                                                let __t575 = {
+                                                    let __t574 = v_V3645.clone();
+                                                    rt::hd(&__t574)?
                                                 };
-                                                rt::mul(&__t623, &__t625)?
+                                                rt::mul(&__t573, &__t575)?
                                             };
-                                            v_V3645 = __t622;
-                                            v_V3646 = __t626;
+                                            v_V3645 = __t572;
+                                            v_V3646 = __t576;
                                             continue;
                                         }
                                     }
                                 }
                             } else {
                                 {
-                                    let __t610 = Value::bool(true);
-                                    if match rt::is_truthy(interp, &__t610) {
+                                    let __t560 = Value::bool(true);
+                                    if match rt::is_truthy(interp, &__t560) {
                                         Ok(b) => b,
                                         Err(e) => break Err(e),
                                     } {
                                         break Ok({
-                                            let __t609 =
+                                            let __t559 =
                                                 Value::str("partial function shen.prodbutzero");
-                                            rt::apply_direct(interp, "simple-error", &[__t609])?
+                                            rt::apply_direct(interp, "simple-error", &[__t559])?
                                         });
                                     } else {
                                         break Err(ShenError::new("cond: no clause matched"));
@@ -3898,17 +3743,17 @@ pub fn aot_shen_x2e_mod(interp: &mut Interp, args: &[Value]) -> ShenResult<Value
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t641 = v_V3647.clone();
-            let __t646 = {
-                let __t642 = v_V3647.clone();
-                let __t645 = {
-                    let __t643 = v_V3648.clone();
-                    let __t644 = Value::nil();
-                    rt::cons(&__t643, &__t644)
+            let __t589 = v_V3647.clone();
+            let __t594 = {
+                let __t590 = v_V3647.clone();
+                let __t593 = {
+                    let __t591 = v_V3648.clone();
+                    let __t592 = Value::nil();
+                    rt::cons(&__t591, &__t592)
                 };
-                rt::apply_direct(interp, "shen.multiples", &[__t642, __t645])?
+                aot_shen_x2e_multiples(interp, &[__t590, __t593])?
             };
-            rt::apply_direct(interp, "shen.modh", &[__t641, __t646])?
+            aot_shen_x2e_modh(interp, &[__t589, __t594])?
         });
     }
 }
@@ -3933,72 +3778,72 @@ pub fn aot_shen_x2e_multiples(interp: &mut Interp, args: &[Value]) -> ShenResult
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t665 = {
-                let __t662 = {
-                    let __t658 = v_V3654.clone();
-                    rt::is_cons(&__t658)
+            let __t613 = {
+                let __t610 = {
+                    let __t606 = v_V3654.clone();
+                    rt::is_cons(&__t606)
                 };
-                if !rt::is_truthy(interp, &__t662)? {
+                if !rt::is_truthy(interp, &__t610)? {
                     Value::bool(false)
                 } else {
-                    let __t663 = {
-                        let __t660 = {
-                            let __t659 = v_V3654.clone();
-                            rt::hd(&__t659)?
+                    let __t611 = {
+                        let __t608 = {
+                            let __t607 = v_V3654.clone();
+                            rt::hd(&__t607)?
                         };
-                        let __t661 = v_V3653.clone();
-                        rt::gt(&__t660, &__t661)?
+                        let __t609 = v_V3653.clone();
+                        rt::gt(&__t608, &__t609)?
                     };
-                    Value::bool(rt::is_truthy(interp, &__t663)?)
+                    Value::bool(rt::is_truthy(interp, &__t611)?)
                 }
             };
-            if match rt::is_truthy(interp, &__t665) {
+            if match rt::is_truthy(interp, &__t613) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t664 = v_V3654.clone();
-                    rt::tl(&__t664)?
+                    let __t612 = v_V3654.clone();
+                    rt::tl(&__t612)?
                 });
             } else {
                 {
-                    let __t657 = {
-                        let __t649 = v_V3654.clone();
-                        rt::is_cons(&__t649)
+                    let __t605 = {
+                        let __t597 = v_V3654.clone();
+                        rt::is_cons(&__t597)
                     };
-                    if match rt::is_truthy(interp, &__t657) {
+                    if match rt::is_truthy(interp, &__t605) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         {
-                            let __t650 = v_V3653.clone();
-                            let __t656 = {
-                                let __t654 = {
-                                    let __t651 = Value::int(2i64);
-                                    let __t653 = {
-                                        let __t652 = v_V3654.clone();
-                                        rt::hd(&__t652)?
+                            let __t598 = v_V3653.clone();
+                            let __t604 = {
+                                let __t602 = {
+                                    let __t599 = Value::int(2i64);
+                                    let __t601 = {
+                                        let __t600 = v_V3654.clone();
+                                        rt::hd(&__t600)?
                                     };
-                                    rt::mul(&__t651, &__t653)?
+                                    rt::mul(&__t599, &__t601)?
                                 };
-                                let __t655 = v_V3654.clone();
-                                rt::cons(&__t654, &__t655)
+                                let __t603 = v_V3654.clone();
+                                rt::cons(&__t602, &__t603)
                             };
-                            v_V3653 = __t650;
-                            v_V3654 = __t656;
+                            v_V3653 = __t598;
+                            v_V3654 = __t604;
                             continue;
                         }
                     } else {
                         {
-                            let __t648 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t648) {
+                            let __t596 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t596) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t647 =
+                                    let __t595 =
                                         Value::str("implementation error in shen.multiples");
-                                    rt::apply_direct(interp, "simple-error", &[__t647])?
+                                    rt::apply_direct(interp, "simple-error", &[__t595])?
                                 });
                             } else {
                                 break Err(ShenError::new("cond: no clause matched"));
@@ -4031,118 +3876,114 @@ pub fn aot_shen_x2e_modh(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t693 = {
-                let __t691 = Value::int(0i64);
-                let __t692 = v_V3661.clone();
-                rt::eq(&__t691, &__t692)
+            let __t639 = {
+                let __t637 = Value::int(0i64);
+                let __t638 = v_V3661.clone();
+                rt::eq(&__t637, &__t638)
             };
-            if match rt::is_truthy(interp, &__t693) {
+            if match rt::is_truthy(interp, &__t639) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::int(0i64));
             } else {
                 {
-                    let __t690 = {
-                        let __t688 = Value::nil();
-                        let __t689 = v_V3662.clone();
-                        rt::eq(&__t688, &__t689)
-                    };
-                    if match rt::is_truthy(interp, &__t690) {
+                    let __t636 = Value::bool((v_V3662.clone()).is_nil());
+                    if match rt::is_truthy(interp, &__t636) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok(v_V3661.clone());
                     } else {
                         {
-                            let __t687 = {
-                                let __t679 = {
-                                    let __t675 = v_V3662.clone();
-                                    rt::is_cons(&__t675)
+                            let __t635 = {
+                                let __t627 = {
+                                    let __t623 = v_V3662.clone();
+                                    rt::is_cons(&__t623)
                                 };
-                                if !rt::is_truthy(interp, &__t679)? {
+                                if !rt::is_truthy(interp, &__t627)? {
                                     Value::bool(false)
                                 } else {
-                                    let __t680 = {
-                                        let __t677 = {
-                                            let __t676 = v_V3662.clone();
-                                            rt::hd(&__t676)?
+                                    let __t628 = {
+                                        let __t625 = {
+                                            let __t624 = v_V3662.clone();
+                                            rt::hd(&__t624)?
                                         };
-                                        let __t678 = v_V3661.clone();
-                                        rt::gt(&__t677, &__t678)?
+                                        let __t626 = v_V3661.clone();
+                                        rt::gt(&__t625, &__t626)?
                                     };
-                                    Value::bool(rt::is_truthy(interp, &__t680)?)
+                                    Value::bool(rt::is_truthy(interp, &__t628)?)
                                 }
                             };
-                            if match rt::is_truthy(interp, &__t687) {
+                            if match rt::is_truthy(interp, &__t635) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 {
-                                    let __t683 = {
-                                        let __t682 = {
-                                            let __t681 = v_V3662.clone();
-                                            rt::tl(&__t681)?
+                                    let __t631 = {
+                                        let __t630 = {
+                                            let __t629 = v_V3662.clone();
+                                            rt::tl(&__t629)?
                                         };
-                                        rt::apply_direct(interp, "empty?", &[__t682])?
+                                        rt::is_empty(&__t630)
                                     };
-                                    if match rt::is_truthy(interp, &__t683) {
+                                    if match rt::is_truthy(interp, &__t631) {
                                         Ok(b) => b,
                                         Err(e) => break Err(e),
                                     } {
                                         break Ok(v_V3661.clone());
                                     } else {
                                         {
-                                            let __t684 = v_V3661.clone();
-                                            let __t686 = {
-                                                let __t685 = v_V3662.clone();
-                                                rt::tl(&__t685)?
+                                            let __t632 = v_V3661.clone();
+                                            let __t634 = {
+                                                let __t633 = v_V3662.clone();
+                                                rt::tl(&__t633)?
                                             };
-                                            v_V3661 = __t684;
-                                            v_V3662 = __t686;
+                                            v_V3661 = __t632;
+                                            v_V3662 = __t634;
                                             continue;
                                         }
                                     }
                                 }
                             } else {
                                 {
-                                    let __t674 = {
-                                        let __t668 = v_V3662.clone();
-                                        rt::is_cons(&__t668)
+                                    let __t622 = {
+                                        let __t616 = v_V3662.clone();
+                                        rt::is_cons(&__t616)
                                     };
-                                    if match rt::is_truthy(interp, &__t674) {
+                                    if match rt::is_truthy(interp, &__t622) {
                                         Ok(b) => b,
                                         Err(e) => break Err(e),
                                     } {
                                         {
-                                            let __t672 = {
-                                                let __t669 = v_V3661.clone();
-                                                let __t671 = {
-                                                    let __t670 = v_V3662.clone();
-                                                    rt::hd(&__t670)?
+                                            let __t620 = {
+                                                let __t617 = v_V3661.clone();
+                                                let __t619 = {
+                                                    let __t618 = v_V3662.clone();
+                                                    rt::hd(&__t618)?
                                                 };
-                                                rt::sub(&__t669, &__t671)?
+                                                rt::sub(&__t617, &__t619)?
                                             };
-                                            let __t673 = v_V3662.clone();
-                                            v_V3661 = __t672;
-                                            v_V3662 = __t673;
+                                            let __t621 = v_V3662.clone();
+                                            v_V3661 = __t620;
+                                            v_V3662 = __t621;
                                             continue;
                                         }
                                     } else {
                                         {
-                                            let __t667 = Value::bool(true);
-                                            if match rt::is_truthy(interp, &__t667) {
+                                            let __t615 = Value::bool(true);
+                                            if match rt::is_truthy(interp, &__t615) {
                                                 Ok(b) => b,
                                                 Err(e) => break Err(e),
                                             } {
                                                 break Ok({
-                                                    let __t666 = Value::str(
+                                                    let __t614 = Value::str(
                                                         "implementation error in shen.modh",
                                                     );
                                                     rt::apply_direct(
                                                         interp,
                                                         "simple-error",
-                                                        &[__t666],
+                                                        &[__t614],
                                                     )?
                                                 });
                                             } else {
@@ -4180,50 +4021,46 @@ pub fn aot_sum(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t705 = {
-                let __t703 = Value::nil();
-                let __t704 = v_V3665.clone();
-                rt::eq(&__t703, &__t704)
-            };
-            if match rt::is_truthy(interp, &__t705) {
+            let __t649 = Value::bool((v_V3665.clone()).is_nil());
+            if match rt::is_truthy(interp, &__t649) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::int(0i64));
             } else {
                 {
-                    let __t702 = {
-                        let __t696 = v_V3665.clone();
-                        rt::is_cons(&__t696)
+                    let __t648 = {
+                        let __t642 = v_V3665.clone();
+                        rt::is_cons(&__t642)
                     };
-                    if match rt::is_truthy(interp, &__t702) {
+                    if match rt::is_truthy(interp, &__t648) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t698 = {
-                                let __t697 = v_V3665.clone();
-                                rt::hd(&__t697)?
+                            let __t644 = {
+                                let __t643 = v_V3665.clone();
+                                rt::hd(&__t643)?
                             };
-                            let __t701 = {
-                                let __t700 = {
-                                    let __t699 = v_V3665.clone();
-                                    rt::tl(&__t699)?
+                            let __t647 = {
+                                let __t646 = {
+                                    let __t645 = v_V3665.clone();
+                                    rt::tl(&__t645)?
                                 };
-                                rt::apply_direct(interp, "sum", &[__t700])?
+                                aot_sum(interp, &[__t646])?
                             };
-                            rt::add(&__t698, &__t701)?
+                            rt::add(&__t644, &__t647)?
                         });
                     } else {
                         {
-                            let __t695 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t695) {
+                            let __t641 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t641) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t694 = Value::str("attempt to sum a non-list\n");
-                                    rt::apply_direct(interp, "simple-error", &[__t694])?
+                                    let __t640 = Value::str("attempt to sum a non-list\n");
+                                    rt::apply_direct(interp, "simple-error", &[__t640])?
                                 });
                             } else {
                                 break Err(ShenError::new("cond: no clause matched"));
@@ -4254,28 +4091,28 @@ pub fn aot_head(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t710 = {
-                let __t708 = v_V3670.clone();
-                rt::is_cons(&__t708)
+            let __t654 = {
+                let __t652 = v_V3670.clone();
+                rt::is_cons(&__t652)
             };
-            if match rt::is_truthy(interp, &__t710) {
+            if match rt::is_truthy(interp, &__t654) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t709 = v_V3670.clone();
-                    rt::hd(&__t709)?
+                    let __t653 = v_V3670.clone();
+                    rt::hd(&__t653)?
                 });
             } else {
                 {
-                    let __t707 = Value::bool(true);
-                    if match rt::is_truthy(interp, &__t707) {
+                    let __t651 = Value::bool(true);
+                    if match rt::is_truthy(interp, &__t651) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t706 = Value::str("head expects a non-empty list\n");
-                            rt::apply_direct(interp, "simple-error", &[__t706])?
+                            let __t650 = Value::str("head expects a non-empty list\n");
+                            rt::apply_direct(interp, "simple-error", &[__t650])?
                         });
                     } else {
                         break Err(ShenError::new("cond: no clause matched"));
@@ -4304,28 +4141,28 @@ pub fn aot_tail(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t715 = {
-                let __t713 = v_V3675.clone();
-                rt::is_cons(&__t713)
+            let __t659 = {
+                let __t657 = v_V3675.clone();
+                rt::is_cons(&__t657)
             };
-            if match rt::is_truthy(interp, &__t715) {
+            if match rt::is_truthy(interp, &__t659) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t714 = v_V3675.clone();
-                    rt::tl(&__t714)?
+                    let __t658 = v_V3675.clone();
+                    rt::tl(&__t658)?
                 });
             } else {
                 {
-                    let __t712 = Value::bool(true);
-                    if match rt::is_truthy(interp, &__t712) {
+                    let __t656 = Value::bool(true);
+                    if match rt::is_truthy(interp, &__t656) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t711 = Value::str("tail expects a non-empty list\n");
-                            rt::apply_direct(interp, "simple-error", &[__t711])?
+                            let __t655 = Value::str("tail expects a non-empty list\n");
+                            rt::apply_direct(interp, "simple-error", &[__t655])?
                         });
                     } else {
                         break Err(ShenError::new("cond: no clause matched"));
@@ -4354,9 +4191,9 @@ pub fn aot_hdstr(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t716 = v_V3676.clone();
-            let __t717 = Value::int(0i64);
-            rt::apply_direct(interp, "pos", &[__t716, __t717])?
+            let __t660 = v_V3676.clone();
+            let __t661 = Value::int(0i64);
+            rt::apply_direct(interp, "pos", &[__t660, __t661])?
         });
     }
 }
@@ -4381,79 +4218,75 @@ pub fn aot_intersection(interp: &mut Interp, args: &[Value]) -> ShenResult<Value
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t737 = {
-                let __t735 = Value::nil();
-                let __t736 = v_V3683.clone();
-                rt::eq(&__t735, &__t736)
-            };
-            if match rt::is_truthy(interp, &__t737) {
+            let __t679 = Value::bool((v_V3683.clone()).is_nil());
+            if match rt::is_truthy(interp, &__t679) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::nil());
             } else {
                 {
-                    let __t734 = {
-                        let __t720 = v_V3683.clone();
-                        rt::is_cons(&__t720)
+                    let __t678 = {
+                        let __t664 = v_V3683.clone();
+                        rt::is_cons(&__t664)
                     };
-                    if match rt::is_truthy(interp, &__t734) {
+                    if match rt::is_truthy(interp, &__t678) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         {
-                            let __t724 = {
-                                let __t722 = {
-                                    let __t721 = v_V3683.clone();
-                                    rt::hd(&__t721)?
+                            let __t668 = {
+                                let __t666 = {
+                                    let __t665 = v_V3683.clone();
+                                    rt::hd(&__t665)?
                                 };
-                                let __t723 = v_V3684.clone();
-                                rt::apply_direct(interp, "element?", &[__t722, __t723])?
+                                let __t667 = v_V3684.clone();
+                                rt::apply_direct(interp, "element?", &[__t666, __t667])?
                             };
-                            if match rt::is_truthy(interp, &__t724) {
+                            if match rt::is_truthy(interp, &__t668) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t726 = {
-                                        let __t725 = v_V3683.clone();
-                                        rt::hd(&__t725)?
+                                    let __t670 = {
+                                        let __t669 = v_V3683.clone();
+                                        rt::hd(&__t669)?
                                     };
-                                    let __t730 = {
-                                        let __t728 = {
-                                            let __t727 = v_V3683.clone();
-                                            rt::tl(&__t727)?
+                                    let __t674 = {
+                                        let __t672 = {
+                                            let __t671 = v_V3683.clone();
+                                            rt::tl(&__t671)?
                                         };
-                                        let __t729 = v_V3684.clone();
-                                        rt::apply_direct(interp, "intersection", &[__t728, __t729])?
+                                        let __t673 = v_V3684.clone();
+                                        aot_intersection(interp, &[__t672, __t673])?
                                     };
-                                    rt::cons(&__t726, &__t730)
+                                    rt::cons(&__t670, &__t674)
                                 });
                             } else {
                                 {
-                                    let __t732 = {
-                                        let __t731 = v_V3683.clone();
-                                        rt::tl(&__t731)?
+                                    let __t676 = {
+                                        let __t675 = v_V3683.clone();
+                                        rt::tl(&__t675)?
                                     };
-                                    let __t733 = v_V3684.clone();
-                                    v_V3683 = __t732;
-                                    v_V3684 = __t733;
+                                    let __t677 = v_V3684.clone();
+                                    v_V3683 = __t676;
+                                    v_V3684 = __t677;
                                     continue;
                                 }
                             }
                         }
                     } else {
                         {
-                            let __t719 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t719) {
+                            let __t663 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t663) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t718 = Value::str(
+                                    let __t662 = Value::str(
                                         "attempt to find the intersection with a non-list\n",
                                     );
-                                    rt::apply_direct(interp, "simple-error", &[__t718])?
+                                    rt::apply_direct(interp, "simple-error", &[__t662])?
                                 });
                             } else {
                                 break Err(ShenError::new("cond: no clause matched"));
@@ -4484,9 +4317,9 @@ pub fn aot_reverse(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t738 = v_V3685.clone();
-            let __t739 = Value::nil();
-            rt::apply_direct(interp, "shen.reverse-help", &[__t738, __t739])?
+            let __t680 = v_V3685.clone();
+            let __t681 = Value::nil();
+            aot_shen_x2e_reverse_x2d_help(interp, &[__t680, __t681])?
         });
     }
 }
@@ -4511,53 +4344,49 @@ pub fn aot_shen_x2e_reverse_x2d_help(interp: &mut Interp, args: &[Value]) -> She
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t752 = {
-                let __t750 = Value::nil();
-                let __t751 = v_V3690.clone();
-                rt::eq(&__t750, &__t751)
-            };
-            if match rt::is_truthy(interp, &__t752) {
+            let __t692 = Value::bool((v_V3690.clone()).is_nil());
+            if match rt::is_truthy(interp, &__t692) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(v_V3691.clone());
             } else {
                 {
-                    let __t749 = {
-                        let __t742 = v_V3690.clone();
-                        rt::is_cons(&__t742)
+                    let __t691 = {
+                        let __t684 = v_V3690.clone();
+                        rt::is_cons(&__t684)
                     };
-                    if match rt::is_truthy(interp, &__t749) {
+                    if match rt::is_truthy(interp, &__t691) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         {
-                            let __t744 = {
-                                let __t743 = v_V3690.clone();
-                                rt::tl(&__t743)?
+                            let __t686 = {
+                                let __t685 = v_V3690.clone();
+                                rt::tl(&__t685)?
                             };
-                            let __t748 = {
-                                let __t746 = {
-                                    let __t745 = v_V3690.clone();
-                                    rt::hd(&__t745)?
+                            let __t690 = {
+                                let __t688 = {
+                                    let __t687 = v_V3690.clone();
+                                    rt::hd(&__t687)?
                                 };
-                                let __t747 = v_V3691.clone();
-                                rt::cons(&__t746, &__t747)
+                                let __t689 = v_V3691.clone();
+                                rt::cons(&__t688, &__t689)
                             };
-                            v_V3690 = __t744;
-                            v_V3691 = __t748;
+                            v_V3690 = __t686;
+                            v_V3691 = __t690;
                             continue;
                         }
                     } else {
                         {
-                            let __t741 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t741) {
+                            let __t683 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t683) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t740 = Value::str("attempt to reverse a non-list\n");
-                                    rt::apply_direct(interp, "simple-error", &[__t740])?
+                                    let __t682 = Value::str("attempt to reverse a non-list\n");
+                                    rt::apply_direct(interp, "simple-error", &[__t682])?
                                 });
                             } else {
                                 break Err(ShenError::new("cond: no clause matched"));
@@ -4590,78 +4419,74 @@ pub fn aot_union(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t772 = {
-                let __t770 = Value::nil();
-                let __t771 = v_V3696.clone();
-                rt::eq(&__t770, &__t771)
-            };
-            if match rt::is_truthy(interp, &__t772) {
+            let __t710 = Value::bool((v_V3696.clone()).is_nil());
+            if match rt::is_truthy(interp, &__t710) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(v_V3697.clone());
             } else {
                 {
-                    let __t769 = {
-                        let __t755 = v_V3696.clone();
-                        rt::is_cons(&__t755)
+                    let __t709 = {
+                        let __t695 = v_V3696.clone();
+                        rt::is_cons(&__t695)
                     };
-                    if match rt::is_truthy(interp, &__t769) {
+                    if match rt::is_truthy(interp, &__t709) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         {
-                            let __t759 = {
-                                let __t757 = {
-                                    let __t756 = v_V3696.clone();
-                                    rt::hd(&__t756)?
+                            let __t699 = {
+                                let __t697 = {
+                                    let __t696 = v_V3696.clone();
+                                    rt::hd(&__t696)?
                                 };
-                                let __t758 = v_V3697.clone();
-                                rt::apply_direct(interp, "element?", &[__t757, __t758])?
+                                let __t698 = v_V3697.clone();
+                                rt::apply_direct(interp, "element?", &[__t697, __t698])?
                             };
-                            if match rt::is_truthy(interp, &__t759) {
+                            if match rt::is_truthy(interp, &__t699) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 {
-                                    let __t761 = {
-                                        let __t760 = v_V3696.clone();
-                                        rt::tl(&__t760)?
+                                    let __t701 = {
+                                        let __t700 = v_V3696.clone();
+                                        rt::tl(&__t700)?
                                     };
-                                    let __t762 = v_V3697.clone();
-                                    v_V3696 = __t761;
-                                    v_V3697 = __t762;
+                                    let __t702 = v_V3697.clone();
+                                    v_V3696 = __t701;
+                                    v_V3697 = __t702;
                                     continue;
                                 }
                             } else {
                                 break Ok({
-                                    let __t764 = {
-                                        let __t763 = v_V3696.clone();
-                                        rt::hd(&__t763)?
+                                    let __t704 = {
+                                        let __t703 = v_V3696.clone();
+                                        rt::hd(&__t703)?
                                     };
-                                    let __t768 = {
-                                        let __t766 = {
-                                            let __t765 = v_V3696.clone();
-                                            rt::tl(&__t765)?
+                                    let __t708 = {
+                                        let __t706 = {
+                                            let __t705 = v_V3696.clone();
+                                            rt::tl(&__t705)?
                                         };
-                                        let __t767 = v_V3697.clone();
-                                        rt::apply_direct(interp, "union", &[__t766, __t767])?
+                                        let __t707 = v_V3697.clone();
+                                        aot_union(interp, &[__t706, __t707])?
                                     };
-                                    rt::cons(&__t764, &__t768)
+                                    rt::cons(&__t704, &__t708)
                                 });
                             }
                         }
                     } else {
                         {
-                            let __t754 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t754) {
+                            let __t694 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t694) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t753 =
+                                    let __t693 =
                                         Value::str("attempt to find the union with a non-list\n");
-                                    rt::apply_direct(interp, "simple-error", &[__t753])?
+                                    rt::apply_direct(interp, "simple-error", &[__t693])?
                                 });
                             } else {
                                 break Err(ShenError::new("cond: no clause matched"));
@@ -4693,48 +4518,40 @@ pub fn aot_y_x2d_or_x2d_n_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResul
     loop {
         {
             let v_W3699 = {
-                let __t774 = {
-                    let __t773 = v_V3698.clone();
-                    rt::apply_direct(interp, "shen.proc-nl", &[__t773])?
+                let __t712 = {
+                    let __t711 = v_V3698.clone();
+                    rt::apply_direct(interp, "shen.proc-nl", &[__t711])?
                 };
-                let __t775 = { rt::apply_direct(interp, "stoutput", &[])? };
-                rt::apply_direct(interp, "pr", &[__t774, __t775])?
+                let __t713 = { aot_stoutput(interp, &[])? };
+                rt::apply_direct(interp, "pr", &[__t712, __t713])?
             };
             {
                 let v_W3700 = {
-                    let __t776 = Value::str(" (y/n) ");
-                    let __t777 = { rt::apply_direct(interp, "stoutput", &[])? };
-                    rt::apply_direct(interp, "pr", &[__t776, __t777])?
+                    let __t714 = Value::str(" (y/n) ");
+                    let __t715 = { aot_stoutput(interp, &[])? };
+                    rt::apply_direct(interp, "pr", &[__t714, __t715])?
                 };
                 {
                     let v_W3701 = {
-                        let __t779 = {
-                            let __t778 = { rt::apply_direct(interp, "stinput", &[])? };
-                            rt::apply_direct(interp, "read", &[__t778])?
+                        let __t717 = {
+                            let __t716 = { aot_stinput(interp, &[])? };
+                            rt::apply_direct(interp, "read", &[__t716])?
                         };
-                        let __t780 = Value::str("");
-                        let __t781 = Value::sym(interp.intern("shen.s"));
-                        rt::apply_direct(interp, "shen.app", &[__t779, __t780, __t781])?
+                        let __t718 = Value::str("");
+                        let __t719 = Value::sym(interp.intern_static("shen.s"));
+                        rt::apply_direct(interp, "shen.app", &[__t717, __t718, __t719])?
                     };
                     {
-                        let __t784 = {
-                            let __t782 = Value::str("y");
-                            let __t783 = v_W3701.clone();
-                            rt::eq(&__t782, &__t783)
-                        };
-                        if match rt::is_truthy(interp, &__t784) {
+                        let __t720 = Value::bool((v_W3701.clone()).as_str() == Some("y"));
+                        if match rt::is_truthy(interp, &__t720) {
                             Ok(b) => b,
                             Err(e) => break Err(e),
                         } {
                             break Ok(Value::bool(true));
                         } else {
                             {
-                                let __t787 = {
-                                    let __t785 = Value::str("n");
-                                    let __t786 = v_W3701.clone();
-                                    rt::eq(&__t785, &__t786)
-                                };
-                                if match rt::is_truthy(interp, &__t787) {
+                                let __t721 = Value::bool((v_W3701.clone()).as_str() == Some("n"));
+                                if match rt::is_truthy(interp, &__t721) {
                                     Ok(b) => b,
                                     Err(e) => break Err(e),
                                 } {
@@ -4742,14 +4559,13 @@ pub fn aot_y_x2d_or_x2d_n_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResul
                                 } else {
                                     {
                                         let _ = {
-                                            let __t788 = Value::str("please answer y or n\n");
-                                            let __t789 =
-                                                { rt::apply_direct(interp, "stoutput", &[])? };
-                                            rt::apply_direct(interp, "pr", &[__t788, __t789])?
+                                            let __t722 = Value::str("please answer y or n\n");
+                                            let __t723 = { aot_stoutput(interp, &[])? };
+                                            rt::apply_direct(interp, "pr", &[__t722, __t723])?
                                         };
                                         {
-                                            let __t790 = v_V3698.clone();
-                                            v_V3698 = __t790;
+                                            let __t724 = v_V3698.clone();
+                                            v_V3698 = __t724;
                                             continue;
                                         }
                                     }
@@ -4781,8 +4597,8 @@ pub fn aot_not(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t791 = v_V3702.clone();
-            if match rt::is_truthy(interp, &__t791) {
+            let __t725 = v_V3702.clone();
+            if match rt::is_truthy(interp, &__t725) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
@@ -4810,8 +4626,8 @@ pub fn aot_abort(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t792 = Value::str("");
-            rt::apply_direct(interp, "simple-error", &[__t792])?
+            let __t726 = Value::str("");
+            rt::apply_direct(interp, "simple-error", &[__t726])?
         });
     }
 }
@@ -4838,51 +4654,51 @@ pub fn aot_subst(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t808 = {
-                let __t806 = v_V3709.clone();
-                let __t807 = v_V3710.clone();
-                rt::eq(&__t806, &__t807)
+            let __t742 = {
+                let __t740 = v_V3709.clone();
+                let __t741 = v_V3710.clone();
+                rt::eq(&__t740, &__t741)
             };
-            if match rt::is_truthy(interp, &__t808) {
+            if match rt::is_truthy(interp, &__t742) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(v_V3708.clone());
             } else {
                 {
-                    let __t805 = {
-                        let __t794 = v_V3710.clone();
-                        rt::is_cons(&__t794)
+                    let __t739 = {
+                        let __t728 = v_V3710.clone();
+                        rt::is_cons(&__t728)
                     };
-                    if match rt::is_truthy(interp, &__t805) {
+                    if match rt::is_truthy(interp, &__t739) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t799 = {
-                                let __t795 = v_V3708.clone();
-                                let __t796 = v_V3709.clone();
-                                let __t798 = {
-                                    let __t797 = v_V3710.clone();
-                                    rt::hd(&__t797)?
+                            let __t733 = {
+                                let __t729 = v_V3708.clone();
+                                let __t730 = v_V3709.clone();
+                                let __t732 = {
+                                    let __t731 = v_V3710.clone();
+                                    rt::hd(&__t731)?
                                 };
-                                rt::apply_direct(interp, "subst", &[__t795, __t796, __t798])?
+                                aot_subst(interp, &[__t729, __t730, __t732])?
                             };
-                            let __t804 = {
-                                let __t800 = v_V3708.clone();
-                                let __t801 = v_V3709.clone();
-                                let __t803 = {
-                                    let __t802 = v_V3710.clone();
-                                    rt::tl(&__t802)?
+                            let __t738 = {
+                                let __t734 = v_V3708.clone();
+                                let __t735 = v_V3709.clone();
+                                let __t737 = {
+                                    let __t736 = v_V3710.clone();
+                                    rt::tl(&__t736)?
                                 };
-                                rt::apply_direct(interp, "subst", &[__t800, __t801, __t803])?
+                                aot_subst(interp, &[__t734, __t735, __t737])?
                             };
-                            rt::cons(&__t799, &__t804)
+                            rt::cons(&__t733, &__t738)
                         });
                     } else {
                         {
-                            let __t793 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t793) {
+                            let __t727 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t727) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
@@ -4916,13 +4732,13 @@ pub fn aot_explode(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t812 = {
-                let __t809 = v_V3711.clone();
-                let __t810 = Value::str("");
-                let __t811 = Value::sym(interp.intern("shen.a"));
-                rt::apply_direct(interp, "shen.app", &[__t809, __t810, __t811])?
+            let __t746 = {
+                let __t743 = v_V3711.clone();
+                let __t744 = Value::str("");
+                let __t745 = Value::sym(interp.intern_static("shen.a"));
+                rt::apply_direct(interp, "shen.app", &[__t743, __t744, __t745])?
             };
-            rt::apply_direct(interp, "shen.explode-h", &[__t812])?
+            aot_shen_x2e_explode_x2d_h(interp, &[__t746])?
         });
     }
 }
@@ -4945,50 +4761,46 @@ pub fn aot_shen_x2e_explode_x2d_h(interp: &mut Interp, args: &[Value]) -> ShenRe
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t824 = {
-                let __t822 = Value::str("");
-                let __t823 = v_V3714.clone();
-                rt::eq(&__t822, &__t823)
-            };
-            if match rt::is_truthy(interp, &__t824) {
+            let __t756 = Value::bool((v_V3714.clone()).as_str() == Some(""));
+            if match rt::is_truthy(interp, &__t756) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::nil());
             } else {
                 {
-                    let __t821 = {
-                        let __t815 = v_V3714.clone();
-                        rt::apply_direct(interp, "shen.+string?", &[__t815])?
+                    let __t755 = {
+                        let __t749 = v_V3714.clone();
+                        rt::apply_direct(interp, "shen.+string?", &[__t749])?
                     };
-                    if match rt::is_truthy(interp, &__t821) {
+                    if match rt::is_truthy(interp, &__t755) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t817 = {
-                                let __t816 = v_V3714.clone();
-                                rt::apply_direct(interp, "hdstr", &[__t816])?
+                            let __t751 = {
+                                let __t750 = v_V3714.clone();
+                                rt::hdstr(&__t750)?
                             };
-                            let __t820 = {
-                                let __t819 = {
-                                    let __t818 = v_V3714.clone();
-                                    rt::apply_direct(interp, "tlstr", &[__t818])?
+                            let __t754 = {
+                                let __t753 = {
+                                    let __t752 = v_V3714.clone();
+                                    rt::tlstr(&__t752)?
                                 };
-                                rt::apply_direct(interp, "shen.explode-h", &[__t819])?
+                                aot_shen_x2e_explode_x2d_h(interp, &[__t753])?
                             };
-                            rt::cons(&__t817, &__t820)
+                            rt::cons(&__t751, &__t754)
                         });
                     } else {
                         {
-                            let __t814 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t814) {
+                            let __t748 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t748) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t813 = Value::str("implementation error in explode-h");
-                                    rt::apply_direct(interp, "simple-error", &[__t813])?
+                                    let __t747 = Value::str("implementation error in explode-h");
+                                    rt::apply_direct(interp, "simple-error", &[__t747])?
                                 });
                             } else {
                                 break Err(ShenError::new("cond: no clause matched"));
@@ -5019,25 +4831,20 @@ pub fn aot_cd(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t825 = Value::sym(interp.intern("*home-directory*"));
-            let __t832 = {
-                let __t831 = {
-                    let __t826 = v_V3715.clone();
-                    let __t827 = Value::str("");
-                    rt::eq(&__t826, &__t827)
-                };
-                if rt::is_truthy(interp, &__t831)? {
+            let __v = {
+                let __t760 = Value::bool((v_V3715.clone()).as_str() == Some(""));
+                if rt::is_truthy(interp, &__t760)? {
                     Value::str("")
                 } else {
                     {
-                        let __t828 = v_V3715.clone();
-                        let __t829 = Value::str("/");
-                        let __t830 = Value::sym(interp.intern("shen.a"));
-                        rt::apply_direct(interp, "shen.app", &[__t828, __t829, __t830])?
+                        let __t757 = v_V3715.clone();
+                        let __t758 = Value::str("/");
+                        let __t759 = Value::sym(interp.intern_static("shen.a"));
+                        rt::apply_direct(interp, "shen.app", &[__t757, __t758, __t759])?
                     }
                 }
             };
-            rt::apply_direct(interp, "set", &[__t825, __t832])?
+            rt::set_global(interp, "*home-directory*", __v)
         });
     }
 }
@@ -5062,10 +4869,10 @@ pub fn aot_map(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t833 = v_V3716.clone();
-            let __t834 = v_V3717.clone();
-            let __t835 = Value::nil();
-            rt::apply_direct(interp, "shen.map-h", &[__t833, __t834, __t835])?
+            let __t761 = v_V3716.clone();
+            let __t762 = v_V3717.clone();
+            let __t763 = Value::nil();
+            aot_shen_x2e_map_x2d_h(interp, &[__t761, __t762, __t763])?
         });
     }
 }
@@ -5092,61 +4899,57 @@ pub fn aot_shen_x2e_map_x2d_h(interp: &mut Interp, args: &[Value]) -> ShenResult
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t851 = {
-                let __t848 = Value::nil();
-                let __t849 = v_V3719.clone();
-                rt::eq(&__t848, &__t849)
-            };
-            if match rt::is_truthy(interp, &__t851) {
+            let __t777 = Value::bool((v_V3719.clone()).is_nil());
+            if match rt::is_truthy(interp, &__t777) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t850 = v_V3720.clone();
-                    rt::apply_direct(interp, "reverse", &[__t850])?
+                    let __t776 = v_V3720.clone();
+                    aot_reverse(interp, &[__t776])?
                 });
             } else {
                 {
-                    let __t847 = {
-                        let __t838 = v_V3719.clone();
-                        rt::is_cons(&__t838)
+                    let __t775 = {
+                        let __t766 = v_V3719.clone();
+                        rt::is_cons(&__t766)
                     };
-                    if match rt::is_truthy(interp, &__t847) {
+                    if match rt::is_truthy(interp, &__t775) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         {
-                            let __t839 = v_V3718.clone();
-                            let __t841 = {
-                                let __t840 = v_V3719.clone();
-                                rt::tl(&__t840)?
+                            let __t767 = v_V3718.clone();
+                            let __t769 = {
+                                let __t768 = v_V3719.clone();
+                                rt::tl(&__t768)?
                             };
-                            let __t846 = {
-                                let __t844 = {
-                                    let __t843 = {
-                                        let __t842 = v_V3719.clone();
-                                        rt::hd(&__t842)?
+                            let __t774 = {
+                                let __t772 = {
+                                    let __t771 = {
+                                        let __t770 = v_V3719.clone();
+                                        rt::hd(&__t770)?
                                     };
-                                    rt::apply_value(interp, v_V3718.clone(), &[__t843])?
+                                    rt::apply_value(interp, v_V3718.clone(), &[__t771])?
                                 };
-                                let __t845 = v_V3720.clone();
-                                rt::cons(&__t844, &__t845)
+                                let __t773 = v_V3720.clone();
+                                rt::cons(&__t772, &__t773)
                             };
-                            v_V3718 = __t839;
-                            v_V3719 = __t841;
-                            v_V3720 = __t846;
+                            v_V3718 = __t767;
+                            v_V3719 = __t769;
+                            v_V3720 = __t774;
                             continue;
                         }
                     } else {
                         {
-                            let __t837 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t837) {
+                            let __t765 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t765) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t836 = Value::str("partial function shen.map-h");
-                                    rt::apply_direct(interp, "simple-error", &[__t836])?
+                                    let __t764 = Value::str("partial function shen.map-h");
+                                    rt::apply_direct(interp, "simple-error", &[__t764])?
                                 });
                             } else {
                                 break Err(ShenError::new("cond: no clause matched"));
@@ -5177,9 +4980,9 @@ pub fn aot_length(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t852 = v_V3721.clone();
-            let __t853 = Value::int(0i64);
-            rt::apply_direct(interp, "shen.length-h", &[__t852, __t853])?
+            let __t778 = v_V3721.clone();
+            let __t779 = Value::int(0i64);
+            aot_shen_x2e_length_x2d_h(interp, &[__t778, __t779])?
         });
     }
 }
@@ -5204,35 +5007,31 @@ pub fn aot_shen_x2e_length_x2d_h(interp: &mut Interp, args: &[Value]) -> ShenRes
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t862 = {
-                let __t860 = Value::nil();
-                let __t861 = v_V3726.clone();
-                rt::eq(&__t860, &__t861)
-            };
-            if match rt::is_truthy(interp, &__t862) {
+            let __t786 = Value::bool((v_V3726.clone()).is_nil());
+            if match rt::is_truthy(interp, &__t786) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(v_V3727.clone());
             } else {
                 {
-                    let __t859 = Value::bool(true);
-                    if match rt::is_truthy(interp, &__t859) {
+                    let __t785 = Value::bool(true);
+                    if match rt::is_truthy(interp, &__t785) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         {
-                            let __t855 = {
-                                let __t854 = v_V3726.clone();
-                                rt::tl(&__t854)?
+                            let __t781 = {
+                                let __t780 = v_V3726.clone();
+                                rt::tl(&__t780)?
                             };
-                            let __t858 = {
-                                let __t856 = v_V3727.clone();
-                                let __t857 = Value::int(1i64);
-                                rt::add(&__t856, &__t857)?
+                            let __t784 = {
+                                let __t782 = v_V3727.clone();
+                                let __t783 = Value::int(1i64);
+                                rt::add(&__t782, &__t783)?
                             };
-                            v_V3726 = __t855;
-                            v_V3727 = __t858;
+                            v_V3726 = __t781;
+                            v_V3727 = __t784;
                             continue;
                         }
                     } else {
@@ -5264,49 +5063,49 @@ pub fn aot_occurrences(interp: &mut Interp, args: &[Value]) -> ShenResult<Value>
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t876 = {
-                let __t874 = v_V3733.clone();
-                let __t875 = v_V3734.clone();
-                rt::eq(&__t874, &__t875)
+            let __t800 = {
+                let __t798 = v_V3733.clone();
+                let __t799 = v_V3734.clone();
+                rt::eq(&__t798, &__t799)
             };
-            if match rt::is_truthy(interp, &__t876) {
+            if match rt::is_truthy(interp, &__t800) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::int(1i64));
             } else {
                 {
-                    let __t873 = {
-                        let __t864 = v_V3734.clone();
-                        rt::is_cons(&__t864)
+                    let __t797 = {
+                        let __t788 = v_V3734.clone();
+                        rt::is_cons(&__t788)
                     };
-                    if match rt::is_truthy(interp, &__t873) {
+                    if match rt::is_truthy(interp, &__t797) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t868 = {
-                                let __t865 = v_V3733.clone();
-                                let __t867 = {
-                                    let __t866 = v_V3734.clone();
-                                    rt::hd(&__t866)?
+                            let __t792 = {
+                                let __t789 = v_V3733.clone();
+                                let __t791 = {
+                                    let __t790 = v_V3734.clone();
+                                    rt::hd(&__t790)?
                                 };
-                                rt::apply_direct(interp, "occurrences", &[__t865, __t867])?
+                                aot_occurrences(interp, &[__t789, __t791])?
                             };
-                            let __t872 = {
-                                let __t869 = v_V3733.clone();
-                                let __t871 = {
-                                    let __t870 = v_V3734.clone();
-                                    rt::tl(&__t870)?
+                            let __t796 = {
+                                let __t793 = v_V3733.clone();
+                                let __t795 = {
+                                    let __t794 = v_V3734.clone();
+                                    rt::tl(&__t794)?
                                 };
-                                rt::apply_direct(interp, "occurrences", &[__t869, __t871])?
+                                aot_occurrences(interp, &[__t793, __t795])?
                             };
-                            rt::add(&__t868, &__t872)?
+                            rt::add(&__t792, &__t796)?
                         });
                     } else {
                         {
-                            let __t863 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t863) {
+                            let __t787 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t787) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
@@ -5342,91 +5141,91 @@ pub fn aot_nth(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t902 = {
-                let __t899 = {
-                    let __t896 = Value::int(1i64);
-                    let __t897 = v_V3739.clone();
-                    rt::eq(&__t896, &__t897)
+            let __t826 = {
+                let __t823 = {
+                    let __t820 = Value::int(1i64);
+                    let __t821 = v_V3739.clone();
+                    rt::eq(&__t820, &__t821)
                 };
-                if !rt::is_truthy(interp, &__t899)? {
+                if !rt::is_truthy(interp, &__t823)? {
                     Value::bool(false)
                 } else {
-                    let __t900 = {
-                        let __t898 = v_V3740.clone();
-                        rt::is_cons(&__t898)
+                    let __t824 = {
+                        let __t822 = v_V3740.clone();
+                        rt::is_cons(&__t822)
                     };
-                    Value::bool(rt::is_truthy(interp, &__t900)?)
+                    Value::bool(rt::is_truthy(interp, &__t824)?)
                 }
             };
-            if match rt::is_truthy(interp, &__t902) {
+            if match rt::is_truthy(interp, &__t826) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t901 = v_V3740.clone();
-                    rt::hd(&__t901)?
+                    let __t825 = v_V3740.clone();
+                    rt::hd(&__t825)?
                 });
             } else {
                 {
-                    let __t895 = {
-                        let __t889 = v_V3740.clone();
-                        rt::is_cons(&__t889)
+                    let __t819 = {
+                        let __t813 = v_V3740.clone();
+                        rt::is_cons(&__t813)
                     };
-                    if match rt::is_truthy(interp, &__t895) {
+                    if match rt::is_truthy(interp, &__t819) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         {
-                            let __t892 = {
-                                let __t890 = v_V3739.clone();
-                                let __t891 = Value::int(1i64);
-                                rt::sub(&__t890, &__t891)?
+                            let __t816 = {
+                                let __t814 = v_V3739.clone();
+                                let __t815 = Value::int(1i64);
+                                rt::sub(&__t814, &__t815)?
                             };
-                            let __t894 = {
-                                let __t893 = v_V3740.clone();
-                                rt::tl(&__t893)?
+                            let __t818 = {
+                                let __t817 = v_V3740.clone();
+                                rt::tl(&__t817)?
                             };
-                            v_V3739 = __t892;
-                            v_V3740 = __t894;
+                            v_V3739 = __t816;
+                            v_V3740 = __t818;
                             continue;
                         }
                     } else {
                         {
-                            let __t888 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t888) {
+                            let __t812 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t812) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t887 = {
-                                        let __t877 = Value::str("nth applied to ");
-                                        let __t886 = {
-                                            let __t878 = v_V3739.clone();
-                                            let __t884 = {
-                                                let __t879 = Value::str(", ");
-                                                let __t883 = {
-                                                    let __t880 = v_V3740.clone();
-                                                    let __t881 = Value::str("\n");
-                                                    let __t882 =
-                                                        Value::sym(interp.intern("shen.a"));
+                                    let __t811 = {
+                                        let __t801 = Value::str("nth applied to ");
+                                        let __t810 = {
+                                            let __t802 = v_V3739.clone();
+                                            let __t808 = {
+                                                let __t803 = Value::str(", ");
+                                                let __t807 = {
+                                                    let __t804 = v_V3740.clone();
+                                                    let __t805 = Value::str("\n");
+                                                    let __t806 =
+                                                        Value::sym(interp.intern_static("shen.a"));
                                                     rt::apply_direct(
                                                         interp,
                                                         "shen.app",
-                                                        &[__t880, __t881, __t882],
+                                                        &[__t804, __t805, __t806],
                                                     )?
                                                 };
-                                                rt::apply_direct(interp, "cn", &[__t879, __t883])?
+                                                rt::cn(&__t803, &__t807)?
                                             };
-                                            let __t885 = Value::sym(interp.intern("shen.a"));
+                                            let __t809 = Value::sym(interp.intern_static("shen.a"));
                                             rt::apply_direct(
                                                 interp,
                                                 "shen.app",
-                                                &[__t878, __t884, __t885],
+                                                &[__t802, __t808, __t809],
                                             )?
                                         };
-                                        rt::apply_direct(interp, "cn", &[__t877, __t886])?
+                                        rt::cn(&__t801, &__t810)?
                                     };
-                                    rt::apply_direct(interp, "simple-error", &[__t887])?
+                                    rt::apply_direct(interp, "simple-error", &[__t811])?
                                 });
                             } else {
                                 break Err(ShenError::new("cond: no clause matched"));
@@ -5457,11 +5256,11 @@ pub fn aot_integer_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t904 = {
-                let __t903 = v_V3741.clone();
-                rt::is_number(&__t903)
+            let __t828 = {
+                let __t827 = v_V3741.clone();
+                rt::is_number(&__t827)
             };
-            if !match rt::is_truthy(interp, &__t904) {
+            if !match rt::is_truthy(interp, &__t828) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
@@ -5469,17 +5268,17 @@ pub fn aot_integer_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value
             } else {
                 {
                     let v_W3742 = {
-                        let __t905 = v_V3741.clone();
-                        rt::apply_direct(interp, "shen.abs", &[__t905])?
+                        let __t829 = v_V3741.clone();
+                        aot_shen_x2e_abs(interp, &[__t829])?
                     };
                     break Ok({
-                        let __t906 = v_W3742.clone();
-                        let __t909 = {
-                            let __t907 = v_W3742.clone();
-                            let __t908 = Value::int(1i64);
-                            rt::apply_direct(interp, "shen.magless", &[__t907, __t908])?
+                        let __t830 = v_W3742.clone();
+                        let __t833 = {
+                            let __t831 = v_W3742.clone();
+                            let __t832 = Value::int(1i64);
+                            aot_shen_x2e_magless(interp, &[__t831, __t832])?
                         };
-                        rt::apply_direct(interp, "shen.integer-test?", &[__t906, __t909])?
+                        aot_shen_x2e_integer_x2d_test_x3f_(interp, &[__t830, __t833])?
                     });
                 }
             }
@@ -5505,21 +5304,21 @@ pub fn aot_shen_x2e_abs(interp: &mut Interp, args: &[Value]) -> ShenResult<Value
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t912 = {
-                let __t910 = v_V3743.clone();
-                let __t911 = Value::int(0i64);
-                rt::gt(&__t910, &__t911)?
+            let __t836 = {
+                let __t834 = v_V3743.clone();
+                let __t835 = Value::int(0i64);
+                rt::gt(&__t834, &__t835)?
             };
-            if match rt::is_truthy(interp, &__t912) {
+            if match rt::is_truthy(interp, &__t836) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(v_V3743.clone());
             } else {
                 break Ok({
-                    let __t913 = Value::int(0i64);
-                    let __t914 = v_V3743.clone();
-                    rt::sub(&__t913, &__t914)?
+                    let __t837 = Value::int(0i64);
+                    let __t838 = v_V3743.clone();
+                    rt::sub(&__t837, &__t838)?
                 });
             }
         }
@@ -5547,27 +5346,27 @@ pub fn aot_shen_x2e_magless(interp: &mut Interp, args: &[Value]) -> ShenResult<V
     loop {
         {
             let v_W3746 = {
-                let __t915 = v_V3745.clone();
-                let __t916 = Value::int(2i64);
-                rt::mul(&__t915, &__t916)?
+                let __t839 = v_V3745.clone();
+                let __t840 = Value::int(2i64);
+                rt::mul(&__t839, &__t840)?
             };
             {
-                let __t919 = {
-                    let __t917 = v_W3746.clone();
-                    let __t918 = v_V3744.clone();
-                    rt::gt(&__t917, &__t918)?
+                let __t843 = {
+                    let __t841 = v_W3746.clone();
+                    let __t842 = v_V3744.clone();
+                    rt::gt(&__t841, &__t842)?
                 };
-                if match rt::is_truthy(interp, &__t919) {
+                if match rt::is_truthy(interp, &__t843) {
                     Ok(b) => b,
                     Err(e) => break Err(e),
                 } {
                     break Ok(v_V3745.clone());
                 } else {
                     {
-                        let __t920 = v_V3744.clone();
-                        let __t921 = v_W3746.clone();
-                        v_V3744 = __t920;
-                        v_V3745 = __t921;
+                        let __t844 = v_V3744.clone();
+                        let __t845 = v_W3746.clone();
+                        v_V3744 = __t844;
+                        v_V3745 = __t845;
                         continue;
                     }
                 }
@@ -5599,61 +5398,61 @@ pub fn aot_shen_x2e_integer_x2d_test_x3f_(
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t936 = {
-                let __t934 = Value::int(0i64);
-                let __t935 = v_V3750.clone();
-                rt::eq(&__t934, &__t935)
+            let __t860 = {
+                let __t858 = Value::int(0i64);
+                let __t859 = v_V3750.clone();
+                rt::eq(&__t858, &__t859)
             };
-            if match rt::is_truthy(interp, &__t936) {
+            if match rt::is_truthy(interp, &__t860) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::bool(true));
             } else {
                 {
-                    let __t933 = {
-                        let __t931 = Value::int(1i64);
-                        let __t932 = v_V3750.clone();
-                        rt::gt(&__t931, &__t932)?
+                    let __t857 = {
+                        let __t855 = Value::int(1i64);
+                        let __t856 = v_V3750.clone();
+                        rt::gt(&__t855, &__t856)?
                     };
-                    if match rt::is_truthy(interp, &__t933) {
+                    if match rt::is_truthy(interp, &__t857) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok(Value::bool(false));
                     } else {
                         {
-                            let __t930 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t930) {
+                            let __t854 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t854) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 {
                                     let v_W3752 = {
-                                        let __t922 = v_V3750.clone();
-                                        let __t923 = v_V3751.clone();
-                                        rt::sub(&__t922, &__t923)?
+                                        let __t846 = v_V3750.clone();
+                                        let __t847 = v_V3751.clone();
+                                        rt::sub(&__t846, &__t847)?
                                     };
                                     {
-                                        let __t926 = {
-                                            let __t924 = Value::int(0i64);
-                                            let __t925 = v_W3752.clone();
-                                            rt::gt(&__t924, &__t925)?
+                                        let __t850 = {
+                                            let __t848 = Value::int(0i64);
+                                            let __t849 = v_W3752.clone();
+                                            rt::gt(&__t848, &__t849)?
                                         };
-                                        if match rt::is_truthy(interp, &__t926) {
+                                        if match rt::is_truthy(interp, &__t850) {
                                             Ok(b) => b,
                                             Err(e) => break Err(e),
                                         } {
                                             break Ok({
-                                                let __t927 = v_V3750.clone();
-                                                rt::apply_direct(interp, "integer?", &[__t927])?
+                                                let __t851 = v_V3750.clone();
+                                                rt::apply_direct(interp, "integer?", &[__t851])?
                                             });
                                         } else {
                                             {
-                                                let __t928 = v_W3752.clone();
-                                                let __t929 = v_V3751.clone();
-                                                v_V3750 = __t928;
-                                                v_V3751 = __t929;
+                                                let __t852 = v_W3752.clone();
+                                                let __t853 = v_V3751.clone();
+                                                v_V3750 = __t852;
+                                                v_V3751 = __t853;
                                                 continue;
                                             }
                                         }
@@ -5690,54 +5489,50 @@ pub fn aot_mapcan(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t950 = {
-                let __t948 = Value::nil();
-                let __t949 = v_V3760.clone();
-                rt::eq(&__t948, &__t949)
-            };
-            if match rt::is_truthy(interp, &__t950) {
+            let __t872 = Value::bool((v_V3760.clone()).is_nil());
+            if match rt::is_truthy(interp, &__t872) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::nil());
             } else {
                 {
-                    let __t947 = {
-                        let __t939 = v_V3760.clone();
-                        rt::is_cons(&__t939)
+                    let __t871 = {
+                        let __t863 = v_V3760.clone();
+                        rt::is_cons(&__t863)
                     };
-                    if match rt::is_truthy(interp, &__t947) {
+                    if match rt::is_truthy(interp, &__t871) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t942 = {
-                                let __t941 = {
-                                    let __t940 = v_V3760.clone();
-                                    rt::hd(&__t940)?
+                            let __t866 = {
+                                let __t865 = {
+                                    let __t864 = v_V3760.clone();
+                                    rt::hd(&__t864)?
                                 };
-                                rt::apply_value(interp, v_V3759.clone(), &[__t941])?
+                                rt::apply_value(interp, v_V3759.clone(), &[__t865])?
                             };
-                            let __t946 = {
-                                let __t943 = v_V3759.clone();
-                                let __t945 = {
-                                    let __t944 = v_V3760.clone();
-                                    rt::tl(&__t944)?
+                            let __t870 = {
+                                let __t867 = v_V3759.clone();
+                                let __t869 = {
+                                    let __t868 = v_V3760.clone();
+                                    rt::tl(&__t868)?
                                 };
-                                rt::apply_direct(interp, "mapcan", &[__t943, __t945])?
+                                aot_mapcan(interp, &[__t867, __t869])?
                             };
-                            rt::apply_direct(interp, "append", &[__t942, __t946])?
+                            aot_append(interp, &[__t866, __t870])?
                         });
                     } else {
                         {
-                            let __t938 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t938) {
+                            let __t862 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t862) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t937 = Value::str("attempt to mapcan over a non-list\n");
-                                    rt::apply_direct(interp, "simple-error", &[__t937])?
+                                    let __t861 = Value::str("attempt to mapcan over a non-list\n");
+                                    rt::apply_direct(interp, "simple-error", &[__t861])?
                                 });
                             } else {
                                 break Err(ShenError::new("cond: no clause matched"));
@@ -5770,20 +5565,20 @@ pub fn aot__x3d__x3d_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> 
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t954 = {
-                let __t952 = v_V3766.clone();
-                let __t953 = v_V3767.clone();
-                rt::eq(&__t952, &__t953)
+            let __t876 = {
+                let __t874 = v_V3766.clone();
+                let __t875 = v_V3767.clone();
+                rt::eq(&__t874, &__t875)
             };
-            if match rt::is_truthy(interp, &__t954) {
+            if match rt::is_truthy(interp, &__t876) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::bool(true));
             } else {
                 {
-                    let __t951 = Value::bool(true);
-                    if match rt::is_truthy(interp, &__t951) {
+                    let __t873 = Value::bool(true);
+                    if match rt::is_truthy(interp, &__t873) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
@@ -5815,48 +5610,40 @@ pub fn aot_bound_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> 
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t956 = {
-                let __t955 = v_V3768.clone();
-                rt::is_symbol(&__t955)
+            let __t878 = {
+                let __t877 = v_V3768.clone();
+                rt::apply_direct(interp, "symbol?", &[__t877])?
             };
-            if !match rt::is_truthy(interp, &__t956) {
+            if !match rt::is_truthy(interp, &__t878) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::bool(false));
             } else {
                 {
-                    let v_W3769 = match (|| -> ShenResult<Value> {
-                        Ok({
-                            let __t957 = v_V3768.clone();
-                            rt::apply_direct(interp, "value", &[__t957])?
-                        })
-                    })() {
-                        Ok(v) => v,
-                        Err(e) => {
-                            let __h = {
-                                rt::make_aot_closure(
-                                    "<lambda>",
-                                    1,
-                                    move |interp, args| {
-                                        let v_Z3770 = args[0].clone();
-                                        Ok(Value::sym(interp.intern("shen.this-symbol-is-unbound")))
-                                    },
-                                    Vec::new(),
-                                    interp,
-                                )
-                            };
-                            let __err = Value::err(e.message.clone());
-                            rt::apply_value(interp, __h, &[__err])?
-                        }
+                    let v_W3769 = {
+                        let __x = v_V3768.clone();
+                        let __h = {
+                            rt::make_aot_closure(
+                                "<freeze>",
+                                0,
+                                move |interp, _args| {
+                                    Ok(Value::sym(
+                                        interp.intern_static("shen.this-symbol-is-unbound"),
+                                    ))
+                                },
+                                Vec::new(),
+                                interp,
+                            )
+                        };
+                        rt::apply_direct(interp, "value/or", &[__x, __h])?
                     };
                     {
-                        let __t960 = {
-                            let __t958 = v_W3769.clone();
-                            let __t959 = Value::sym(interp.intern("shen.this-symbol-is-unbound"));
-                            rt::eq(&__t958, &__t959)
-                        };
-                        if match rt::is_truthy(interp, &__t960) {
+                        let __t879 = Value::bool(
+                            (v_W3769.clone()).as_sym()
+                                == Some(interp.intern_static("shen.this-symbol-is-unbound")),
+                        );
+                        if match rt::is_truthy(interp, &__t879) {
                             Ok(b) => b,
                             Err(e) => break Err(e),
                         } {
@@ -5892,40 +5679,36 @@ pub fn aot_shen_x2e_string_x2d__x3e_bytes(
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t971 = {
-                let __t969 = Value::str("");
-                let __t970 = v_V3771.clone();
-                rt::eq(&__t969, &__t970)
-            };
-            if match rt::is_truthy(interp, &__t971) {
+            let __t888 = Value::bool((v_V3771.clone()).as_str() == Some(""));
+            if match rt::is_truthy(interp, &__t888) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::nil());
             } else {
                 {
-                    let __t968 = Value::bool(true);
-                    if match rt::is_truthy(interp, &__t968) {
+                    let __t887 = Value::bool(true);
+                    if match rt::is_truthy(interp, &__t887) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t964 = {
-                                let __t963 = {
-                                    let __t961 = v_V3771.clone();
-                                    let __t962 = Value::int(0i64);
-                                    rt::apply_direct(interp, "pos", &[__t961, __t962])?
+                            let __t883 = {
+                                let __t882 = {
+                                    let __t880 = v_V3771.clone();
+                                    let __t881 = Value::int(0i64);
+                                    rt::apply_direct(interp, "pos", &[__t880, __t881])?
                                 };
-                                rt::apply_direct(interp, "string->n", &[__t963])?
+                                rt::string_to_n(&__t882)?
                             };
-                            let __t967 = {
-                                let __t966 = {
-                                    let __t965 = v_V3771.clone();
-                                    rt::apply_direct(interp, "tlstr", &[__t965])?
+                            let __t886 = {
+                                let __t885 = {
+                                    let __t884 = v_V3771.clone();
+                                    rt::tlstr(&__t884)?
                                 };
-                                rt::apply_direct(interp, "shen.string->bytes", &[__t966])?
+                                aot_shen_x2e_string_x2d__x3e_bytes(interp, &[__t885])?
                             };
-                            rt::cons(&__t964, &__t967)
+                            rt::cons(&__t883, &__t886)
                         });
                     } else {
                         break Err(ShenError::new("cond: no clause matched"));
@@ -5954,38 +5737,34 @@ pub fn aot_maxinferences(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t974 = {
-                let __t972 = v_V3772.clone();
-                let __t973 = Value::int(0i64);
-                rt::lt(&__t972, &__t973)?
+            let __t891 = {
+                let __t889 = v_V3772.clone();
+                let __t890 = Value::int(0i64);
+                rt::lt(&__t889, &__t890)?
             };
-            if match rt::is_truthy(interp, &__t974) {
+            if match rt::is_truthy(interp, &__t891) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
-                break Ok({
-                    let __t975 = Value::sym(interp.intern("shen.*maxinferences*"));
-                    rt::apply_direct(interp, "value", &[__t975])?
-                });
+                break Ok(rt::global_value(interp, "shen.*maxinferences*")?);
             } else {
                 {
-                    let __t977 = {
-                        let __t976 = v_V3772.clone();
-                        rt::apply_direct(interp, "integer?", &[__t976])?
+                    let __t893 = {
+                        let __t892 = v_V3772.clone();
+                        rt::apply_direct(interp, "integer?", &[__t892])?
                     };
-                    if match rt::is_truthy(interp, &__t977) {
+                    if match rt::is_truthy(interp, &__t893) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t978 = Value::sym(interp.intern("shen.*maxinferences*"));
-                            let __t979 = v_V3772.clone();
-                            rt::apply_direct(interp, "set", &[__t978, __t979])?
+                            let __v = v_V3772.clone();
+                            rt::set_global(interp, "shen.*maxinferences*", __v)
                         });
                     } else {
                         break Ok({
-                            let __t980 = Value::str("maxinferences expects an integer value\n");
-                            rt::apply_direct(interp, "simple-error", &[__t980])?
+                            let __t894 = Value::str("maxinferences expects an integer value\n");
+                            rt::apply_direct(interp, "simple-error", &[__t894])?
                         });
                     }
                 }
@@ -6009,10 +5788,7 @@ pub fn aot_inferences(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> 
     }
     #[allow(clippy::never_loop)]
     loop {
-        break Ok({
-            let __t981 = Value::sym(interp.intern("shen.*infs*"));
-            rt::apply_direct(interp, "value", &[__t981])?
-        });
+        break Ok(rt::global_value(interp, "shen.*infs*")?);
     }
 }
 
@@ -6052,10 +5828,7 @@ pub fn aot_stoutput(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     }
     #[allow(clippy::never_loop)]
     loop {
-        break Ok({
-            let __t982 = Value::sym(interp.intern("*stoutput*"));
-            rt::apply_direct(interp, "value", &[__t982])?
-        });
+        break Ok(rt::global_value(interp, "*stoutput*")?);
     }
 }
 
@@ -6078,32 +5851,32 @@ pub fn aot_string_x2d__x3e_symbol(interp: &mut Interp, args: &[Value]) -> ShenRe
     loop {
         {
             let v_W3775 = {
-                let __t983 = v_V3774.clone();
-                rt::apply_direct(interp, "intern", &[__t983])?
+                let __t895 = v_V3774.clone();
+                rt::intern(interp, &__t895)?
             };
             {
-                let __t985 = {
-                    let __t984 = v_W3775.clone();
-                    rt::is_symbol(&__t984)
+                let __t897 = {
+                    let __t896 = v_W3775.clone();
+                    rt::apply_direct(interp, "symbol?", &[__t896])?
                 };
-                if match rt::is_truthy(interp, &__t985) {
+                if match rt::is_truthy(interp, &__t897) {
                     Ok(b) => b,
                     Err(e) => break Err(e),
                 } {
                     break Ok(v_W3775.clone());
                 } else {
                     break Ok({
-                        let __t991 = {
-                            let __t986 = Value::str("cannot intern ");
-                            let __t990 = {
-                                let __t987 = v_V3774.clone();
-                                let __t988 = Value::str(" to a symbol");
-                                let __t989 = Value::sym(interp.intern("shen.s"));
-                                rt::apply_direct(interp, "shen.app", &[__t987, __t988, __t989])?
+                        let __t903 = {
+                            let __t898 = Value::str("cannot intern ");
+                            let __t902 = {
+                                let __t899 = v_V3774.clone();
+                                let __t900 = Value::str(" to a symbol");
+                                let __t901 = Value::sym(interp.intern_static("shen.s"));
+                                rt::apply_direct(interp, "shen.app", &[__t899, __t900, __t901])?
                             };
-                            rt::apply_direct(interp, "cn", &[__t986, __t990])?
+                            rt::cn(&__t898, &__t902)?
                         };
-                        rt::apply_direct(interp, "simple-error", &[__t991])?
+                        rt::apply_direct(interp, "simple-error", &[__t903])?
                     });
                 }
             }
@@ -6129,46 +5902,37 @@ pub fn aot_optimise(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t1003 = {
-                let __t999 = Value::sym(interp.intern("+"));
-                let __t1000 = v_V3778.clone();
-                rt::eq(&__t999, &__t1000)
-            };
-            if match rt::is_truthy(interp, &__t1003) {
+            let __t907 = Value::bool((v_V3778.clone()).as_sym() == Some(interp.intern_static("+")));
+            if match rt::is_truthy(interp, &__t907) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t1001 = Value::sym(interp.intern("shen.*optimise*"));
-                    let __t1002 = Value::bool(true);
-                    rt::apply_direct(interp, "set", &[__t1001, __t1002])?
+                    let __v = Value::bool(true);
+                    rt::set_global(interp, "shen.*optimise*", __v)
                 });
             } else {
                 {
-                    let __t998 = {
-                        let __t994 = Value::sym(interp.intern("-"));
-                        let __t995 = v_V3778.clone();
-                        rt::eq(&__t994, &__t995)
-                    };
-                    if match rt::is_truthy(interp, &__t998) {
+                    let __t906 =
+                        Value::bool((v_V3778.clone()).as_sym() == Some(interp.intern_static("-")));
+                    if match rt::is_truthy(interp, &__t906) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t996 = Value::sym(interp.intern("shen.*optimise*"));
-                            let __t997 = Value::bool(false);
-                            rt::apply_direct(interp, "set", &[__t996, __t997])?
+                            let __v = Value::bool(false);
+                            rt::set_global(interp, "shen.*optimise*", __v)
                         });
                     } else {
                         {
-                            let __t993 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t993) {
+                            let __t905 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t905) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t992 = Value::str("optimise expects a + or a -.\n");
-                                    rt::apply_direct(interp, "simple-error", &[__t992])?
+                                    let __t904 = Value::str("optimise expects a + or a -.\n");
+                                    rt::apply_direct(interp, "simple-error", &[__t904])?
                                 });
                             } else {
                                 break Err(ShenError::new("cond: no clause matched"));
@@ -6196,10 +5960,7 @@ pub fn aot_os(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     }
     #[allow(clippy::never_loop)]
     loop {
-        break Ok({
-            let __t1004 = Value::sym(interp.intern("*os*"));
-            rt::apply_direct(interp, "value", &[__t1004])?
-        });
+        break Ok(rt::global_value(interp, "*os*")?);
     }
 }
 
@@ -6218,10 +5979,7 @@ pub fn aot_language(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     }
     #[allow(clippy::never_loop)]
     loop {
-        break Ok({
-            let __t1005 = Value::sym(interp.intern("*language*"));
-            rt::apply_direct(interp, "value", &[__t1005])?
-        });
+        break Ok(rt::global_value(interp, "*language*")?);
     }
 }
 
@@ -6240,10 +5998,7 @@ pub fn aot_version(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     }
     #[allow(clippy::never_loop)]
     loop {
-        break Ok({
-            let __t1006 = Value::sym(interp.intern("*version*"));
-            rt::apply_direct(interp, "value", &[__t1006])?
-        });
+        break Ok(rt::global_value(interp, "*version*")?);
     }
 }
 
@@ -6262,10 +6017,7 @@ pub fn aot_port(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     }
     #[allow(clippy::never_loop)]
     loop {
-        break Ok({
-            let __t1007 = Value::sym(interp.intern("*port*"));
-            rt::apply_direct(interp, "value", &[__t1007])?
-        });
+        break Ok(rt::global_value(interp, "*port*")?);
     }
 }
 
@@ -6284,10 +6036,7 @@ pub fn aot_porters(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     }
     #[allow(clippy::never_loop)]
     loop {
-        break Ok({
-            let __t1008 = Value::sym(interp.intern("*porters*"));
-            rt::apply_direct(interp, "value", &[__t1008])?
-        });
+        break Ok(rt::global_value(interp, "*porters*")?);
     }
 }
 
@@ -6306,10 +6055,7 @@ pub fn aot_implementation(interp: &mut Interp, args: &[Value]) -> ShenResult<Val
     }
     #[allow(clippy::never_loop)]
     loop {
-        break Ok({
-            let __t1009 = Value::sym(interp.intern("*implementation*"));
-            rt::apply_direct(interp, "value", &[__t1009])?
-        });
+        break Ok(rt::global_value(interp, "*implementation*")?);
     }
 }
 
@@ -6328,10 +6074,7 @@ pub fn aot_release(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     }
     #[allow(clippy::never_loop)]
     loop {
-        break Ok({
-            let __t1010 = Value::sym(interp.intern("*release*"));
-            rt::apply_direct(interp, "value", &[__t1010])?
-        });
+        break Ok(rt::global_value(interp, "*release*")?);
     }
 }
 
@@ -6353,20 +6096,17 @@ pub fn aot_package_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t1015 = {
-                let __t1013 = Value::sym(interp.intern("null"));
-                let __t1014 = v_V3779.clone();
-                rt::eq(&__t1013, &__t1014)
-            };
-            if match rt::is_truthy(interp, &__t1015) {
+            let __t910 =
+                Value::bool((v_V3779.clone()).as_sym() == Some(interp.intern_static("null")));
+            if match rt::is_truthy(interp, &__t910) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::bool(true));
             } else {
                 {
-                    let __t1012 = Value::bool(true);
-                    if match rt::is_truthy(interp, &__t1012) {
+                    let __t909 = Value::bool(true);
+                    if match rt::is_truthy(interp, &__t909) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
@@ -6374,8 +6114,8 @@ pub fn aot_package_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value
                             match (|| -> ShenResult<Value> {
                                 Ok({
                                     let _ = {
-                                        let __t1011 = v_V3779.clone();
-                                        rt::apply_direct(interp, "external", &[__t1011])?
+                                        let __t908 = v_V3779.clone();
+                                        aot_external(interp, &[__t908])?
                                     };
                                     Value::bool(true)
                                 })
@@ -6423,7 +6163,7 @@ pub fn aot_fail(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     }
     #[allow(clippy::never_loop)]
     loop {
-        break Ok(Value::sym(interp.intern("shen.fail!")));
+        break Ok(Value::sym(interp.intern_static("shen.fail!")));
     }
 }
 
@@ -6442,10 +6182,7 @@ pub fn aot_userdefs(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     }
     #[allow(clippy::never_loop)]
     loop {
-        break Ok({
-            let __t1016 = Value::sym(interp.intern("shen.*userdefs*"));
-            rt::apply_direct(interp, "value", &[__t1016])?
-        });
+        break Ok(rt::global_value(interp, "shen.*userdefs*")?);
     }
 }
 
@@ -6464,10 +6201,7 @@ pub fn aot_optimise_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
     }
     #[allow(clippy::never_loop)]
     loop {
-        break Ok({
-            let __t1017 = Value::sym(interp.intern("shen.*optimise*"));
-            rt::apply_direct(interp, "value", &[__t1017])?
-        });
+        break Ok(rt::global_value(interp, "shen.*optimise*")?);
     }
 }
 
@@ -6486,10 +6220,7 @@ pub fn aot_hush_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     }
     #[allow(clippy::never_loop)]
     loop {
-        break Ok({
-            let __t1018 = Value::sym(interp.intern("*hush*"));
-            rt::apply_direct(interp, "value", &[__t1018])?
-        });
+        break Ok(rt::global_value(interp, "*hush*")?);
     }
 }
 
@@ -6508,10 +6239,10 @@ pub fn aot_system_x2d_S_x3f_(interp: &mut Interp, args: &[Value]) -> ShenResult<
     }
     #[allow(clippy::never_loop)]
     loop {
-        break Ok({
-            let __t1019 = Value::sym(interp.intern("shen.*shen-type-theory-enabled?*"));
-            rt::apply_direct(interp, "value", &[__t1019])?
-        });
+        break Ok(rt::global_value(
+            interp,
+            "shen.*shen-type-theory-enabled?*",
+        )?);
     }
 }
 
@@ -6533,48 +6264,38 @@ pub fn aot_enable_x2d_type_x2d_theory(interp: &mut Interp, args: &[Value]) -> Sh
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t1031 = {
-                let __t1027 = Value::sym(interp.intern("+"));
-                let __t1028 = v_V3783.clone();
-                rt::eq(&__t1027, &__t1028)
-            };
-            if match rt::is_truthy(interp, &__t1031) {
+            let __t914 = Value::bool((v_V3783.clone()).as_sym() == Some(interp.intern_static("+")));
+            if match rt::is_truthy(interp, &__t914) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t1029 = Value::sym(interp.intern("shen.*shen-type-theory-enabled?*"));
-                    let __t1030 = Value::bool(true);
-                    rt::apply_direct(interp, "set", &[__t1029, __t1030])?
+                    let __v = Value::bool(true);
+                    rt::set_global(interp, "shen.*shen-type-theory-enabled?*", __v)
                 });
             } else {
                 {
-                    let __t1026 = {
-                        let __t1022 = Value::sym(interp.intern("-"));
-                        let __t1023 = v_V3783.clone();
-                        rt::eq(&__t1022, &__t1023)
-                    };
-                    if match rt::is_truthy(interp, &__t1026) {
+                    let __t913 =
+                        Value::bool((v_V3783.clone()).as_sym() == Some(interp.intern_static("-")));
+                    if match rt::is_truthy(interp, &__t913) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t1024 =
-                                Value::sym(interp.intern("shen.*shen-type-theory-enabled?*"));
-                            let __t1025 = Value::bool(false);
-                            rt::apply_direct(interp, "set", &[__t1024, __t1025])?
+                            let __v = Value::bool(false);
+                            rt::set_global(interp, "shen.*shen-type-theory-enabled?*", __v)
                         });
                     } else {
                         {
-                            let __t1021 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t1021) {
+                            let __t912 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t912) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t1020 =
+                                    let __t911 =
                                         Value::str("enable-type-theory expects a + or a -\n");
-                                    rt::apply_direct(interp, "simple-error", &[__t1020])?
+                                    rt::apply_direct(interp, "simple-error", &[__t911])?
                                 });
                             } else {
                                 break Err(ShenError::new("cond: no clause matched"));
@@ -6605,46 +6326,37 @@ pub fn aot_shen_x2e_hush(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t1043 = {
-                let __t1039 = Value::sym(interp.intern("+"));
-                let __t1040 = v_V3786.clone();
-                rt::eq(&__t1039, &__t1040)
-            };
-            if match rt::is_truthy(interp, &__t1043) {
+            let __t918 = Value::bool((v_V3786.clone()).as_sym() == Some(interp.intern_static("+")));
+            if match rt::is_truthy(interp, &__t918) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t1041 = Value::sym(interp.intern("*hush*"));
-                    let __t1042 = Value::bool(true);
-                    rt::apply_direct(interp, "set", &[__t1041, __t1042])?
+                    let __v = Value::bool(true);
+                    rt::set_global(interp, "*hush*", __v)
                 });
             } else {
                 {
-                    let __t1038 = {
-                        let __t1034 = Value::sym(interp.intern("-"));
-                        let __t1035 = v_V3786.clone();
-                        rt::eq(&__t1034, &__t1035)
-                    };
-                    if match rt::is_truthy(interp, &__t1038) {
+                    let __t917 =
+                        Value::bool((v_V3786.clone()).as_sym() == Some(interp.intern_static("-")));
+                    if match rt::is_truthy(interp, &__t917) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t1036 = Value::sym(interp.intern("*hush*"));
-                            let __t1037 = Value::bool(false);
-                            rt::apply_direct(interp, "set", &[__t1036, __t1037])?
+                            let __v = Value::bool(false);
+                            rt::set_global(interp, "*hush*", __v)
                         });
                     } else {
                         {
-                            let __t1033 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t1033) {
+                            let __t916 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t916) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t1032 = Value::str("hush expects a + or a -\n");
-                                    rt::apply_direct(interp, "simple-error", &[__t1032])?
+                                    let __t915 = Value::str("hush expects a + or a -\n");
+                                    rt::apply_direct(interp, "simple-error", &[__t915])?
                                 });
                             } else {
                                 break Err(ShenError::new("cond: no clause matched"));
@@ -6675,46 +6387,37 @@ pub fn aot_tc(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t1055 = {
-                let __t1051 = Value::sym(interp.intern("+"));
-                let __t1052 = v_V3789.clone();
-                rt::eq(&__t1051, &__t1052)
-            };
-            if match rt::is_truthy(interp, &__t1055) {
+            let __t922 = Value::bool((v_V3789.clone()).as_sym() == Some(interp.intern_static("+")));
+            if match rt::is_truthy(interp, &__t922) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t1053 = Value::sym(interp.intern("shen.*tc*"));
-                    let __t1054 = Value::bool(true);
-                    rt::apply_direct(interp, "set", &[__t1053, __t1054])?
+                    let __v = Value::bool(true);
+                    rt::set_global(interp, "shen.*tc*", __v)
                 });
             } else {
                 {
-                    let __t1050 = {
-                        let __t1046 = Value::sym(interp.intern("-"));
-                        let __t1047 = v_V3789.clone();
-                        rt::eq(&__t1046, &__t1047)
-                    };
-                    if match rt::is_truthy(interp, &__t1050) {
+                    let __t921 =
+                        Value::bool((v_V3789.clone()).as_sym() == Some(interp.intern_static("-")));
+                    if match rt::is_truthy(interp, &__t921) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t1048 = Value::sym(interp.intern("shen.*tc*"));
-                            let __t1049 = Value::bool(false);
-                            rt::apply_direct(interp, "set", &[__t1048, __t1049])?
+                            let __v = Value::bool(false);
+                            rt::set_global(interp, "shen.*tc*", __v)
                         });
                     } else {
                         {
-                            let __t1045 = Value::bool(true);
-                            if match rt::is_truthy(interp, &__t1045) {
+                            let __t920 = Value::bool(true);
+                            if match rt::is_truthy(interp, &__t920) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t1044 = Value::str("tc expects a + or -");
-                                    rt::apply_direct(interp, "simple-error", &[__t1044])?
+                                    let __t919 = Value::str("tc expects a + or -");
+                                    rt::apply_direct(interp, "simple-error", &[__t919])?
                                 });
                             } else {
                                 break Err(ShenError::new("cond: no clause matched"));
@@ -6746,16 +6449,12 @@ pub fn aot_destroy(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     loop {
         {
             let _ = {
-                let __t1056 = Value::sym(interp.intern("shen.*sigf*"));
-                let __t1060 = {
-                    let __t1057 = v_V3790.clone();
-                    let __t1059 = {
-                        let __t1058 = Value::sym(interp.intern("shen.*sigf*"));
-                        rt::apply_direct(interp, "value", &[__t1058])?
-                    };
-                    rt::apply_direct(interp, "shen.unassoc", &[__t1057, __t1059])?
+                let __v = {
+                    let __t923 = v_V3790.clone();
+                    let __t924 = rt::global_value(interp, "shen.*sigf*")?;
+                    aot_shen_x2e_unassoc(interp, &[__t923, __t924])?
                 };
-                rt::apply_direct(interp, "set", &[__t1056, __t1060])?
+                rt::set_global(interp, "shen.*sigf*", __v)
             };
             break Ok(v_V3790.clone());
         }
@@ -6782,102 +6481,94 @@ pub fn aot_shen_x2e_unassoc(interp: &mut Interp, args: &[Value]) -> ShenResult<V
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t1086 = {
-                let __t1084 = Value::nil();
-                let __t1085 = v_V3801.clone();
-                rt::eq(&__t1084, &__t1085)
-            };
-            if match rt::is_truthy(interp, &__t1086) {
+            let __t948 = Value::bool((v_V3801.clone()).is_nil());
+            if match rt::is_truthy(interp, &__t948) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok(Value::nil());
             } else {
                 {
-                    let __t1083 = {
-                        let __t1080 = {
-                            let __t1071 = v_V3801.clone();
-                            rt::is_cons(&__t1071)
+                    let __t947 = {
+                        let __t944 = {
+                            let __t935 = v_V3801.clone();
+                            rt::is_cons(&__t935)
                         };
-                        if !rt::is_truthy(interp, &__t1080)? {
+                        if !rt::is_truthy(interp, &__t944)? {
                             Value::bool(false)
                         } else {
-                            let __t1081 = {
-                                let __t1078 = {
-                                    let __t1073 = {
-                                        let __t1072 = v_V3801.clone();
-                                        rt::hd(&__t1072)?
+                            let __t945 = {
+                                let __t942 = {
+                                    let __t937 = {
+                                        let __t936 = v_V3801.clone();
+                                        rt::hd(&__t936)?
                                     };
-                                    rt::is_cons(&__t1073)
+                                    rt::is_cons(&__t937)
                                 };
-                                if !rt::is_truthy(interp, &__t1078)? {
+                                if !rt::is_truthy(interp, &__t942)? {
                                     Value::bool(false)
                                 } else {
-                                    let __t1079 = {
-                                        let __t1074 = v_V3800.clone();
-                                        let __t1077 = {
-                                            let __t1076 = {
-                                                let __t1075 = v_V3801.clone();
-                                                rt::hd(&__t1075)?
+                                    let __t943 = {
+                                        let __t938 = v_V3800.clone();
+                                        let __t941 = {
+                                            let __t940 = {
+                                                let __t939 = v_V3801.clone();
+                                                rt::hd(&__t939)?
                                             };
-                                            rt::hd(&__t1076)?
+                                            rt::hd(&__t940)?
                                         };
-                                        rt::eq(&__t1074, &__t1077)
+                                        rt::eq(&__t938, &__t941)
                                     };
-                                    Value::bool(rt::is_truthy(interp, &__t1079)?)
+                                    Value::bool(rt::is_truthy(interp, &__t943)?)
                                 }
                             };
-                            Value::bool(rt::is_truthy(interp, &__t1081)?)
+                            Value::bool(rt::is_truthy(interp, &__t945)?)
                         }
                     };
-                    if match rt::is_truthy(interp, &__t1083) {
+                    if match rt::is_truthy(interp, &__t947) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         break Ok({
-                            let __t1082 = v_V3801.clone();
-                            rt::tl(&__t1082)?
+                            let __t946 = v_V3801.clone();
+                            rt::tl(&__t946)?
                         });
                     } else {
                         {
-                            let __t1070 = {
-                                let __t1063 = v_V3801.clone();
-                                rt::is_cons(&__t1063)
+                            let __t934 = {
+                                let __t927 = v_V3801.clone();
+                                rt::is_cons(&__t927)
                             };
-                            if match rt::is_truthy(interp, &__t1070) {
+                            if match rt::is_truthy(interp, &__t934) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 break Ok({
-                                    let __t1065 = {
-                                        let __t1064 = v_V3801.clone();
-                                        rt::hd(&__t1064)?
+                                    let __t929 = {
+                                        let __t928 = v_V3801.clone();
+                                        rt::hd(&__t928)?
                                     };
-                                    let __t1069 = {
-                                        let __t1066 = v_V3800.clone();
-                                        let __t1068 = {
-                                            let __t1067 = v_V3801.clone();
-                                            rt::tl(&__t1067)?
+                                    let __t933 = {
+                                        let __t930 = v_V3800.clone();
+                                        let __t932 = {
+                                            let __t931 = v_V3801.clone();
+                                            rt::tl(&__t931)?
                                         };
-                                        rt::apply_direct(
-                                            interp,
-                                            "shen.unassoc",
-                                            &[__t1066, __t1068],
-                                        )?
+                                        aot_shen_x2e_unassoc(interp, &[__t930, __t932])?
                                     };
-                                    rt::cons(&__t1065, &__t1069)
+                                    rt::cons(&__t929, &__t933)
                                 });
                             } else {
                                 {
-                                    let __t1062 = Value::bool(true);
-                                    if match rt::is_truthy(interp, &__t1062) {
+                                    let __t926 = Value::bool(true);
+                                    if match rt::is_truthy(interp, &__t926) {
                                         Ok(b) => b,
                                         Err(e) => break Err(e),
                                     } {
                                         break Ok({
-                                            let __t1061 =
+                                            let __t925 =
                                                 Value::str("implementation error in shen.unassoc");
-                                            rt::apply_direct(interp, "simple-error", &[__t1061])?
+                                            rt::apply_direct(interp, "simple-error", &[__t925])?
                                         });
                                     } else {
                                         break Err(ShenError::new("cond: no clause matched"));
@@ -6910,32 +6601,31 @@ pub fn aot_in_x2d_package(interp: &mut Interp, args: &[Value]) -> ShenResult<Val
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t1088 = {
-                let __t1087 = v_V3802.clone();
-                rt::apply_direct(interp, "package?", &[__t1087])?
+            let __t950 = {
+                let __t949 = v_V3802.clone();
+                aot_package_x3f_(interp, &[__t949])?
             };
-            if match rt::is_truthy(interp, &__t1088) {
+            if match rt::is_truthy(interp, &__t950) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t1089 = Value::sym(interp.intern("shen.*package*"));
-                    let __t1090 = v_V3802.clone();
-                    rt::apply_direct(interp, "set", &[__t1089, __t1090])?
+                    let __v = v_V3802.clone();
+                    rt::set_global(interp, "shen.*package*", __v)
                 });
             } else {
                 break Ok({
-                    let __t1096 = {
-                        let __t1091 = Value::str("package ");
-                        let __t1095 = {
-                            let __t1092 = v_V3802.clone();
-                            let __t1093 = Value::str(" does not exist\n");
-                            let __t1094 = Value::sym(interp.intern("shen.a"));
-                            rt::apply_direct(interp, "shen.app", &[__t1092, __t1093, __t1094])?
+                    let __t956 = {
+                        let __t951 = Value::str("package ");
+                        let __t955 = {
+                            let __t952 = v_V3802.clone();
+                            let __t953 = Value::str(" does not exist\n");
+                            let __t954 = Value::sym(interp.intern_static("shen.a"));
+                            rt::apply_direct(interp, "shen.app", &[__t952, __t953, __t954])?
                         };
-                        rt::apply_direct(interp, "cn", &[__t1091, __t1095])?
+                        rt::cn(&__t951, &__t955)?
                     };
-                    rt::apply_direct(interp, "simple-error", &[__t1096])?
+                    rt::apply_direct(interp, "simple-error", &[__t956])?
                 });
             }
         }
@@ -6963,37 +6653,37 @@ pub fn aot_write_x2d_to_x2d_file(interp: &mut Interp, args: &[Value]) -> ShenRes
     loop {
         {
             let v_W3805 = {
-                let __t1097 = v_V3803.clone();
-                let __t1098 = Value::sym(interp.intern("out"));
-                rt::apply_direct(interp, "open", &[__t1097, __t1098])?
+                let __t957 = v_V3803.clone();
+                let __t958 = Value::sym(interp.intern_static("out"));
+                rt::apply_direct(interp, "open", &[__t957, __t958])?
             };
             {
                 let v_W3806 = {
-                    let __t1103 = {
-                        let __t1099 = v_V3804.clone();
-                        rt::is_string(&__t1099)
+                    let __t963 = {
+                        let __t959 = v_V3804.clone();
+                        rt::is_string(&__t959)
                     };
-                    if rt::is_truthy(interp, &__t1103)? {
+                    if rt::is_truthy(interp, &__t963)? {
                         v_V3804.clone()
                     } else {
                         {
-                            let __t1100 = v_V3804.clone();
-                            let __t1101 = Value::str("");
-                            let __t1102 = Value::sym(interp.intern("shen.s"));
-                            rt::apply_direct(interp, "shen.app", &[__t1100, __t1101, __t1102])?
+                            let __t960 = v_V3804.clone();
+                            let __t961 = Value::str("");
+                            let __t962 = Value::sym(interp.intern_static("shen.s"));
+                            rt::apply_direct(interp, "shen.app", &[__t960, __t961, __t962])?
                         }
                     }
                 };
                 {
                     let v_W3807 = {
-                        let __t1104 = v_W3806.clone();
-                        let __t1105 = v_W3805.clone();
-                        rt::apply_direct(interp, "pr", &[__t1104, __t1105])?
+                        let __t964 = v_W3806.clone();
+                        let __t965 = v_W3805.clone();
+                        rt::apply_direct(interp, "pr", &[__t964, __t965])?
                     };
                     {
                         let v_W3808 = {
-                            let __t1106 = v_W3805.clone();
-                            rt::apply_direct(interp, "close", &[__t1106])?
+                            let __t966 = v_W3805.clone();
+                            rt::apply_direct(interp, "close", &[__t966])?
                         };
                         break Ok(v_V3804.clone());
                     }
@@ -7019,11 +6709,11 @@ pub fn aot_fresh(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t1108 = {
-                let __t1107 = Value::sym(interp.intern("shen.t"));
-                rt::apply_direct(interp, "gensym", &[__t1107])?
+            let __t968 = {
+                let __t967 = Value::sym(interp.intern_static("shen.t"));
+                aot_gensym(interp, &[__t967])?
             };
-            rt::apply_direct(interp, "shen.freshterm", &[__t1108])?
+            rt::apply_direct(interp, "shen.freshterm", &[__t968])?
         });
     }
 }
@@ -7049,32 +6739,25 @@ pub fn aot_update_x2d_lambda_x2d_table(interp: &mut Interp, args: &[Value]) -> S
     loop {
         {
             let v_W3811 = {
-                let __t1109 = v_V3809.clone();
-                let __t1110 = Value::sym(interp.intern("arity"));
-                let __t1111 = v_V3810.clone();
-                let __t1113 = {
-                    let __t1112 = Value::sym(interp.intern("*property-vector*"));
-                    rt::apply_direct(interp, "value", &[__t1112])?
-                };
-                rt::apply_direct(interp, "put", &[__t1109, __t1110, __t1111, __t1113])?
+                let __t969 = v_V3809.clone();
+                let __t970 = Value::sym(interp.intern_static("arity"));
+                let __t971 = v_V3810.clone();
+                let __t972 = rt::global_value(interp, "*property-vector*")?;
+                rt::apply_direct(interp, "put", &[__t969, __t970, __t971, __t972])?
             };
             {
                 let v_W3812 = {
-                    let __t1114 = v_V3809.clone();
-                    rt::apply_direct(interp, "shen.lambda-entry", &[__t1114])?
+                    let __t973 = v_V3809.clone();
+                    rt::apply_direct(interp, "shen.lambda-entry", &[__t973])?
                 };
                 {
                     let v_W3813 = {
-                        let __t1115 = Value::sym(interp.intern("shen.*lambdatable*"));
-                        let __t1119 = {
-                            let __t1116 = v_W3812.clone();
-                            let __t1118 = {
-                                let __t1117 = Value::sym(interp.intern("shen.*lambdatable*"));
-                                rt::apply_direct(interp, "value", &[__t1117])?
-                            };
-                            rt::cons(&__t1116, &__t1118)
+                        let __v = {
+                            let __t974 = v_W3812.clone();
+                            let __t975 = rt::global_value(interp, "shen.*lambdatable*")?;
+                            rt::cons(&__t974, &__t975)
                         };
-                        rt::apply_direct(interp, "set", &[__t1115, __t1119])?
+                        rt::set_global(interp, "shen.*lambdatable*", __v)
                     };
                     break Ok(v_V3809.clone());
                 }
@@ -7103,145 +6786,121 @@ pub fn aot_specialise(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> 
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t1160 = {
-                let __t1148 = Value::int(0i64);
-                let __t1149 = v_V3817.clone();
-                rt::eq(&__t1148, &__t1149)
+            let __t998 = {
+                let __t992 = Value::int(0i64);
+                let __t993 = v_V3817.clone();
+                rt::eq(&__t992, &__t993)
             };
-            if match rt::is_truthy(interp, &__t1160) {
+            if match rt::is_truthy(interp, &__t998) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 {
                     let _ = {
-                        let __t1150 = Value::sym(interp.intern("shen.*special*"));
-                        let __t1154 = {
-                            let __t1151 = v_V3816.clone();
-                            let __t1153 = {
-                                let __t1152 = Value::sym(interp.intern("shen.*special*"));
-                                rt::apply_direct(interp, "value", &[__t1152])?
-                            };
-                            rt::apply_direct(interp, "remove", &[__t1151, __t1153])?
+                        let __v = {
+                            let __t994 = v_V3816.clone();
+                            let __t995 = rt::global_value(interp, "shen.*special*")?;
+                            rt::apply_direct(interp, "remove", &[__t994, __t995])?
                         };
-                        rt::apply_direct(interp, "set", &[__t1150, __t1154])?
+                        rt::set_global(interp, "shen.*special*", __v)
                     };
                     {
                         let _ = {
-                            let __t1155 = Value::sym(interp.intern("shen.*extraspecial*"));
-                            let __t1159 = {
-                                let __t1156 = v_V3816.clone();
-                                let __t1158 = {
-                                    let __t1157 = Value::sym(interp.intern("shen.*extraspecial*"));
-                                    rt::apply_direct(interp, "value", &[__t1157])?
-                                };
-                                rt::apply_direct(interp, "remove", &[__t1156, __t1158])?
+                            let __v = {
+                                let __t996 = v_V3816.clone();
+                                let __t997 = rt::global_value(interp, "shen.*extraspecial*")?;
+                                rt::apply_direct(interp, "remove", &[__t996, __t997])?
                             };
-                            rt::apply_direct(interp, "set", &[__t1155, __t1159])?
+                            rt::set_global(interp, "shen.*extraspecial*", __v)
                         };
                         break Ok(v_V3816.clone());
                     }
                 }
             } else {
                 {
-                    let __t1147 = {
-                        let __t1135 = Value::int(1i64);
-                        let __t1136 = v_V3817.clone();
-                        rt::eq(&__t1135, &__t1136)
+                    let __t991 = {
+                        let __t985 = Value::int(1i64);
+                        let __t986 = v_V3817.clone();
+                        rt::eq(&__t985, &__t986)
                     };
-                    if match rt::is_truthy(interp, &__t1147) {
+                    if match rt::is_truthy(interp, &__t991) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {
                         {
                             let _ = {
-                                let __t1137 = Value::sym(interp.intern("shen.*special*"));
-                                let __t1141 = {
-                                    let __t1138 = v_V3816.clone();
-                                    let __t1140 = {
-                                        let __t1139 = Value::sym(interp.intern("shen.*special*"));
-                                        rt::apply_direct(interp, "value", &[__t1139])?
-                                    };
-                                    rt::apply_direct(interp, "adjoin", &[__t1138, __t1140])?
+                                let __v = {
+                                    let __t987 = v_V3816.clone();
+                                    let __t988 = rt::global_value(interp, "shen.*special*")?;
+                                    rt::apply_direct(interp, "adjoin", &[__t987, __t988])?
                                 };
-                                rt::apply_direct(interp, "set", &[__t1137, __t1141])?
+                                rt::set_global(interp, "shen.*special*", __v)
                             };
                             {
                                 let _ = {
-                                    let __t1142 = Value::sym(interp.intern("shen.*extraspecial*"));
-                                    let __t1146 = {
-                                        let __t1143 = v_V3816.clone();
-                                        let __t1145 = {
-                                            let __t1144 =
-                                                Value::sym(interp.intern("shen.*extraspecial*"));
-                                            rt::apply_direct(interp, "value", &[__t1144])?
-                                        };
-                                        rt::apply_direct(interp, "remove", &[__t1143, __t1145])?
+                                    let __v = {
+                                        let __t989 = v_V3816.clone();
+                                        let __t990 =
+                                            rt::global_value(interp, "shen.*extraspecial*")?;
+                                        rt::apply_direct(interp, "remove", &[__t989, __t990])?
                                     };
-                                    rt::apply_direct(interp, "set", &[__t1142, __t1146])?
+                                    rt::set_global(interp, "shen.*extraspecial*", __v)
                                 };
                                 break Ok(v_V3816.clone());
                             }
                         }
                     } else {
                         {
-                            let __t1134 = {
-                                let __t1122 = Value::int(2i64);
-                                let __t1123 = v_V3817.clone();
-                                rt::eq(&__t1122, &__t1123)
+                            let __t984 = {
+                                let __t978 = Value::int(2i64);
+                                let __t979 = v_V3817.clone();
+                                rt::eq(&__t978, &__t979)
                             };
-                            if match rt::is_truthy(interp, &__t1134) {
+                            if match rt::is_truthy(interp, &__t984) {
                                 Ok(b) => b,
                                 Err(e) => break Err(e),
                             } {
                                 {
                                     let _ = {
-                                        let __t1124 = Value::sym(interp.intern("shen.*special*"));
-                                        let __t1128 = {
-                                            let __t1125 = v_V3816.clone();
-                                            let __t1127 = {
-                                                let __t1126 =
-                                                    Value::sym(interp.intern("shen.*special*"));
-                                                rt::apply_direct(interp, "value", &[__t1126])?
-                                            };
-                                            rt::apply_direct(interp, "remove", &[__t1125, __t1127])?
+                                        let __v = {
+                                            let __t980 = v_V3816.clone();
+                                            let __t981 =
+                                                rt::global_value(interp, "shen.*special*")?;
+                                            rt::apply_direct(interp, "remove", &[__t980, __t981])?
                                         };
-                                        rt::apply_direct(interp, "set", &[__t1124, __t1128])?
+                                        rt::set_global(interp, "shen.*special*", __v)
                                     };
                                     {
                                         let _ = {
-                                            let __t1129 =
-                                                Value::sym(interp.intern("shen.*extraspecial*"));
-                                            let __t1133 = {
-                                                let __t1130 = v_V3816.clone();
-                                                let __t1132 = {
-                                                    let __t1131 = Value::sym(
-                                                        interp.intern("shen.*extraspecial*"),
-                                                    );
-                                                    rt::apply_direct(interp, "value", &[__t1131])?
-                                                };
+                                            let __v = {
+                                                let __t982 = v_V3816.clone();
+                                                let __t983 = rt::global_value(
+                                                    interp,
+                                                    "shen.*extraspecial*",
+                                                )?;
                                                 rt::apply_direct(
                                                     interp,
                                                     "adjoin",
-                                                    &[__t1130, __t1132],
+                                                    &[__t982, __t983],
                                                 )?
                                             };
-                                            rt::apply_direct(interp, "set", &[__t1129, __t1133])?
+                                            rt::set_global(interp, "shen.*extraspecial*", __v)
                                         };
                                         break Ok(v_V3816.clone());
                                     }
                                 }
                             } else {
                                 {
-                                    let __t1121 = Value::bool(true);
-                                    if match rt::is_truthy(interp, &__t1121) {
+                                    let __t977 = Value::bool(true);
+                                    if match rt::is_truthy(interp, &__t977) {
                                         Ok(b) => b,
                                         Err(e) => break Err(e),
                                     } {
                                         break Ok({
-                                            let __t1120 = Value::str(
+                                            let __t976 = Value::str(
                                                 "specialise requires values of 0, 1 or 2\n",
                                             );
-                                            rt::apply_direct(interp, "simple-error", &[__t1120])?
+                                            rt::apply_direct(interp, "simple-error", &[__t976])?
                                         });
                                     } else {
                                         break Err(ShenError::new("cond: no clause matched"));
@@ -7274,16 +6933,12 @@ pub fn aot_absolute(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t1161 = Value::sym(interp.intern("*absolute*"));
-            let __t1165 = {
-                let __t1162 = v_V3818.clone();
-                let __t1164 = {
-                    let __t1163 = Value::sym(interp.intern("*absolute*"));
-                    rt::apply_direct(interp, "value", &[__t1163])?
-                };
-                rt::cons(&__t1162, &__t1164)
+            let __v = {
+                let __t999 = v_V3818.clone();
+                let __t1000 = rt::global_value(interp, "*absolute*")?;
+                rt::cons(&__t999, &__t1000)
             };
-            rt::apply_direct(interp, "set", &[__t1161, __t1165])?
+            rt::set_global(interp, "*absolute*", __v)
         });
     }
 }
@@ -7306,16 +6961,12 @@ pub fn aot_unabsolute(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> 
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t1166 = Value::sym(interp.intern("*absolute*"));
-            let __t1170 = {
-                let __t1167 = v_V3819.clone();
-                let __t1169 = {
-                    let __t1168 = Value::sym(interp.intern("*absolute*"));
-                    rt::apply_direct(interp, "value", &[__t1168])?
-                };
-                rt::apply_direct(interp, "remove", &[__t1167, __t1169])?
+            let __v = {
+                let __t1001 = v_V3819.clone();
+                let __t1002 = rt::global_value(interp, "*absolute*")?;
+                rt::apply_direct(interp, "remove", &[__t1001, __t1002])?
             };
-            rt::apply_direct(interp, "set", &[__t1166, __t1170])?
+            rt::set_global(interp, "*absolute*", __v)
         });
     }
 }

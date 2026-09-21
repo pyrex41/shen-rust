@@ -324,3 +324,131 @@ pub fn is_symbol(v: &Value) -> Value {
 pub fn is_absvector(v: &Value) -> Value {
     Value::bool(v.is_vec())
 }
+
+#[inline(always)]
+pub fn is_empty(v: &Value) -> Value {
+    Value::bool(v.is_nil())
+}
+
+#[inline(always)]
+pub fn not(interp: &Interp, v: &Value) -> ShenResult<Value> {
+    Ok(Value::bool(!is_truthy(interp, v)?))
+}
+
+#[inline(always)]
+pub fn is_boolean(interp: &Interp, v: &Value) -> Value {
+    let b = v.as_bool().is_some()
+        || matches!(v.as_sym(), Some(s) if s == interp.well_known.k_true || s == interp.well_known.k_false);
+    Value::bool(b)
+}
+
+#[inline(always)]
+pub fn fail(interp: &Interp) -> Value {
+    Value::sym(interp.well_known.k_shen_fail)
+}
+
+#[inline(always)]
+pub fn intern(interp: &mut Interp, s: &Value) -> ShenResult<Value> {
+    match s.as_str() {
+        Some(s) => Ok(interp.intern_kl(s)),
+        None => Err(ShenError::new(format!("intern: not a string: {s:?}"))),
+    }
+}
+
+#[inline(always)]
+pub fn cn(a: &Value, b: &Value) -> ShenResult<Value> {
+    match (a.as_str(), b.as_str()) {
+        (Some(x), Some(y)) => {
+            let mut s = String::with_capacity(x.len() + y.len());
+            s.push_str(x);
+            s.push_str(y);
+            Ok(Value::str(s))
+        }
+        _ => Err(ShenError::new(format!(
+            "cn: strings only, got {a:?} and {b:?}"
+        ))),
+    }
+}
+
+#[inline(always)]
+pub fn hdstr(v: &Value) -> ShenResult<Value> {
+    match v.as_str() {
+        Some(s) => s
+            .chars()
+            .next()
+            .map(|c| Value::str(c.to_string()))
+            .ok_or_else(|| ShenError::new("hdstr: empty string")),
+        None => Err(ShenError::new(format!("hdstr: not a string: {v:?}"))),
+    }
+}
+
+#[inline(always)]
+pub fn tlstr(v: &Value) -> ShenResult<Value> {
+    match v.as_str() {
+        Some(s) => {
+            if s.is_empty() {
+                return Err(ShenError::new("tlstr: empty string"));
+            }
+            let first_len = s.chars().next().expect("non-empty").len_utf8();
+            Ok(Value::str(&s[first_len..]))
+        }
+        None => Err(ShenError::new(format!("tlstr: not a string: {v:?}"))),
+    }
+}
+
+#[inline(always)]
+pub fn string_to_n(v: &Value) -> ShenResult<Value> {
+    match v.as_str() {
+        Some(s) => s
+            .chars()
+            .next()
+            .map(|c| Value::int(c as i64))
+            .ok_or_else(|| ShenError::new("string->n: empty string")),
+        None => Err(ShenError::new(format!("string->n: not a string: {v:?}"))),
+    }
+}
+
+#[inline(always)]
+pub fn n_to_string(v: &Value) -> ShenResult<Value> {
+    match v.as_int() {
+        Some(n) => {
+            let c = char::from_u32(n as u32)
+                .ok_or_else(|| ShenError::new(format!("n->string: bad codepoint {n}")))?;
+            Ok(Value::str(String::from(c)))
+        }
+        None => Err(ShenError::new(format!("n->string: not an int: {v:?}"))),
+    }
+}
+
+#[inline(always)]
+pub fn address_ref(v: &Value, n: &Value) -> ShenResult<Value> {
+    match (v.is_vec(), n.as_int()) {
+        (true, Some(i)) => v
+            .vec_get_opt(i as usize)
+            .ok_or_else(|| ShenError::new(format!("<-address: out of range {i}"))),
+        _ => Err(ShenError::new(format!("<-address: bad args: {v:?}, {n:?}"))),
+    }
+}
+
+#[inline(always)]
+pub fn address_set(v: &Value, n: &Value, x: &Value) -> ShenResult<Value> {
+    match (v.is_vec(), n.as_int()) {
+        (true, Some(i)) => {
+            let idx = i as usize;
+            if idx >= v.vec_len() {
+                return Err(ShenError::new(format!("address->: out of range {i}")));
+            }
+            v.vec_set(idx, *x);
+            Ok(*v)
+        }
+        _ => Err(ShenError::new(format!("address->: bad args: {v:?}, {n:?}"))),
+    }
+}
+
+/// `(set NAME Val)` when NAME is a free symbol — intern_static + store.
+#[inline(always)]
+pub fn set_global(interp: &mut Interp, name: &'static str, val: Value) -> Value {
+    let sym = interp.intern_static(name);
+    interp.env.set_global(sym, val);
+    val
+}
