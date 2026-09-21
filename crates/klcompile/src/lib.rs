@@ -722,6 +722,12 @@ impl<'a> Codegen<'a> {
                 return Ok(src);
             }
 
+            // Prolog CPS: `(when T … (freeze B))` / cut / bind! thaw the last
+            // arg immediately. Lowering skips the heap freeze (t-star's 23).
+            if let Some(src) = self.compile_cps_freeze(head, args, scope)? {
+                return Ok(src);
+            }
+
             // Inlinable primitive? Emit a direct call to the rt:: helper,
             // bypassing the env-routed apply_named path. release-mode LLVM
             // inlines the helper body so e.g. `(+ X 1)` becomes a direct
@@ -1148,6 +1154,74 @@ impl<'a> Codegen<'a> {
         }
     }
 
+    /// `(when T _ _ _ (freeze B))`, `(shen.cut V C N (freeze B))`,
+    /// `(shen.bind! P X V (freeze B))`, `(bind P X V _ _ (freeze B))`.
+    /// These callees thaw the last argument immediately (prolog.kl).
+    fn compile_cps_freeze(
+        &mut self,
+        head: &str,
+        args: &[KlExpr],
+        scope: &mut Scope,
+    ) -> Result<Option<String>, String> {
+        let Some(body) = freeze_arg_body(self.interner, args.last()) else {
+            return Ok(None);
+        };
+        match (head, args.len()) {
+            ("when", 5) => {
+                let t = self.compile_expr(&args[0], scope)?;
+                let b = self.compile_expr(&args[1], scope)?;
+                let c = self.compile_expr(&args[2], scope)?;
+                let n = self.compile_expr(&args[3], scope)?;
+                let body_src = self.compile_expr(body, scope)?;
+                let tv = self.fresh();
+                Ok(Some(format!(
+                    "{{ let {tv} = {t}; let _ = {b}; let _ = {c}; let _ = {n}; if rt::is_truthy(interp, &{tv})? {{ {body_src} }} else {{ Value::bool(false) }} }}"
+                )))
+            }
+            ("shen.cut", 4) => {
+                let v = self.compile_expr(&args[0], scope)?;
+                let c = self.compile_expr(&args[1], scope)?;
+                let n = self.compile_expr(&args[2], scope)?;
+                let body_src = self.compile_expr(body, scope)?;
+                let rv = self.fresh();
+                let cv = self.fresh();
+                Ok(Some(format!(
+                    "{{ let _ = {v}; let {cv} = {c}; let __n = {n}; let {rv} = {body_src}; if rt::is_truthy(interp, &rt::eq(&{rv}, &Value::bool(false)))? {{ let __u = rt::apply_direct(interp, \"shen.unlocked?\", &[{cv}])?; if rt::is_truthy(interp, &__u)? {{ let _ = rt::apply_direct(interp, \"shen.lock\", &[__n, {cv}])?; }} }} {rv} }}"
+                )))
+            }
+            ("shen.bind!", 4) => {
+                let p = self.compile_expr(&args[0], scope)?;
+                let x = self.compile_expr(&args[1], scope)?;
+                let vec = self.compile_expr(&args[2], scope)?;
+                let body_src = self.compile_expr(body, scope)?;
+                let pv = self.fresh();
+                let xv = self.fresh();
+                let vv = self.fresh();
+                let rv = self.fresh();
+                Ok(Some(format!(
+                    "{{ let {pv} = {p}; let {xv} = {x}; let {vv} = {vec}; let _ = rt::apply_direct(interp, \"shen.bindv\", &[{pv}, {xv}, {vv}])?; let {rv} = {body_src}; if rt::is_truthy(interp, &rt::eq(&{rv}, &Value::bool(false)))? {{ rt::apply_direct(interp, \"shen.unwind\", &[{pv}, {vv}, {rv}])? }} else {{ {rv} }} }}"
+                )))
+            }
+            ("bind", 6) => {
+                // (bind P X Vec C N Cont) → bind! P X Vec Cont
+                let p = self.compile_expr(&args[0], scope)?;
+                let x = self.compile_expr(&args[1], scope)?;
+                let vec = self.compile_expr(&args[2], scope)?;
+                let c = self.compile_expr(&args[3], scope)?;
+                let n = self.compile_expr(&args[4], scope)?;
+                let body_src = self.compile_expr(body, scope)?;
+                let pv = self.fresh();
+                let xv = self.fresh();
+                let vv = self.fresh();
+                let rv = self.fresh();
+                Ok(Some(format!(
+                    "{{ let {pv} = {p}; let {xv} = {x}; let {vv} = {vec}; let _ = {c}; let _ = {n}; let _ = rt::apply_direct(interp, \"shen.bindv\", &[{pv}, {xv}, {vv}])?; let {rv} = {body_src}; if rt::is_truthy(interp, &rt::eq(&{rv}, &Value::bool(false)))? {{ rt::apply_direct(interp, \"shen.unwind\", &[{pv}, {vv}, {rv}])? }} else {{ {rv} }} }}"
+                )))
+            }
+            _ => Ok(None),
+        }
+    }
+
     /// S37+ factoriser: `(let Go (freeze Else) Body)` where `Go` is only
     /// `(thaw Go)`'d. Emit a Rust closure (no Shen heap allocation) so Chez's
     /// local-procedure / jump lowering has a Rust analogue.
@@ -1403,6 +1477,19 @@ fn expr_uses_name(interner: &Interner, name: &str, expr: &KlExpr) -> bool {
 
 fn is_safe_operand(expr: &KlExpr) -> bool {
     !matches!(expr, KlExpr::App(_))
+}
+
+fn freeze_arg_body<'a>(interner: &Interner, last: Option<&'a KlExpr>) -> Option<&'a KlExpr> {
+    let KlExpr::App(items) = last? else {
+        return None;
+    };
+    if items.len() != 2 {
+        return None;
+    }
+    match &items[0] {
+        KlExpr::Sym(s) if interner.resolve(*s) == "freeze" => Some(&items[1]),
+        _ => None,
+    }
 }
 
 /// Kernel names with native overrides. Sealing to `aot_*` would skip them.
@@ -1724,6 +1811,15 @@ mod tests {
         let (out, _) = compile_kl(src, &opts).expect("compile");
         assert!(!out.contains("vector/or"), "{out}");
         assert!(out.contains("Value::err"), "{out}");
+    }
+
+    #[test]
+    fn when_freeze_is_inlined() {
+        let src = "(defun f (X) (when X A B C (freeze 1)))";
+        let opts = CompileOptions::external("test.kl");
+        let (out, _) = compile_kl(src, &opts).expect("compile");
+        assert!(!out.contains("make_aot_closure(\"<freeze>\""), "{out}");
+        assert!(out.contains("is_truthy"), "{out}");
     }
 
     #[test]
