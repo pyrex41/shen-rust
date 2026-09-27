@@ -1,7 +1,7 @@
 //! Yggdrasil stage-2 builder (Rust target).
 //!
 //! `yggdrasil-build <shaken-dir> <outdir>` reads a Yggdrasil shaken
-//! directory (manifest v3: `yggdrasil.manifest.txt`, a shaken
+//! directory (manifest v3 or v4: `yggdrasil.manifest.txt`, a shaken
 //! `kernel.kl`, user `.kl` files) and scaffolds a standalone Cargo
 //! project in `<outdir>`:
 //!
@@ -29,7 +29,7 @@ use std::process::ExitCode;
 
 use klcompile::{compile_kl, CompileOptions, SkipPolicy, KERNEL_SLOW_DEFUNS};
 
-/// Parsed Yggdrasil manifest v3 (`key=value` lines; unknown keys ignored).
+/// Parsed Yggdrasil manifest v3/v4 (`key=value` lines; unknown keys ignored).
 #[derive(Debug, Default)]
 struct Manifest {
     kernel: String,
@@ -60,9 +60,9 @@ fn parse_manifest(path: &Path) -> Result<Manifest, String> {
             ));
         };
         match key {
-            "manifest-version" if value != "3" => {
+            "manifest-version" if value != "3" && value != "4" => {
                 return Err(format!(
-                    "unsupported manifest-version {value:?} (expected 3)"
+                    "unsupported manifest-version {value:?} (expected 3 or 4)"
                 ));
             }
             "kernel" => m.kernel = value.to_string(),
@@ -105,6 +105,7 @@ fn compile_options(label: &str) -> CompileOptions {
             force_skip: KERNEL_SLOW_DEFUNS.iter().map(|s| s.to_string()).collect(),
         },
         emit_manifest: None,
+        seal_same_module: false,
     }
 }
 
