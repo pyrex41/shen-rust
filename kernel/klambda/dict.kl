@@ -1,0 +1,33 @@
+(defun shen.dict (V4225) (cond ((< V4225 1) (simple-error (cn "invalid initial dict size: " (shen.app V4225 "" shen.s)))) (true (let W4226 (absvector (+ 3 V4225)) (let W4227 (address-> W4226 0 shen.dictionary) (let W4228 (address-> W4226 1 V4225) (let W4229 (address-> W4226 2 0) (let W4230 (shen.fillvector W4226 3 (+ 2 V4225) ()) W4226))))))))
+
+(defun shen.dict? (V4231) (and (absvector? V4231) (= (trap-error (<-address V4231 0) (lambda Z4232 shen.not-dictionary)) shen.dictionary)))
+
+(defun shen.dict-capacity (V4233) (<-address V4233 1))
+
+(defun shen.dict-count (V4234) (<-address V4234 2))
+
+(defun shen.dict-count-> (V4235 V4236) (address-> V4235 2 V4236))
+
+(defun shen.<-dict-bucket (V4237 V4238) (<-address V4237 (+ 3 V4238)))
+
+(defun shen.dict-bucket-> (V4239 V4240 V4241) (address-> V4239 (+ 3 V4240) V4241))
+
+(defun shen.dict-update-count (V4242 V4243 V4244) (let W4245 (- (length V4244) (length V4243)) (shen.dict-count-> V4242 (+ W4245 (shen.dict-count V4242)))))
+
+(defun shen.dict-> (V4246 V4247 V4248) (let W4249 (hash V4247 (shen.dict-capacity V4246)) (let W4250 (shen.<-dict-bucket V4246 W4249) (let W4251 (shen.assoc-set V4247 V4248 W4250) (let W4252 (shen.dict-bucket-> V4246 W4249 W4251) (let W4253 (shen.dict-update-count V4246 W4250 W4251) V4248))))))
+
+(defun shen.<-dict (V4254 V4255) (let W4256 (hash V4255 (shen.dict-capacity V4254)) (let W4257 (shen.<-dict-bucket V4254 W4256) (let W4258 (assoc V4255 W4257) (if (empty? W4258) (simple-error (cn "value " (shen.app V4255 " not found in dict
+" shen.a))) (tl W4258))))))
+
+(defun shen.dict-rm (V4259 V4260) (let W4261 (hash V4260 (shen.dict-capacity V4259)) (let W4262 (shen.<-dict-bucket V4259 W4261) (let W4263 (shen.assoc-rm V4260 W4262) (let W4264 (shen.dict-bucket-> V4259 W4261 W4263) (let W4265 (shen.dict-update-count V4259 W4262 W4263) V4260))))))
+
+(defun shen.dict-fold (V4266 V4267 V4268) (let W4269 (shen.dict-capacity V4267) (shen.dict-fold-h V4266 V4267 V4268 0 W4269)))
+
+(defun shen.dict-fold-h (V4271 V4272 V4273 V4274 V4275) (cond ((= V4274 V4275) V4273) (true (let W4276 (shen.<-dict-bucket V4272 V4274) (let W4277 (shen.bucket-fold V4271 W4276 V4273) (shen.dict-fold-h V4271 V4272 W4277 (+ 1 V4274) V4275))))))
+
+(defun shen.bucket-fold (V4278 V4279 V4280) (cond ((= () V4279) V4280) ((and (cons? V4279) (cons? (hd V4279))) (((V4278 (hd (hd V4279))) (tl (hd V4279))) (shen.bucket-fold V4278 (tl V4279) V4280))) (true (shen.f-error shen.bucket-fold))))
+
+(defun shen.dict-keys (V4281) (shen.dict-fold (lambda Z4282 (lambda Z4283 (lambda Z4284 (cons Z4282 Z4284)))) V4281 ()))
+
+(defun shen.dict-values (V4285) (shen.dict-fold (lambda Z4286 (lambda Z4287 (lambda Z4288 (cons Z4287 Z4288)))) V4285 ()))
+

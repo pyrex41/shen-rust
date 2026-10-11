@@ -1,20 +1,16 @@
-//! Kernel boot: load all KL files, set port metadata, run
+//! Kernel boot: load the KL kernel files, set port metadata, run
 //! `shen.initialise`, then publish primitive arity / lambda-form on the
 //! kernel's property vector so `(fn NAME)` resolves correctly.
 //!
-//! The kernel-file order follows upstream `install.lsp` (the reference
-//! SBCL port's *runtime* loader) for the S42 (2026-08-25 refresh) set,
-//! then the retained standard-library overlay and community extensions.
-//!
-//! Order matters here: unlike the old community kernel (defun-only `.kl`
-//! whose load order was cosmetic), the refreshed `declarations.kl` and
-//! `types.kl` carry top-level executable forms. `declarations.kl` runs
-//! `(set shen.*prolog-memory* …)` + `shen.initialise-arity-table`, and
-//! `types.kl`'s 161 `(declare …)` forms invoke the type checker
-//! (`shen.prolog-vector` from `macros.kl`, the prolog memory global). So
-//! `declarations` and `macros` must precede `types`, which loads last —
-//! exactly the `install.lsp` order (NOT the `Sources/make.shen`
-//! bootstrap-generation order, where `types` precedes both).
+//! The vendored kernel is the community ShenOSKernel 42.2
+//! (`Shen-Language/shen-sources`, tag `shen-42.2`), the kernel upstream
+//! shen-scheme 0.50 ships. Its `.kl` files contain only `defun`s (no
+//! top-level effects), so load order is cosmetic; the fixed order below
+//! follows shen-scheme 0.50's `*shen-files*` so diagnostics line up.
+//! Initialisation is explicit: `init.kl` defines `shen.initialise`, which
+//! boot calls once after every file is loaded; `stlib.kl` defines
+//! `stlib.initialise`, and the bundled extensions have their own
+//! `*.initialise` entry points (see `run_post_aot_initialisers`).
 
 use std::cell::RefCell;
 use std::fs;
@@ -28,42 +24,51 @@ use crate::value::{Stream, Value};
 
 /// File names in boot order. Vendored under `kernel/klambda/`.
 ///
-/// The first 14 are Mark Tarver's refreshed S42 kernel, in the
-/// `install.lsp` runtime load order. `dict.kl`, `compiler.kl`, and
-/// `init.kl` from the community Shen kernel are gone: `put`/`get`
-/// now use pointer-list property vectors (`sys.kl`), `compiler.kl` was a
-/// shen-cl artifact, and `init.kl`'s content (incl. `shen.initialise`)
-/// moved into `declarations.kl`/`toplevel.kl`.
-///
-/// `backend.kl` (the new `cl.*` KLambda→Common-Lisp backend) is vendored
-/// and AOT-generated for audit completeness but deliberately NOT booted:
-/// upstream loads it as precompiled `backend.lsp` (the CL compiler), and
-/// it is dead weight for a Rust port. See `kernel/klambda/PROVENANCE.md`.
-///
-/// The standard library is no longer a kernel `.kl`. Upstream ships it as
-/// separate Shen sources under `Lib/StLib`; this port vendors them under
-/// `kernel/stlib/` and loads them after the kernel via `load_stlib`
-/// (running upstream's `install.shen`), retiring the old community
-/// `stlib.kl` overlay. The community extensions are still loaded on top:
-/// the conformance suite and Yggdrasil stage-1 launcher need them.
+/// The kernel set and its order follow shen-scheme 0.50's `*shen-files*`
+/// (ShenOSKernel 42.2): the 16 kernel modules, the precompiled standard
+/// library (`stlib.kl`), then the extensions shen-scheme 0.50 bundles
+/// (`features`, `launcher`, `programmable-pattern-matching`, `namespaces`).
+/// `extension-expand-dynamic.kl` is retained from this port's previous boot
+/// list (Yggdrasil's stage-1 tooling uses it). `extension-type-annotations.kl`
+/// is vendored and AOT-generated for audit completeness but not booted, as in
+/// shen-scheme 0.50.
 const KERNEL_FILES: &[&str] = &[
-    "sys.kl",
-    "writer.kl",
-    "core.kl",
-    "reader.kl",
-    "declarations.kl",
     "toplevel.kl",
-    "macros.kl",
-    "load.kl",
-    "prolog.kl",
+    "core.kl",
+    "sys.kl",
+    "dict.kl",
     "sequent.kl",
-    "track.kl",
-    "t-star.kl",
     "yacc.kl",
+    "reader.kl",
+    "prolog.kl",
+    "track.kl",
+    "load.kl",
+    "writer.kl",
+    "macros.kl",
+    "declarations.kl",
     "types.kl",
+    "t-star.kl",
+    "init.kl",
+    "stlib.kl",
     "extension-features.kl",
     "extension-expand-dynamic.kl",
     "extension-launcher.kl",
+    "extension-programmable-pattern-matching.kl",
+    "extension-namespaces.kl",
+];
+
+/// Zero-argument initialisers run after the kernel is fully installed
+/// (AOT + native overrides), in shen-scheme 0.50's `*init-code*` order.
+/// Each is skipped when the function is not defined (shaken kernels).
+/// `stlib.initialise` installs the standard library's arities, lambda
+/// forms, macros, synonyms, datatypes and types (ShenOSKernel 41.1+).
+///
+/// `shen.x.features.initialise` is deliberately not called: this port
+/// provides `shen.x.features.current` natively (`register_shenx`).
+const POST_AOT_INITIALISERS: &[&str] = &[
+    "shen.x.programmable-pattern-matching.initialise",
+    "shen.x.namespaces.initialise",
+    "stlib.initialise",
 ];
 
 /// Names + arities of native primitives whose `arity` and `shen.lambda-form`
@@ -220,92 +225,31 @@ pub fn boot_with_kernel(interp: &mut Interp, kernel_dir: &Path) -> ShenResult<()
     // land over the AOT registrations above. See `interp::tc_cache`.
     crate::interp::tc_cache::install_from_env(interp, kernel_dir);
 
-    // Load the standard library from the vendored `Lib/StLib` Shen
-    // sources (replacing the old community `stlib.kl` overlay). Done last,
-    // over the fully-installed kernel, so `load`/`tc`/`define` are live —
-    // going through the real `load` path is what registers correct
-    // arities (the overlay left them at -1, so `(fn filter)` failed).
-    load_stlib(interp, kernel_dir)?;
+    // Run the standard-library and extension initialisers over the fully
+    // installed kernel (AOT + native overrides), so their `declare`s go
+    // through the compiled type checker rather than the tree-walker.
+    run_post_aot_initialisers(interp)?;
 
     Ok(())
 }
 
-/// Load the standard library by running upstream's `install.shen` over the
-/// vendored `kernel/stlib/` sources. Sibling of `kernel/klambda/`
-/// (`kernel_dir` is `.../kernel/klambda`). A no-op when the directory is
-/// absent — shaken/embedded boots that don't ship StLib on disk just skip
-/// it.
-///
-/// `install.shen` drives the load with **relative** `(load "Maths/…")`
-/// paths, and `shen-rust`'s file I/O resolves relative paths against the
-/// process cwd (its `cd` only sets `*home-directory*`). Mutating the
-/// process cwd is not an option: `Interp` is single-threaded but multiple
-/// interpreters can boot concurrently (the test harness does), and cwd is
-/// process-global — a chdir in one boot corrupts another's relative loads.
-/// So instead we materialise a temp copy of `install.shen` with every
-/// `(load "REL")` rewritten to an absolute path under the StLib dir, and
-/// load that by absolute path. No cwd mutation, fully re-entrant.
-///
-/// `*hush*` (a per-interpreter global) is set for the duration so the
-/// per-file "…loaded" / type-signature chatter stays off the boot path
-/// (file writes, if any, are unaffected).
-fn load_stlib(interp: &mut Interp, kernel_dir: &Path) -> ShenResult<()> {
-    let Some(stlib_dir) = kernel_dir.parent().map(|p| p.join("stlib")) else {
-        return Ok(());
-    };
-    let install = stlib_dir.join("install.shen");
-    if !install.exists() {
-        return Ok(());
+/// Call each of `POST_AOT_INITIALISERS` that is defined, in order:
+/// the standard library's `stlib.initialise` and the bundled extensions'
+/// initialisers. `boot_with_kernel` calls this last; callers of
+/// `boot_from_kl_source` with a full (unshaken) kernel call it themselves
+/// (a shaken slice may keep these functions without the type checker
+/// their `declare`s need, so `boot_from_kl_source` does not).
+pub fn run_post_aot_initialisers(interp: &mut Interp) -> ShenResult<()> {
+    for name in POST_AOT_INITIALISERS {
+        let sym = interp.intern(name);
+        let Some(f) = interp.env.get_fn(sym).cloned() else {
+            continue;
+        };
+        interp
+            .apply(f, vec![])
+            .map_err(|e| ShenError::new(format!("{name}: {e}")))?;
     }
-    let stlib_abs = stlib_dir
-        .canonicalize()
-        .map_err(|e| ShenError::new(format!("stlib: canonicalize {stlib_dir:?}: {e}")))?;
-    let base = stlib_abs.to_string_lossy();
-
-    // Rewrite `(load "REL")` -> `(load "<stlib>/REL")` so the whole install
-    // sequence resolves without touching the process cwd (re-entrant).
-    // install.shen is otherwise run verbatim — including its per-module
-    // `(tc +/-)` toggles — matching the shen-cl reference. (The type-checked
-    // load recurses deeply; the boot thread and `RUST_MIN_STACK` provide the
-    // stack. See `.cargo/config.toml` and `bin/shen-rust/src/main.rs`.)
-    let src = fs::read_to_string(&install)
-        .map_err(|e| ShenError::new(format!("read {install:?}: {e}")))?;
-    let rewritten = src.replace("(load \"", &format!("(load \"{base}/"));
-
-    // Unique temp path per boot (pid + monotonic counter): concurrent boots
-    // must not share a file.
-    static SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-    let n = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let tmp = std::env::temp_dir().join(format!(
-        "shen-rust-stlib-install-{}-{}.shen",
-        std::process::id(),
-        n
-    ));
-    fs::write(&tmp, rewritten).map_err(|e| ShenError::new(format!("write {tmp:?}: {e}")))?;
-
-    let load_sym = interp.intern("load");
-    let Some(load_fn) = interp.env.get_fn(load_sym).cloned() else {
-        let _ = fs::remove_file(&tmp);
-        return Err(ShenError::new("load not defined; cannot install stlib"));
-    };
-    let hush = interp.intern("*hush*");
-    let prev_hush = interp.env.get_global(hush).cloned();
-
-    interp.env.set_global(hush, Value::bool(true));
-    let result = interp
-        .apply(
-            load_fn,
-            vec![Value::str(Rc::from(tmp.to_string_lossy().as_ref()))],
-        )
-        .map(|_| ())
-        .map_err(|e| ShenError::new(format!("stlib install.shen: {e}")));
-
-    match prev_hush {
-        Some(v) => interp.env.set_global(hush, v),
-        None => interp.env.set_global(hush, Value::bool(false)),
-    }
-    let _ = fs::remove_file(&tmp);
-    result
+    Ok(())
 }
 
 /// Boot-from-subset (Yggdrasil stage 2): bring up an interpreter from a
@@ -431,7 +375,7 @@ fn set_standard_streams(interp: &mut Interp) {
 /// `*porters*` identify this port.
 fn set_port_metadata(interp: &mut Interp) {
     let pairs: &[(&str, &str)] = &[
-        ("*version*", "42"),
+        ("*version*", "42.2"),
         ("*language*", "Rust"),
         ("*implementation*", "shen-rust"),
         ("*release*", "0.1.0"),

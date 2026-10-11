@@ -5,7 +5,7 @@
 
 (defun shen.syntax-error-message (V123 V124 V125) (cond ((= () V125) "
 ") ((= V123 V124) "...etc 
-") ((cons? V125) (cn (shen.app (hd V125) " " shen.s) (shen.syntax-error-message V123 (+ V124 1) (tl V125)))) (true (simple-error "partial function shen.syntax-error-message"))))
+") ((cons? V125) (cn (shen.app (hd V125) " " shen.s) (shen.syntax-error-message V123 (+ V124 1) (tl V125)))) (true (shen.f-error shen.syntax-error-message))))
 
 (defun shen.parse-failure? (V126) (= V126 (fail)))
 
@@ -94,13 +94,13 @@
 
 (defun shen.process-yacc-semantics (V388) (cond ((and (cons? V388) (and (= protect (hd V388)) (and (cons? (tl V388)) (and (= () (tl (tl V388))) (shen.non-terminal? (hd (tl V388))))))) (hd (tl V388))) ((cons? V388) (map (lambda Z389 (shen.process-yacc-semantics Z389)) V388)) ((shen.non-terminal? V388) (concat Action V388)) (true V388)))
 
-(defun shen.<-out (V390) (hd (tl V390)))
+(defun shen.<-out (V392) (cond ((and (cons? V392) (and (cons? (tl V392)) (= () (tl (tl V392))))) (hd (tl V392))) (true (hd (tl V392)))))
 
-(defun shen.in-> (V391) (hd V391))
+(defun shen.in-> (V393) (hd V393))
 
-(defun <!> (V392) (cons () (cons V392 ())))
+(defun <!> (V394) (cons () (cons V394 ())))
 
-(defun <e> (V393) (cons V393 (cons () ())))
+(defun <e> (V395) (cons V395 (cons () ())))
 
-(defun <end> (V396) (cond ((= () V396) (cons () (cons () ()))) (true (shen.parse-failure))))
+(defun <end> (V398) (cond ((= () V398) (cons () (cons () ()))) (true (shen.parse-failure))))
 
