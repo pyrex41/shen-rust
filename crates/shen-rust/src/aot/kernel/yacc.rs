@@ -230,10 +230,10 @@ pub fn aot_shen_x2e_syntax_x2d_error_x2d_message(
                                         Err(e) => break Err(e),
                                     } {
                                         break Ok({
-                                            let __t16 = Value::str(
-                                                "partial function shen.syntax-error-message",
+                                            let __t16 = Value::sym(
+                                                interp.intern_static("shen.syntax-error-message"),
                                             );
-                                            rt::apply_direct(interp, "simple-error", &[__t16])?
+                                            rt::apply_direct(interp, "shen.f-error", &[__t16])?
                                         });
                                     } else {
                                         break Err(ShenError::new("cond: no clause matched"));
@@ -5562,16 +5562,76 @@ pub fn aot_shen_x2e__x3c__x2d_out(interp: &mut Interp, args: &[Value]) -> ShenRe
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V390 = args[0].clone();
+    let mut v_V392 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
-        break Ok({
-            let __t1203 = {
-                let __t1202 = v_V390.clone();
-                rt::tl(&__t1202)?
+        {
+            let __t1216 = {
+                let __t1212 = {
+                    let __t1205 = v_V392.clone();
+                    rt::is_cons(&__t1205)
+                };
+                if !rt::is_truthy(interp, &__t1212)? {
+                    Value::bool(false)
+                } else {
+                    let __t1213 = {
+                        let __t1210 = {
+                            let __t1207 = {
+                                let __t1206 = v_V392.clone();
+                                rt::tl(&__t1206)?
+                            };
+                            rt::is_cons(&__t1207)
+                        };
+                        if !rt::is_truthy(interp, &__t1210)? {
+                            Value::bool(false)
+                        } else {
+                            let __t1211 = Value::bool(
+                                ({
+                                    let __t1209 = {
+                                        let __t1208 = v_V392.clone();
+                                        rt::tl(&__t1208)?
+                                    };
+                                    rt::tl(&__t1209)?
+                                })
+                                .is_nil(),
+                            );
+                            Value::bool(rt::is_truthy(interp, &__t1211)?)
+                        }
+                    };
+                    Value::bool(rt::is_truthy(interp, &__t1213)?)
+                }
             };
-            rt::hd(&__t1203)?
-        });
+            if match rt::is_truthy(interp, &__t1216) {
+                Ok(b) => b,
+                Err(e) => break Err(e),
+            } {
+                break Ok({
+                    let __t1215 = {
+                        let __t1214 = v_V392.clone();
+                        rt::tl(&__t1214)?
+                    };
+                    rt::hd(&__t1215)?
+                });
+            } else {
+                {
+                    let __t1204 = Value::bool(true);
+                    if match rt::is_truthy(interp, &__t1204) {
+                        Ok(b) => b,
+                        Err(e) => break Err(e),
+                    } {
+                        break Ok({
+                            let __t1203 = {
+                                let __t1202 = v_V392.clone();
+                                rt::tl(&__t1202)?
+                            };
+                            rt::hd(&__t1203)?
+                        });
+                    } else {
+                        break Err(ShenError::new("cond: no clause matched"));
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -5589,12 +5649,12 @@ pub fn aot_shen_x2e_in_x2d__x3e_(interp: &mut Interp, args: &[Value]) -> ShenRes
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V391 = args[0].clone();
+    let mut v_V393 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t1204 = v_V391.clone();
-            rt::hd(&__t1204)?
+            let __t1217 = v_V393.clone();
+            rt::hd(&__t1217)?
         });
     }
 }
@@ -5613,17 +5673,17 @@ pub fn aot__x3c__x21__x3e_(interp: &mut Interp, args: &[Value]) -> ShenResult<Va
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V392 = args[0].clone();
+    let mut v_V394 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t1205 = Value::nil();
-            let __t1208 = {
-                let __t1206 = v_V392.clone();
-                let __t1207 = Value::nil();
-                rt::cons(&__t1206, &__t1207)
+            let __t1218 = Value::nil();
+            let __t1221 = {
+                let __t1219 = v_V394.clone();
+                let __t1220 = Value::nil();
+                rt::cons(&__t1219, &__t1220)
             };
-            rt::cons(&__t1205, &__t1208)
+            rt::cons(&__t1218, &__t1221)
         });
     }
 }
@@ -5642,17 +5702,17 @@ pub fn aot__x3c_e_x3e_(interp: &mut Interp, args: &[Value]) -> ShenResult<Value>
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V393 = args[0].clone();
+    let mut v_V395 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         break Ok({
-            let __t1209 = v_V393.clone();
-            let __t1212 = {
-                let __t1210 = Value::nil();
-                let __t1211 = Value::nil();
-                rt::cons(&__t1210, &__t1211)
+            let __t1222 = v_V395.clone();
+            let __t1225 = {
+                let __t1223 = Value::nil();
+                let __t1224 = Value::nil();
+                rt::cons(&__t1223, &__t1224)
             };
-            rt::cons(&__t1209, &__t1212)
+            rt::cons(&__t1222, &__t1225)
         });
     }
 }
@@ -5671,28 +5731,28 @@ pub fn aot__x3c_end_x3e_(interp: &mut Interp, args: &[Value]) -> ShenResult<Valu
         )));
     }
     #[allow(unused_mut)]
-    let mut v_V396 = args[0].clone();
+    let mut v_V398 = args[0].clone();
     #[allow(clippy::never_loop)]
     loop {
         {
-            let __t1218 = Value::bool((v_V396.clone()).is_nil());
-            if match rt::is_truthy(interp, &__t1218) {
+            let __t1231 = Value::bool((v_V398.clone()).is_nil());
+            if match rt::is_truthy(interp, &__t1231) {
                 Ok(b) => b,
                 Err(e) => break Err(e),
             } {
                 break Ok({
-                    let __t1214 = Value::nil();
-                    let __t1217 = {
-                        let __t1215 = Value::nil();
-                        let __t1216 = Value::nil();
-                        rt::cons(&__t1215, &__t1216)
+                    let __t1227 = Value::nil();
+                    let __t1230 = {
+                        let __t1228 = Value::nil();
+                        let __t1229 = Value::nil();
+                        rt::cons(&__t1228, &__t1229)
                     };
-                    rt::cons(&__t1214, &__t1217)
+                    rt::cons(&__t1227, &__t1230)
                 });
             } else {
                 {
-                    let __t1213 = Value::bool(true);
-                    if match rt::is_truthy(interp, &__t1213) {
+                    let __t1226 = Value::bool(true);
+                    if match rt::is_truthy(interp, &__t1226) {
                         Ok(b) => b,
                         Err(e) => break Err(e),
                     } {

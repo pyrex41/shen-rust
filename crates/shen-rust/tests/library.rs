@@ -250,14 +250,14 @@ fn reverse_of_nested_lists() {
 }
 
 #[test]
-fn stdlib_loaded_from_source_has_real_arities() {
-    // Regression for the retired community `stlib.kl` overlay: it installed
-    // the stdlib as pre-compiled KLambda defuns, bypassing the kernel's
-    // `load`/`define` path, so functions like `filter` ended up with the
-    // "unknown" arity -1. That broke `(fn filter)` and top-level
-    // `(filter ...)` ("fn: filter is undefined"). The S42 port loads StLib
-    // from the `Lib/StLib` Shen sources through the real `load`, which
-    // registers correct arities. See kernel/stlib/PROVENANCE.md.
+fn stdlib_has_real_arities() {
+    // Regression for the 41.2-era community `stlib.kl` overlay: it installed
+    // the stdlib as pre-compiled KLambda defuns without registering their
+    // arities, so functions like `filter` ended up with the "unknown" arity
+    // -1. That broke `(fn filter)` and top-level `(filter ...)` ("fn: filter
+    // is undefined"). ShenOSKernel 42.2's `stlib.kl` ships `stlib.initialise`
+    // (41.1+), which boot calls to install arities and lambda forms. See
+    // kernel/klambda/PROVENANCE.md.
     let mut i = fresh_booted();
 
     // `filter` has a known (non -1) arity now.

@@ -24,7 +24,9 @@ use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 use std::path::PathBuf;
 
-use shen_rust::interp::boot::{boot, boot_from_kl_source, boot_with_kernel, eval_kl_source};
+use shen_rust::interp::boot::{
+    boot, boot_from_kl_source, boot_with_kernel, eval_kl_source, run_post_aot_initialisers,
+};
 use shen_rust::interp::eval::Interp;
 use shen_rust::value::Value;
 
@@ -37,30 +39,34 @@ pub struct ShenCtx {
 /// shen-rust's boot order (must match `interp::boot::KERNEL_FILES`). Lets
 /// `shen_boot_embedded` bring up the kernel with **no filesystem access** —
 /// the iOS-friendly path (no bundled resources, no sandbox path juggling).
-/// See `kernel/klambda/PROVENANCE.md` for the S42 refresh set.
+/// See `kernel/klambda/PROVENANCE.md` for the ShenOSKernel 42.2 set.
 ///
-/// NOTE: the standard library is no longer a kernel `.kl` (it loads from the
-/// vendored `kernel/stlib/` Shen sources via `boot::load_stlib`, which needs a
-/// filesystem). So this no-fs embedded boot brings up the kernel WITHOUT the
-/// stdlib; embedding the StLib sources for the no-fs path is follow-up work.
+/// The precompiled standard library (`stlib.kl`) is embedded too;
+/// `shen_boot_embedded` runs `stlib.initialise` and the extension
+/// initialisers after the boot, like the on-disk boot does.
 const KERNEL_PARTS: &[&str] = &[
-    include_str!("../../../kernel/klambda/sys.kl"),
-    include_str!("../../../kernel/klambda/writer.kl"),
-    include_str!("../../../kernel/klambda/core.kl"),
-    include_str!("../../../kernel/klambda/reader.kl"),
-    include_str!("../../../kernel/klambda/declarations.kl"),
     include_str!("../../../kernel/klambda/toplevel.kl"),
-    include_str!("../../../kernel/klambda/macros.kl"),
-    include_str!("../../../kernel/klambda/load.kl"),
-    include_str!("../../../kernel/klambda/prolog.kl"),
+    include_str!("../../../kernel/klambda/core.kl"),
+    include_str!("../../../kernel/klambda/sys.kl"),
+    include_str!("../../../kernel/klambda/dict.kl"),
     include_str!("../../../kernel/klambda/sequent.kl"),
-    include_str!("../../../kernel/klambda/track.kl"),
-    include_str!("../../../kernel/klambda/t-star.kl"),
     include_str!("../../../kernel/klambda/yacc.kl"),
+    include_str!("../../../kernel/klambda/reader.kl"),
+    include_str!("../../../kernel/klambda/prolog.kl"),
+    include_str!("../../../kernel/klambda/track.kl"),
+    include_str!("../../../kernel/klambda/load.kl"),
+    include_str!("../../../kernel/klambda/writer.kl"),
+    include_str!("../../../kernel/klambda/macros.kl"),
+    include_str!("../../../kernel/klambda/declarations.kl"),
     include_str!("../../../kernel/klambda/types.kl"),
+    include_str!("../../../kernel/klambda/t-star.kl"),
+    include_str!("../../../kernel/klambda/init.kl"),
+    include_str!("../../../kernel/klambda/stlib.kl"),
     include_str!("../../../kernel/klambda/extension-features.kl"),
     include_str!("../../../kernel/klambda/extension-expand-dynamic.kl"),
     include_str!("../../../kernel/klambda/extension-launcher.kl"),
+    include_str!("../../../kernel/klambda/extension-programmable-pattern-matching.kl"),
+    include_str!("../../../kernel/klambda/extension-namespaces.kl"),
 ];
 
 /// Boots a Shen kernel and returns an owning handle, or NULL on failure.
@@ -94,7 +100,9 @@ pub extern "C" fn shen_boot(kernel_dir: *const c_char) -> *mut ShenCtx {
 pub extern "C" fn shen_boot_embedded() -> *mut ShenCtx {
     let mut interp = Interp::new();
     let src = KERNEL_PARTS.join("\n");
-    match boot_from_kl_source(&mut interp, &src, Some(shen_rust::aot::kernel::install_all)) {
+    let booted = boot_from_kl_source(&mut interp, &src, Some(shen_rust::aot::kernel::install_all))
+        .and_then(|()| run_post_aot_initialisers(&mut interp));
+    match booted {
         Ok(()) => Box::into_raw(Box::new(ShenCtx { interp })),
         Err(_) => std::ptr::null_mut(),
     }

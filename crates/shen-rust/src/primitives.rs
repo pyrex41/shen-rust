@@ -46,11 +46,24 @@ fn override_kernel(interp: &mut Interp, name: &str, arity: usize, f: DirectFn) {
 /// (which would otherwise overwrite the primitive) and again after AOT install.
 pub fn register_early_overrides(interp: &mut Interp) {
     override_kernel(interp, "hash", 2, hot_hash);
-    // Property store: native put/get must be live before declarations.kl
-    // fills *property-vector*, same reason as hash.
-    override_kernel(interp, "put", 4, hot_put);
-    override_kernel(interp, "get", 3, hot_get);
-    override_kernel(interp, "unput", 3, hot_unput);
+    // Property store: native put/get must be live before the kernel fills
+    // *property-vector*, same reason as hash. The natives implement the
+    // Tarver S4x pointer-list layout (`shen.change-pointer-value`), so they
+    // are only installed over a kernel of that lineage (e.g. a shaken slice
+    // of it). The community ShenOSKernel (42.2, vendored) stores properties
+    // in a `shen.dict` (`dict.kl`) and keeps its own `put`/`get`/`unput`.
+    if kernel_defines(interp, "shen.change-pointer-value") {
+        override_kernel(interp, "put", 4, hot_put);
+        override_kernel(interp, "get", 3, hot_get);
+        override_kernel(interp, "unput", 3, hot_unput);
+    }
+}
+
+/// True when the kernel has a function named `name` in the function
+/// namespace (used to gate lineage-specific native overrides).
+fn kernel_defines(interp: &mut Interp, name: &str) -> bool {
+    let sym = interp.symbols.intern(name);
+    interp.env.get_fn(sym).is_some()
 }
 
 /// Override kernel-level Shen functions with native Rust implementations
@@ -69,6 +82,11 @@ pub fn register_hot_overrides(interp: &mut Interp) {
     override_kernel(interp, "shen.pvar?", 1, hot_pvar_p);
     override_kernel(interp, "shen.lazyderef", 2, hot_lazyderef);
     override_kernel(interp, "fail", 0, hot_fail);
+    // `value/or`, `<-address/or` and `<-vector/or` are not ShenOSKernel 42.2
+    // functions, but klcompile lowers `trap-error` around `value` /
+    // `<-address` / `<-vector` to them (Shen/Scheme-style mapping), so the
+    // AOT kernel needs them regardless of lineage. shen-scheme 0.50 also
+    // ships them as runtime primitives.
     override_kernel(interp, "value/or", 2, hot_value_or);
     override_kernel(interp, "<-address/or", 3, hot_address_or);
     override_kernel(interp, "<-vector/or", 3, hot_vector_or);

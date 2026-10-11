@@ -39,8 +39,8 @@ fn eval(interp: &mut Interp, src: &str) -> Value {
 #[test]
 fn kernel_boots_clean() {
     // Just running boot is the test — it has to load every kernel file
-    // (incl. the S42 self-initialising declarations.kl) without
-    // raising.
+    // and run `shen.initialise` plus the stlib / extension initialisers
+    // without raising.
     let _ = fresh_booted();
 }
 
@@ -49,10 +49,13 @@ fn version_global_is_set() {
     let mut interp = fresh_booted();
     let v = eval(&mut interp, "(value *version*)");
     if let Some(s) = v.as_str() {
-        assert_eq!(s, "42");
+        assert_eq!(s, "42.2");
     } else {
         panic!("expected string, got {v:?}");
     }
+    // `(version)` reports the ShenOSKernel release set by `init.kl`.
+    let v = eval(&mut interp, "(version)");
+    assert_eq!(v.as_str(), Some("42.2"), "(version) = {v:?}");
 }
 
 #[test]
@@ -159,4 +162,14 @@ fn fn_lookup_post_metadata() {
     let mut interp = fresh_booted();
     let v = eval(&mut interp, "(fn +)");
     assert!((v.is_closure()));
+}
+
+#[test]
+fn aot_trap_error_helpers_are_installed() {
+    // klcompile lowers `(trap-error (<-address X N) ...)` to the runtime
+    // helper `<-address/or`, which ShenOSKernel 42.2 does not define; the
+    // port must install it natively (Bifrost `tuple-not-vector`).
+    let mut interp = fresh_booted();
+    let v = eval(&mut interp, "(vector? (@p 1 2))");
+    assert_eq!(v.as_bool(), Some(false), "(vector? (@p 1 2)) = {v:?}");
 }

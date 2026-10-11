@@ -2,10 +2,11 @@
 
 ## Current state
 
-A working port of the Shen language to Rust. It boots Mark Tarver's
-**Shen S42** kernel (`*version*` 42, provenance `s42-pristine-20260825`; see
-`kernel/klambda/PROVENANCE.md`) and passes the full conformance suite — **134 / 134**
-kernel tests (`scripts/kernel-tests.sh`) — in every execution mode. All gates
+A working port of the Shen language to Rust. It boots the community
+**ShenOSKernel 42.2** (`(version)` = `"42.2"`, tag `shen-42.2`, the kernel
+upstream shen-scheme 0.50 ships; see `kernel/klambda/PROVENANCE.md`) and passes
+the full conformance suite — **143 / 143** kernel tests
+(`scripts/kernel-tests.sh`, release). All gates
 green (`scripts/gates.sh`): shengen-codegen, fmt+clippy, build, test
 (unit + integration suites), shen-check, tcb-audit, kernel-aot-audit,
 kernel-tests, kernel-tests-debug (the debug-build run carries the heap
@@ -117,11 +118,22 @@ code. Full story in `PERFORMANCE.md`, `BENCHMARKS.md`, and `design/perf-*.md`.
   ~8s and vs June S41.2 ~3s (do not quote 3s for S42). GC, VM, overlay, and
   Cedar are unchanged.
 
+- **ShenOSKernel 42.2** (2026-10-11, pyrex41/shen-rust#28) — replace the
+  Tarver S42 lineage wholesale with the community kernel shen-scheme 0.50
+  ships (tag `shen-42.2`, tarball SHA-256 `1d022730…2678d8`). Boot is
+  `init.kl`-driven again: load the defun-only `.kl` set, `shen.initialise`,
+  AOT + native overrides, then `programmable-pattern-matching` /
+  `namespaces` / `stlib.initialise`. The standard library is the
+  precompiled `stlib.kl` (the `kernel/stlib/` sources are the matching 42.2
+  `lib/stlib/`, not loaded at boot). The kernel's own `dict.kl`-based
+  `put`/`get` are used (the native ones assume Tarver's layout). Kernel
+  tests 143/0 (the 42.2 suite).
+
 ## Known limitations
 
-- Boot loads + AOT-installs 17 kernel files every startup, then loads the
-  standard library from the `kernel/stlib/` Shen sources (~sub-second
-  release); shen-cl uses pre-compiled FASLs.
+- Boot loads + AOT-installs 22 kernel files (including the precompiled
+  standard library `stlib.kl`) every startup; shen-cl uses pre-compiled
+  FASLs.
 - GC collection is opt-in (`SHEN_RUST_GC=1`) and requires aarch64
   macOS/Linux (the conservative stack scan is unimplemented elsewhere —
   refused with a warning, heap stays grow-only). Hosts embedding the engine

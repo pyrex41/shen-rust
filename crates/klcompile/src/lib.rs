@@ -145,11 +145,17 @@ pub struct CompileReport {
 /// invocation's policy (see `CompileOptions::kernel`), not a property of
 /// the compiler.
 ///
-/// Empty since the S42 refresh: the only members were the four
-/// `stlib.initialise-*` defuns in the community `stlib.kl`, which is
-/// retired — the standard library now loads from the `Lib/StLib` Shen
-/// sources at boot (`kernel/stlib/`) and is not part of the kernel AOT set.
-pub const KERNEL_SLOW_DEFUNS: &[&str] = &[];
+/// The members are the four `stlib.initialise-*` defuns in ShenOSKernel's
+/// precompiled `stlib.kl` (each one large nested cons literal, ~12-190 KB of
+/// KL); they run once at boot from `stlib.initialise`, so tree-walking them
+/// costs nothing measurable. (Empty during the Tarver S42 interlude, when
+/// the standard library loaded from Shen sources instead of `stlib.kl`.)
+pub const KERNEL_SLOW_DEFUNS: &[&str] = &[
+    "stlib.initialise-sources",
+    "stlib.initialise-types",
+    "stlib.initialise-environment",
+    "stlib.initialise-arities",
+];
 
 /// Compile KL source text to a Rust module. Pure: no filesystem access.
 /// One `Codegen` per call, so `__tN` numbering matches the historical
@@ -1610,11 +1616,11 @@ mod tests {
         p
     }
 
-    /// Pin the kernel skip set: with the kernel options, no defun across
-    /// the kernel .kl files is force-skipped (empty since the S42 refresh
-    /// retired `stlib.kl`, whose four `stlib.initialise-*` defuns were the
-    /// only members). A budget heuristic must never silently change this —
-    /// the kernel AOT bytes are frozen behind Gate 6.
+    /// Pin the kernel skip set: with the kernel options, exactly the four
+    /// `stlib.initialise-*` defuns of the vendored `stlib.kl` are
+    /// force-skipped across the kernel .kl files. A budget heuristic must
+    /// never silently change this — the kernel AOT bytes are frozen behind
+    /// Gate 6.
     #[test]
     fn kernel_skip_set_is_exactly_the_legacy_four() {
         let dir = workspace_root().join("kernel").join("klambda");

@@ -7,9 +7,10 @@ with native [AWS Cedar](https://www.cedarpolicy.com/) authorization integration.
 
 Shen is a functional language with an integrated logic engine and an optional,
 very expressive type system (a sequent-calculus theorem prover). `shen-rust`
-boots the upstream **Shen S42** kernel (`*version*` 42, provenance
-`s42-pristine-20260825`; see `kernel/klambda/PROVENANCE.md`) and passes its
-full conformance suite — **134 / 134 kernel tests**, in every execution mode.
+boots the community **ShenOSKernel 42.2** (`(version)` = `"42.2"`, the kernel
+upstream shen-scheme 0.50 ships; tag `shen-42.2`; see
+`kernel/klambda/PROVENANCE.md`) and passes its full conformance suite —
+**143 / 143 kernel tests**.
 
 The name follows the Shen-port convention (`shen-cl`, `shen-go`, `shen-ocaml`):
 the engine is `shen-rust`. The name `shen-cedar` is reused for the Shen **+**
@@ -27,7 +28,7 @@ cargo run --release --bin shen-rust
 # Long-running / served mode (enables the bytecode VM — ~2.3× warm)
 cargo run --release --bin shen-rust -- --served
 
-# Run the upstream Shen kernel conformance suite (expect 134/0)
+# Run the upstream Shen kernel conformance suite (expect 143/0)
 cargo run --release --bin shen-rust -- --kernel-tests
 
 # Standard Shen launcher protocol (extension-launcher.kl), as in shen-cl:
@@ -136,7 +137,7 @@ crates/klcompile/           build-time KL → Rust AOT compiler for the kernel
 crates/shengen-rust/        Shen sequent-calc specs → Rust guard types (backpressure)
 bin/shen-rust/              the REPL / CLI (`--served`, `--kernel-tests`)
 examples/shen-cedar-authz/  Shen + Cedar integration (gate / verify / generate)
-kernel/                     vendored Shen S42 (klambda + conformance tests)
+kernel/                     vendored ShenOSKernel 42.2 (klambda, stlib, tests)
 specs/                      backpressure specs in Shen sequent-calculus syntax
 design/                     architecture + performance design notes
 scripts/                    gates.sh (CI), benches, cross-port + warm benchmarks
