@@ -43,9 +43,8 @@
      ExternalF (filter (/. X (> (arity X) -1)) External)
      Systemf   (map (fn systemf) ExternalF)
      ok)
-         
+
 (preclude-all-but [])
 (set shen.*userdefs* [])
-(cd "") 
+(cd "")
 (tc -)
-

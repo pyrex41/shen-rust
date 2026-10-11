@@ -1,5 +1,50 @@
 (maxinferences 1e7)
 
+(report "lambda table updates"
+
+  (update-lambda-table append 2)
+  append
+
+  (let F append
+       Lambda (fn F)
+    (Lambda [1] [2]))
+  [1 2]
+
+  (put version shen.lambda-form stale)
+  stale
+
+  (update-lambda-table version 0)
+  version
+
+  (trap-error
+    (get version shen.lambda-form)
+    (/. X undefined))
+  undefined
+
+  (do (put lambda-table-missing shen.lambda-form stale)
+      (update-lambda-table lambda-table-missing -1)
+      (let Result (trap-error
+                    (let F lambda-table-missing
+                      (fn F))
+                    (/. X undefined))
+           Clear (unput lambda-table-missing arity)
+        Result))
+  undefined)
+
+(report "type declaration variancy"
+
+  (prolog? (shen.variancy-signature (receive version) (receive string) Signature)
+           (return Signature))
+  [--> string]
+
+  (prolog? (shen.variancy-signature (receive version) (receive string)
+                                     (receive [--> number])))
+  false
+
+  (prolog? (shen.variancy-signature (receive append) (receive [number --> number]) Signature)
+           (return Signature))
+  [number --> number])
+
 (report "cartesian product"
 
     (load "cartprod.shen") loaded

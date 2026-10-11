@@ -1,0 +1,31 @@
+"Copyright (c) 2026 Bruno Deferrari. All rights reserved.
+BSD 3-Clause License: http://opensource.org/licenses/BSD-3-Clause"
+
+(defun shen.x.namespaces.initialise () (shen.register-source-form shen.x.namespace (lambda Z7445 (shen.x.namespaces.expand Z7445))))
+
+(defun shen.x.namespaces.expand (V7446) (cond ((and (cons? V7446) (and (= shen.x.namespace (hd V7446)) (and (cons? (tl V7446)) (shen.x.namespaces.name? (hd (tl V7446)))))) (shen.x.namespaces.header (hd (tl V7446)) (tl (tl V7446)) () ())) (true (simple-error (cn "invalid namespace: " (shen.app V7446 "
+" shen.s))))))
+
+(defun shen.x.namespaces.header (V7451 V7452 V7453 V7454) (cond ((and (cons? V7452) (and (cons? (hd V7452)) (and (= use (hd (hd V7452))) (and (cons? (tl (hd V7452))) (= () (tl (tl (hd V7452)))))))) (shen.x.namespaces.header V7451 (tl V7452) (shen.x.namespaces.add-use (hd (tl (hd V7452))) (hd (tl (hd V7452))) V7453) V7454)) ((and (cons? V7452) (and (cons? (hd V7452)) (and (= use (hd (hd V7452))) (and (cons? (tl (hd V7452))) (and (cons? (tl (tl (hd V7452)))) (and (= => (hd (tl (tl (hd V7452))))) (and (cons? (tl (tl (tl (hd V7452))))) (= () (tl (tl (tl (tl (hd V7452))))))))))))) (shen.x.namespaces.header V7451 (tl V7452) (shen.x.namespaces.add-use (hd (tl (hd V7452))) (hd (tl (tl (tl (hd V7452))))) V7453) V7454)) ((and (cons? V7452) (and (cons? (hd V7452)) (and (= externals (hd (hd V7452))) (and (cons? (tl (hd V7452))) (= () (tl (tl (hd V7452)))))))) (shen.x.namespaces.header V7451 (tl V7452) V7453 (union (shen.x.namespaces.external-symbols (eval (hd (tl (hd V7452))))) V7454))) ((and (cons? V7452) (and (cons? (hd V7452)) (element? (hd (hd V7452)) (cons use (cons externals ()))))) (simple-error (cn "invalid namespace directive: " (shen.app (hd V7452) "
+" shen.s)))) (true (let W7455 (shen.x.namespaces.qualify-list (shen.x.namespaces.body-forms V7452) (str V7451) V7453 V7454) (do (shen.record-external V7451 V7454) (do (shen.record-internal V7451 () (snd W7455)) (fst W7455)))))))
+
+(defun shen.x.namespaces.add-use (V7458 V7459 V7460) (cond ((and (shen.x.namespaces.name? V7458) (and (shen.x.namespaces.name? V7459) (empty? (assoc V7459 V7460)))) (cons (cons V7459 V7458) V7460)) (true (simple-error (cn "invalid or duplicate namespace use: " (shen.app V7458 (cn " => " (shen.app V7459 "
+" shen.s)) shen.s))))))
+
+(defun shen.x.namespaces.body-forms (V7463) (cond ((and (cons? V7463) (and (cons? (hd V7463)) (element? (hd (hd V7463)) (cons use (cons externals ()))))) (simple-error (cn "namespace directive after body: " (shen.app (hd (hd V7463)) "
+" shen.s)))) ((cons? V7463) (cons (hd V7463) (shen.x.namespaces.body-forms (tl V7463)))) ((= () V7463) ()) (true (shen.f-error shen.x.namespaces.body-forms))))
+
+(defun shen.x.namespaces.name? (V7464) (and (symbol? V7464) (not (variable? V7464))))
+
+(defun shen.x.namespaces.external-symbols (V7465) (cond ((= () V7465) ()) ((and (cons? V7465) (shen.x.namespaces.name? (hd V7465))) (cons (hd V7465) (shen.x.namespaces.external-symbols (tl V7465)))) (true (simple-error (cn "externals expects a list of non-variable symbols: " (shen.app V7465 "
+" shen.s))))))
+
+(defun shen.x.namespaces.qualify (V7478 V7479 V7480 V7481) (cond ((and (cons? V7478) (and (= with-externals (hd V7478)) (and (cons? (tl V7478)) (and (cons? (tl (tl V7478))) (= () (tl (tl (tl V7478)))))))) (shen.x.namespaces.qualify (hd (tl (tl V7478))) V7479 V7480 (union (shen.x.namespaces.external-symbols (eval (hd (tl V7478)))) V7481))) ((and (cons? V7478) (= with-externals (hd V7478))) (simple-error (cn "invalid with-externals: " (shen.app (tl V7478) "
+" shen.s)))) ((cons? V7478) (shen.x.namespaces.qualify-list V7478 V7479 V7480 V7481)) ((shen.internal? V7478 V7479 V7481) (let W7482 (shen.x.namespaces.import-name V7478 V7480) (if (cons? W7482) (@p (tl W7482) ()) (@p (shen.intern-in-package V7479 V7478) (cons V7478 ()))))) (true (@p V7478 ()))))
+
+(defun shen.x.namespaces.qualify-list (V7483 V7484 V7485 V7486) (cond ((cons? V7483) (let W7487 (shen.x.namespaces.qualify (hd V7483) V7484 V7485 V7486) (let W7488 (shen.x.namespaces.qualify-list (tl V7483) V7484 V7485 V7486) (@p (cons (fst W7487) (fst W7488)) (union (snd W7487) (snd W7488)))))) (true (shen.x.namespaces.qualify V7483 V7484 V7485 V7486))))
+
+(defun shen.x.namespaces.import-name (V7491 V7492) (cond ((= () V7492) ()) ((and (cons? V7492) (cons? (hd V7492))) (let W7493 (shen.x.namespaces.import-name V7491 (tl V7492)) (let W7494 (shen.x.namespaces.member-after (str (hd (hd V7492))) (str V7491)) (if (and (string? W7494) (or (empty? W7493) (shen.internal-to-P? (str (hd W7493)) (str (hd (hd V7492)))))) (cons (hd (hd V7492)) (shen.intern-in-package (str (tl (hd V7492))) (intern W7494))) W7493)))) (true (shen.f-error shen.x.namespaces.import-name))))
+
+(defun shen.x.namespaces.member-after (V7500 V7501) (cond ((and (= "" V7500) (and (shen.+string? V7501) (and (= "." (hdstr V7501)) (not (= (tlstr V7501) ""))))) (tlstr V7501)) ((and (shen.+string? V7500) (and (shen.+string? V7501) (= (hdstr V7500) (hdstr V7501)))) (shen.x.namespaces.member-after (tlstr V7500) (tlstr V7501))) (true false)))
+
