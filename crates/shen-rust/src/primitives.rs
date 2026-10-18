@@ -1109,10 +1109,14 @@ fn register_core(interp: &mut Interp) {
     // the character operations callable with explicit unsupported errors.
     interp.register_native("char-stream?", 1, |_, _args| Ok(Value::bool(false)));
     interp.register_native("read-unit-string", 1, |_, _args| {
-        Err(ShenError::new("read-unit-string: character streams unsupported"))
+        Err(ShenError::new(
+            "read-unit-string: character streams unsupported",
+        ))
     });
     interp.register_native("write-string", 2, |_, _args| {
-        Err(ShenError::new("write-string: character streams unsupported"))
+        Err(ShenError::new(
+            "write-string: character streams unsupported",
+        ))
     });
     // Retain the pre-43.1 hook names for compatibility with embedded callers.
     interp.register_native("shen.char-stoutput?", 1, |_, _args| Ok(Value::bool(false)));
