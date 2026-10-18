@@ -47,7 +47,7 @@ pub mod yacc;
 /// tree-walked versions while leaving property-vector setup intact.
 ///
 /// Order mirrors `interp::boot::KERNEL_FILES` (shen-scheme 0.50's
-/// ShenOSKernel 42.2 file order, then the bundled extensions).
+/// ShenOSKernel 43.1 file order, then the bundled extensions).
 /// `extension_type_annotations` is intentionally absent — see above.
 /// `core` must be called whenever `core.rs` exposes `pub fn install`
 /// (`core.kl` has ~60 defuns; Gate 6 rejects omitting it).

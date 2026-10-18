@@ -1,6 +1,6 @@
 //! Runtime soundness for Shen/Scheme-style mappings (Astra review).
 //!
-//! These cases are the ones 134/0 does not cover: trap-error that *uses* the
+//! These cases are the ones 154/0 does not cover: trap-error that *uses* the
 //! exception, operands that raise before the accessor, hash agreeing with `=`,
 //! get miss messages, freeze captured by a lambda. Callees (hash/get/value)
 //! are the native/AOT overrides; the enclosing form is tree-walked KL.

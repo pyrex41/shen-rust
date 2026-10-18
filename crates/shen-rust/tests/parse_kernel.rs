@@ -43,7 +43,7 @@ fn parses_every_kernel_file() {
         total_forms += forms.len();
     }
 
-    // The ShenOSKernel 42.2 klambda set (including the precompiled
+    // The ShenOSKernel 43.1 klambda set (including the precompiled
     // `stlib.kl`) is well over 1000 top-level forms; exact number changes
     // between releases. We just want a
     // sanity floor that a real content-loss regression would trip.

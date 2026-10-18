@@ -60,11 +60,11 @@ fn install_datatypes(interp: &mut Interp) {
     interp.register_aot_direct("datatypes", aot_datatypes);
 }
 
-/// AOT-compiled from KL `(defun shen.included ...)`
-pub fn aot_shen_x2e_included(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
+/// AOT-compiled from KL `(defun included ...)`
+pub fn aot_included(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
     if args.len() != 0 {
         return Err(ShenError::new(format!(
-            "shen.included: expected 0 args, got {}",
+            "included: expected 0 args, got {}",
             args.len()
         )));
     }
@@ -92,9 +92,9 @@ pub fn aot_shen_x2e_included(interp: &mut Interp, args: &[Value]) -> ShenResult<
     }
 }
 
-fn install_shen_x2e_included(interp: &mut Interp) {
-    interp.register_native("shen.included", 0, aot_shen_x2e_included);
-    interp.register_aot_direct("shen.included", aot_shen_x2e_included);
+fn install_included(interp: &mut Interp) {
+    interp.register_native("included", 0, aot_included);
+    interp.register_aot_direct("included", aot_included);
 }
 
 /// AOT-compiled from KL `(defun shen.typename ...)`
@@ -959,7 +959,7 @@ fn install_shen_x2e_build_x2d_lambda_x2d_table(interp: &mut Interp) {
 /// boot so these names override the tree-walked defuns.
 pub fn install(interp: &mut Interp) {
     install_datatypes(interp);
-    install_shen_x2e_included(interp);
+    install_included(interp);
     install_shen_x2e_typename(interp);
     install_shen_x2e_typename_x2d_h(interp);
     install_prolog_x2d_memory(interp);

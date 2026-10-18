@@ -25,7 +25,7 @@ run() {
 #     (cli_launcher, primitives_coverage, io_coverage, error_robustness,
 #     reader_fuzz, library, and the VM/AOT/JIT differentials). These are ours.
 #   * Gate 7 `kernel-tests` runs the CANONICAL vendored ShenOSKernel
-#     conformance suite (kernel/tests/, 134 tests) end to end through the
+#     conformance suite (kernel/tests/, 154 tests) end to end through the
 #     binary. That suite is NOT modified by the port; it is the conformance
 #     bar, separate from the port-authored regression net.
 run "Gate 0: shengen-codegen" scripts/shengen-codegen.sh

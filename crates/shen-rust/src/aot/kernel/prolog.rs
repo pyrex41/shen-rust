@@ -469,7 +469,7 @@ pub fn aot_shen_x2e_insert_x2d_info(interp: &mut Interp, args: &[Value]) -> Shen
     loop {
         {
             let v_W1627 = {
-                let __t75 = Value::sym(interp.intern_static("shen.g"));
+                let __t75 = Value::sym(interp.intern_static("g"));
                 rt::apply_direct(interp, "gensym", &[__t75])?
             };
             {
@@ -581,7 +581,7 @@ pub fn aot_shen_x2e_newname(interp: &mut Interp, args: &[Value]) -> ShenResult<V
                     };
                     if rt::is_truthy(interp, &__t110)? {
                         {
-                            let __t107 = Value::sym(interp.intern_static("shen.g"));
+                            let __t107 = Value::sym(interp.intern_static("g"));
                             rt::apply_direct(interp, "gensym", &[__t107])?
                         }
                     } else {

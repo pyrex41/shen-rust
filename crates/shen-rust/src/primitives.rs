@@ -50,7 +50,7 @@ pub fn register_early_overrides(interp: &mut Interp) {
     // *property-vector*, same reason as hash. The natives implement the
     // Tarver S4x pointer-list layout (`shen.change-pointer-value`), so they
     // are only installed over a kernel of that lineage (e.g. a shaken slice
-    // of it). The community ShenOSKernel (42.2, vendored) stores properties
+    // of it). The community ShenOSKernel (43.1, vendored) stores properties
     // in a `shen.dict` (`dict.kl`) and keeps its own `put`/`get`/`unput`.
     if kernel_defines(interp, "shen.change-pointer-value") {
         override_kernel(interp, "put", 4, hot_put);
@@ -82,7 +82,7 @@ pub fn register_hot_overrides(interp: &mut Interp) {
     override_kernel(interp, "shen.pvar?", 1, hot_pvar_p);
     override_kernel(interp, "shen.lazyderef", 2, hot_lazyderef);
     override_kernel(interp, "fail", 0, hot_fail);
-    // `value/or`, `<-address/or` and `<-vector/or` are not ShenOSKernel 42.2
+    // `value/or`, `<-address/or` and `<-vector/or` are not ShenOSKernel 43.1
     // functions, but klcompile lowers `trap-error` around `value` /
     // `<-address` / `<-vector` to them (Shen/Scheme-style mapping), so the
     // AOT kernel needs them regardless of lineage. shen-scheme 0.50 also
@@ -1104,10 +1104,17 @@ fn register_core(interp: &mut Interp) {
             args[0]
         ))),
     });
-    // Stream-flavour probes the kernel's `pr` / reader rely on. Our
-    // streams are byte-oriented (read-byte/write-byte), so report
-    // `false` for both. shen-cl maps these to lisp `subtypep` of the
-    // stream element type; for shen-rust there's only one type.
+    // ShenOSKernel 43.1 dispatches character I/O through these public
+    // functions. Our streams are byte-oriented, so report false and keep
+    // the character operations callable with explicit unsupported errors.
+    interp.register_native("char-stream?", 1, |_, _args| Ok(Value::bool(false)));
+    interp.register_native("read-unit-string", 1, |_, _args| {
+        Err(ShenError::new("read-unit-string: character streams unsupported"))
+    });
+    interp.register_native("write-string", 2, |_, _args| {
+        Err(ShenError::new("write-string: character streams unsupported"))
+    });
+    // Retain the pre-43.1 hook names for compatibility with embedded callers.
     interp.register_native("shen.char-stoutput?", 1, |_, _args| Ok(Value::bool(false)));
     interp.register_native("shen.char-stinput?", 1, |_, _args| Ok(Value::bool(false)));
 

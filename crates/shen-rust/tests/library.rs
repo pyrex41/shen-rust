@@ -255,7 +255,7 @@ fn stdlib_has_real_arities() {
     // the stdlib as pre-compiled KLambda defuns without registering their
     // arities, so functions like `filter` ended up with the "unknown" arity
     // -1. That broke `(fn filter)` and top-level `(filter ...)` ("fn: filter
-    // is undefined"). ShenOSKernel 42.2's `stlib.kl` ships `stlib.initialise`
+    // is undefined"). ShenOSKernel 43.1's `stlib.kl` ships `stlib.initialise`
     // (41.1+), which boot calls to install arities and lambda forms. See
     // kernel/klambda/PROVENANCE.md.
     let mut i = fresh_booted();

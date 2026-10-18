@@ -19,7 +19,7 @@ jobs:
   gates:
     # The single source of truth: the same ten gates developers run locally
     # (shengen-codegen, fmt+clippy, build, test, shen-check, tcb-audit,
-    # kernel-aot-audit, kernel-tests = 134/0, kernel-tests-debug = the same
+    # kernel-aot-audit, kernel-tests = 154/0, kernel-tests-debug = the same
     # suite with the heap-reentrancy sentinel live, kernel-tests-debug-gc =
     # that suite again with GC collection forced aggressive — on x86_64
     # runners the scan is unsupported, SHEN_RUST_GC is refused with a

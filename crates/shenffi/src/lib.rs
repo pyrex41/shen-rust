@@ -39,7 +39,7 @@ pub struct ShenCtx {
 /// shen-rust's boot order (must match `interp::boot::KERNEL_FILES`). Lets
 /// `shen_boot_embedded` bring up the kernel with **no filesystem access** —
 /// the iOS-friendly path (no bundled resources, no sandbox path juggling).
-/// See `kernel/klambda/PROVENANCE.md` for the ShenOSKernel 42.2 set.
+/// See `kernel/klambda/PROVENANCE.md` for the ShenOSKernel 43.1 set.
 ///
 /// The precompiled standard library (`stlib.kl`) is embedded too;
 /// `shen_boot_embedded` runs `stlib.initialise` and the extension

@@ -7,8 +7,8 @@ with native [AWS Cedar](https://www.cedarpolicy.com/) authorization integration.
 
 Shen is a functional language with an integrated logic engine and an optional,
 very expressive type system (a sequent-calculus theorem prover). `shen-rust`
-boots the community **ShenOSKernel 42.2** (`(version)` = `"42.2"`, the kernel
-upstream shen-scheme 0.50 ships; tag `shen-42.2`; see
+boots the community **ShenOSKernel 43.1** (`(version)` = `"43.1"`; tag
+`shen-43.1`; see
 `kernel/klambda/PROVENANCE.md`) and passes its full conformance suite —
 **143 / 143 kernel tests**.
 
@@ -28,7 +28,7 @@ cargo run --release --bin shen-rust
 # Long-running / served mode (enables the bytecode VM — ~2.3× warm)
 cargo run --release --bin shen-rust -- --served
 
-# Run the upstream Shen kernel conformance suite (expect 143/0)
+# Run the upstream Shen kernel conformance suite (expect 154/0)
 cargo run --release --bin shen-rust -- --kernel-tests
 
 # Standard Shen launcher protocol (extension-launcher.kl), as in shen-cl:
@@ -69,7 +69,7 @@ The same Shen semantics run on tiers chosen for the workload:
 | **AOT overlay** | opt-in, per `.shen` file | Known `.shen` files are compiled to Rust offline (`scripts/codegen-shen-aot.sh`, same klcompile) and committed; after a normal load (all side effects live) the host swaps the loaded defuns for the native versions via a verified manifest (`Interp::install_overlay_if_match` — source hash + kernel digest, silent fallback on mismatch). **~3.1× over the VM, ~11.7× over the tree-walker on served authz workloads** (`benches/authz_served.rs`). |
 | **Cranelift JIT** | `--features jit`, `SHEN_RUST_JIT=1` | Experimental; native codegen for runtime closures. Wins on compute loops but was falsified for the type-checker's CPS continuations — kept gated/off. See `design/jit-productionization-plan.md`. |
 
-Every tier is differentially tested against the tree-walker and held at 134/0.
+Every tier is differentially tested against the tree-walker and held at 154/0.
 
 **Memory**: `Value` is a word-sized `Copy` tagged `u64` over a non-moving
 mark-sweep GC heap. Collection is opt-in (`SHEN_RUST_GC=1`): the heap stays
@@ -137,7 +137,7 @@ crates/klcompile/           build-time KL → Rust AOT compiler for the kernel
 crates/shengen-rust/        Shen sequent-calc specs → Rust guard types (backpressure)
 bin/shen-rust/              the REPL / CLI (`--served`, `--kernel-tests`)
 examples/shen-cedar-authz/  Shen + Cedar integration (gate / verify / generate)
-kernel/                     vendored ShenOSKernel 42.2 (klambda, stlib, tests)
+kernel/                     vendored ShenOSKernel 43.1 (klambda, stlib, tests)
 specs/                      backpressure specs in Shen sequent-calculus syntax
 design/                     architecture + performance design notes
 scripts/                    gates.sh (CI), benches, cross-port + warm benchmarks
@@ -211,7 +211,7 @@ The suite is split into two distinct tiers, kept separate on purpose:
 
 - **Canonical kernel suite** — the `kernel-tests` gate (`scripts/kernel-tests.sh`).
   This runs the VENDORED ShenOSKernel conformance suite (`kernel/tests/`,
-  134 tests) end to end through the binary and is NOT modified by the port.
+  154 tests) end to end through the binary and is NOT modified by the port.
   It is the conformance bar; the port-authored tier is the regression net
   around the parts the kernel suite doesn't reach (CLI, adversarial inputs,
   the VM path, I/O edges).

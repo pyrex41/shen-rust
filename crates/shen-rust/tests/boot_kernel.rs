@@ -49,13 +49,13 @@ fn version_global_is_set() {
     let mut interp = fresh_booted();
     let v = eval(&mut interp, "(value *version*)");
     if let Some(s) = v.as_str() {
-        assert_eq!(s, "42.2");
+        assert_eq!(s, "43.1");
     } else {
         panic!("expected string, got {v:?}");
     }
     // `(version)` reports the ShenOSKernel release set by `init.kl`.
     let v = eval(&mut interp, "(version)");
-    assert_eq!(v.as_str(), Some("42.2"), "(version) = {v:?}");
+    assert_eq!(v.as_str(), Some("43.1"), "(version) = {v:?}");
 }
 
 #[test]

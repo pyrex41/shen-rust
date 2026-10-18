@@ -1,6 +1,6 @@
 (defun datatypes () (map (lambda Z920 (shen.typename Z920)) (value shen.*alldatatypes*)))
 
-(defun shen.included () (map (lambda Z921 (shen.typename Z921)) (value shen.*datatypes*)))
+(defun included () (map (lambda Z921 (shen.typename Z921)) (value shen.*datatypes*)))
 
 (defun shen.typename (V924) (cond ((cons? V924) (intern (shen.typename-h (str (hd V924))))) (true (shen.f-error shen.typename))))
 

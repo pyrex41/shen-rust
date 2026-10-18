@@ -12,9 +12,9 @@
 
 (defun shen.dynamic-default (V1620 V1621) (append V1621 (cons <-- (cons (cons shen.call-dynamic (cons (shen.cons-form V1621) (cons (cons get (cons V1620 (cons shen.dynamic ()))) ()))) (cons (intern ";") ())))))
 
-(defun shen.insert-info (V1622 V1623 V1624 V1625 V1626) (let W1627 (gensym shen.g) (let W1628 (eval (append (cons defprolog (cons W1627 ())) (append V1623 (cons <-- V1624)))) (let W1629 (cons (fn W1627) (cons W1627 V1625)) (let W1630 (get V1622 shen.dynamic (value *property-vector*)) (let W1631 (if (= V1626 shen.top) (cons W1629 W1630) (append W1630 (cons W1629 ()))) (put V1622 shen.dynamic W1631 (value *property-vector*))))))))
+(defun shen.insert-info (V1622 V1623 V1624 V1625 V1626) (let W1627 (gensym g) (let W1628 (eval (append (cons defprolog (cons W1627 ())) (append V1623 (cons <-- V1624)))) (let W1629 (cons (fn W1627) (cons W1627 V1625)) (let W1630 (get V1622 shen.dynamic (value *property-vector*)) (let W1631 (if (= V1626 shen.top) (cons W1629 W1630) (append W1630 (cons W1629 ()))) (put V1622 shen.dynamic W1631 (value *property-vector*))))))))
 
-(defun shen.newname () (let W1632 (value shen.*names*) (let W1633 (if (empty? W1632) (gensym shen.g) (do (set shen.*names* (tl W1632)) (hd W1632))) W1633)))
+(defun shen.newname () (let W1632 (value shen.*names*) (let W1633 (if (empty? W1632) (gensym g) (do (set shen.*names* (tl W1632)) (hd W1632))) W1633)))
 
 (defun shen.call-dynamic (V1634 V1635 V1636 V1637 V1638 V1639) (let W1640 (if (shen.unlocked? V1637) (let W1641 (shen.lazyderef V1635 V1636) (if (cons? W1641) (let W1642 (shen.lazyderef (hd W1641) V1636) (if (cons? W1642) (let W1643 (hd W1642) (do (shen.incinfs) (shen.callrec W1643 V1634 V1636 V1637 V1638 V1639))) false)) false)) false) (if (= W1640 false) (if (shen.unlocked? V1637) (let W1644 (shen.lazyderef V1635 V1636) (if (cons? W1644) (let W1645 (tl W1644) (do (shen.incinfs) (shen.call-dynamic V1634 W1645 V1636 V1637 V1638 V1639))) false)) false) W1640)))
 

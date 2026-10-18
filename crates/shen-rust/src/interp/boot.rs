@@ -2,9 +2,8 @@
 //! `shen.initialise`, then publish primitive arity / lambda-form on the
 //! kernel's property vector so `(fn NAME)` resolves correctly.
 //!
-//! The vendored kernel is the community ShenOSKernel 42.2
-//! (`Shen-Language/shen-sources`, tag `shen-42.2`), the kernel upstream
-//! shen-scheme 0.50 ships. Its `.kl` files contain only `defun`s (no
+//! The vendored kernel is the community ShenOSKernel 43.1
+//! (`Shen-Language/shen-sources`, tag `shen-43.1`). Its `.kl` files contain only `defun`s (no
 //! top-level effects), so load order is cosmetic; the fixed order below
 //! follows shen-scheme 0.50's `*shen-files*` so diagnostics line up.
 //! Initialisation is explicit: `init.kl` defines `shen.initialise`, which
@@ -24,8 +23,7 @@ use crate::value::{Stream, Value};
 
 /// File names in boot order. Vendored under `kernel/klambda/`.
 ///
-/// The kernel set and its order follow shen-scheme 0.50's `*shen-files*`
-/// (ShenOSKernel 42.2): the 16 kernel modules, the precompiled standard
+/// The kernel set and its order follow the community 43.1 release: the 16 kernel modules, the precompiled standard
 /// library (`stlib.kl`), then the extensions shen-scheme 0.50 bundles
 /// (`features`, `launcher`, `programmable-pattern-matching`, `namespaces`).
 /// `extension-expand-dynamic.kl` is retained from this port's previous boot
@@ -76,6 +74,9 @@ const POST_AOT_INITIALISERS: &[&str] = &[
 /// `shen.initialise` runs, so `(fn NAME)` lookups succeed in code generated
 /// by the kernel's own reader.
 const PRIMITIVE_METADATA: &[(&str, usize)] = &[
+    ("char-stream?", 1),
+    ("read-unit-string", 1),
+    ("write-string", 2),
     ("intern", 1),
     ("+", 2),
     ("*", 2),
@@ -375,7 +376,7 @@ fn set_standard_streams(interp: &mut Interp) {
 /// `*porters*` identify this port.
 fn set_port_metadata(interp: &mut Interp) {
     let pairs: &[(&str, &str)] = &[
-        ("*version*", "42.2"),
+        ("*version*", "43.1"),
         ("*language*", "Rust"),
         ("*implementation*", "shen-rust"),
         ("*release*", "0.1.0"),
