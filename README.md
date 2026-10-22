@@ -7,8 +7,8 @@ with native [AWS Cedar](https://www.cedarpolicy.com/) authorization integration.
 
 Shen is a functional language with an integrated logic engine and an optional,
 very expressive type system (a sequent-calculus theorem prover). `shen-rust`
-boots the community **ShenOSKernel 43.1** (`(version)` = `"43.1"`; tag
-`shen-43.1`; see
+boots the community **ShenOSKernel 43.1** (`(version)` = `"43.1"`; upstream
+`ec16a9f`, the 43.1 release plus shen-sources#117; see
 `kernel/klambda/PROVENANCE.md`) and passes its full conformance suite —
 **143 / 143 kernel tests**.
 
