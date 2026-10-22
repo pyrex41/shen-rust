@@ -6,6 +6,15 @@ Notable changes to shen-rust. Earlier history is summarised in `STATUS.md`.
 
 ### Changed
 
+- **Kernel: ShenOSKernel 43.1 at upstream `ec16a9f`.** The vendored klambda
+  is now built from `Shen-Language/shen-sources` `ec16a9f`, the 43.1 release
+  plus shen-sources#117: `shen.by-hypothesis` and
+  `shen.search-user-datatypes` dereference the checked term once per call
+  rather than once per hypothesis/datatype rule (b-typed: about -65%
+  instructions). `ShenOSKernel-43.1-ec16a9f.tar.gz` SHA-256
+  `060066a8f84d9a2f7d41cb3b37b986a8d4653279752b739b5063cd648d9baacd`;
+  `(version)` stays `"43.1"`. The kernel AOT modules are regenerated with
+  `scripts/codegen-kernel-aot.sh`. See `kernel/klambda/PROVENANCE.md`.
 - **Kernel: ShenOSKernel 42.2** (pyrex41/shen-rust#28). The vendored kernel
   is now the community ShenOSKernel 42.2 from `Shen-Language/shen-sources`
   (tag `shen-42.2`, commit `73507e069fe147aefb728d632c4ce40bc6a7b314`,
