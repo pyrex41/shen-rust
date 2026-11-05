@@ -282,7 +282,7 @@ pub fn aot_shen_x2e_initialise_x2d_environment(
                                                                                                     {
                                                                                                         let _ = { let __v = Value::bool(false); rt::set_global(interp, "shen.*optimise*", __v) };
                                                                                                         {
-                                                                                                            let _ = { let __v = Value::str("43.1"); rt::set_global(interp, "*version*", __v) };
+                                                                                                            let _ = { let __v = Value::str("43.2"); rt::set_global(interp, "*version*", __v) };
                                                                                                             {
                                                                                                                 let _ = { let __v = Value::nil(); rt::set_global(interp, "shen.*names*", __v) };
                                                                                                                 {

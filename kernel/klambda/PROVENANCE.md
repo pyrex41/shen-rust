@@ -1,6 +1,23 @@
 # Kernel provenance
 
-## ShenOSKernel 43.1 (community `shen-sources`)
+## ShenOSKernel 43.2 (community `shen-sources`)
+
+The 22 release `.kl` files in this directory are ShenOSKernel 43.2, the
+`shen-43.2` release of upstream `Shen-Language/shen-sources` (commit
+`e6947f507ebc`, tag object `7b7563e5`). `compiler.kl` is a pre-existing local
+Shen-CL backend retained as an explicit port extra; it is not part of the 43.2
+archive and is not in the Rust boot list.
+
+- Archive: `ShenOSKernel-43.2.tar.gz`, from
+  https://github.com/Shen-Language/shen-sources/releases/download/shen-43.2/ShenOSKernel-43.2.tar.gz
+- Archive SHA-256: `23c71508f0de24785e1f127ea4fab440081904d81c463090bc642ee840417f32`
+- Previous import: `ShenOSKernel-43.1-ec16a9f.tar.gz`, SHA-256
+  `060066a8f84d9a2f7d41cb3b37b986a8d4653279752b739b5063cd648d9baacd`
+- Changes against that import: `init.kl` (`*version*` is `"43.2"`) and
+  `extension-type-annotations.kl` (renumbered generated variable names).
+- `(version)` is `"43.2"`, set by `shen.initialise` in `init.kl`.
+
+## Previous import: ShenOSKernel 43.1 at `ec16a9f` (community `shen-sources`)
 
 The 23 release files in this directory are ShenOSKernel 43.1 as built at
 upstream `Shen-Language/shen-sources` master `ec16a9f`: the 43.1 release plus
