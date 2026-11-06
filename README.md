@@ -7,8 +7,8 @@ with native [AWS Cedar](https://www.cedarpolicy.com/) authorization integration.
 
 Shen is a functional language with an integrated logic engine and an optional,
 very expressive type system (a sequent-calculus theorem prover). `shen-rust`
-boots the community **ShenOSKernel 43.1** (`(version)` = `"43.1"`; upstream
-`ec16a9f`, the 43.1 release plus shen-sources#117; see
+boots the community **ShenOSKernel 43.2** (`(version)` = `"43.2"`; upstream
+tag `shen-43.2`; see
 `kernel/klambda/PROVENANCE.md`) and passes its full conformance suite —
 **143 / 143 kernel tests**.
 
@@ -137,7 +137,7 @@ crates/klcompile/           build-time KL → Rust AOT compiler for the kernel
 crates/shengen-rust/        Shen sequent-calc specs → Rust guard types (backpressure)
 bin/shen-rust/              the REPL / CLI (`--served`, `--kernel-tests`)
 examples/shen-cedar-authz/  Shen + Cedar integration (gate / verify / generate)
-kernel/                     vendored ShenOSKernel 43.1 (klambda, stlib, tests)
+kernel/                     vendored ShenOSKernel 43.2 (klambda, stlib, tests)
 specs/                      backpressure specs in Shen sequent-calculus syntax
 design/                     architecture + performance design notes
 scripts/                    gates.sh (CI), benches, cross-port + warm benchmarks

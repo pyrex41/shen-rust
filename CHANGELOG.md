@@ -6,6 +6,14 @@ Notable changes to shen-rust. Earlier history is summarised in `STATUS.md`.
 
 ### Changed
 
+- **Kernel: ShenOSKernel 43.2.** The vendored klambda is the community
+  `Shen-Language/shen-sources` release `shen-43.2` (commit `e6947f507ebc`),
+  `ShenOSKernel-43.2.tar.gz` SHA-256
+  `23c71508f0de24785e1f127ea4fab440081904d81c463090bc642ee840417f32`.
+  Against the previous `ec16a9f` import only `init.kl` (`*version*`) and
+  `extension-type-annotations.kl` (renumbered generated names) differ;
+  `kernel/tests/benchmark-coverage.shen` is added. `(version)` is `"43.2"`.
+  The kernel AOT modules are regenerated with `scripts/codegen-kernel-aot.sh`.
 - **Kernel: ShenOSKernel 43.1 at upstream `ec16a9f`.** The vendored klambda
   is now built from `Shen-Language/shen-sources` `ec16a9f`, the 43.1 release
   plus shen-sources#117: `shen.by-hypothesis` and
