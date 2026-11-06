@@ -5,11 +5,11 @@
 //! Input is read one balanced s-expression at a time — partial lines are
 //! buffered until the parentheses balance.
 
-use std::io::{self, BufRead, Write};
+use std::io::{self, Write};
 use std::process::ExitCode;
 
 use shen_rust::error::ShenResult;
-use shen_rust::interp::boot::boot;
+use shen_rust::interp::boot::{boot, eval_kl_source};
 use shen_rust::interp::eval::Interp;
 use shen_rust::kl::ast::KlExpr;
 use shen_rust::kl::parser::parse_one;
@@ -436,48 +436,48 @@ fn print_banner(interp: &Interp) {
     eprintln!("\nShen {version}, ©2021–2026 Mark Tarver  (shen-rust {port}, {lang})\n");
 }
 
+/// The REPL is the kernel's own `shen.loop`. Only the REPL's own read checks
+/// for EOF, on the first byte of a line: it prints a newline and exits 0. A
+/// program evaluated at the REPL that reads `(stinput)` sees plain end of
+/// stream (`read-byte` gives -1; `read`/`lineread` raise "empty stream"), and
+/// the REPL then exits at its next prompt. Same design as Shen/JIT.
+///
+/// The kernel's `shen.loop` calls `shen.read-evaluate-print` as a static
+/// AOT-to-AOT call that a redefinition cannot intercept, so the loop and its
+/// read-evaluate-print step are defined here under `shen-rust.*` names.
+const REPL_KL: &str = r#"
+(defun shen-rust.loop ()
+  (do (shen.initialise_environment)
+      (do (shen.prompt)
+          (do (trap-error (shen-rust.read-evaluate-print)
+                          (lambda E (shen.toplevel-display-exception E)))
+              (shen-rust.loop)))))
+(defun shen-rust.read-evaluate-print ()
+  (let Package (value shen.*package*)
+    (let Lineread (shen.package-user-input Package (shen-rust.repl-read (stinput)))
+      (let History (shen.update-history)
+        (shen.evaluate-lineread Lineread History (value shen.*tc*))))))
+(defun shen-rust.repl-read (Stream)
+  (let Byte (shen.my-read-byte Stream)
+    (if (= Byte -1)
+        (do (nl 1) (shen-rust.exit 0))
+        (shen.read-loop Stream Byte () (lambda X (shen.return? X))))))
+"#;
+
 fn repl_loop(interp: &mut Interp) -> ShenResult<()> {
-    let stdin = io::stdin();
-    let mut handle = stdin.lock();
-    let mut stdout = io::stdout();
-    let mut buf = String::new();
-    loop {
-        if buf.is_empty() {
-            print!("(0-) ");
-        } else {
-            print!("...  ");
-        }
-        stdout.flush().ok();
-        let mut line = String::new();
-        match handle.read_line(&mut line) {
-            Ok(0) => {
-                println!();
-                return Ok(());
-            }
-            Ok(_) => {}
-            Err(e) => {
-                eprintln!("read: {e}");
-                return Ok(());
-            }
-        }
-        buf.push_str(&line);
-        if !parens_balanced(&buf) {
-            continue;
-        }
-        let trimmed = buf.trim();
-        if trimmed.is_empty() {
-            buf.clear();
-            continue;
-        }
-        match parse_one(trimmed, &mut interp.symbols) {
-            Ok(expr) => match dispatch_through_kernel_eval(interp, &expr) {
-                Ok(v) => println!("{}", render(interp, &v)),
-                Err(e) => println!("error: {e}"),
-            },
-            Err(e) => println!("parse error: {e}"),
-        }
-        buf.clear();
-    }
+    interp.register_native("shen-rust.exit", 1, |_, args| {
+        io::stdout().flush().ok();
+        std::process::exit(args[0].as_int().unwrap_or(0) as i32)
+    });
+    eval_kl_source(interp, REPL_KL, "repl", &[])?;
+    let loop_sym = interp.intern("shen-rust.loop");
+    let f = interp
+        .env
+        .get_fn(loop_sym)
+        .cloned()
+        .ok_or_else(|| shen_rust::error::ShenError::new("shen-rust.loop is not defined"))?;
+    interp.apply(f, vec![])?;
+    Ok(())
 }
 
 /// Wrap the parsed expression in `(eval EXPR)` so the kernel's reader
@@ -505,164 +505,6 @@ fn klexpr_to_value(e: &KlExpr) -> Value {
         KlExpr::Sym(s) => V::sym(*s),
         KlExpr::App(items) => V::list(items.iter().map(klexpr_to_value)),
     }
-}
-
-fn parens_balanced(src: &str) -> bool {
-    let mut depth: i32 = 0;
-    let mut in_string = false;
-    let mut in_block_comment = false;
-    let bytes = src.as_bytes();
-    let mut i = 0;
-    while i < bytes.len() {
-        let c = bytes[i];
-        if in_block_comment {
-            if c == b'*' && i + 1 < bytes.len() && bytes[i + 1] == b'\\' {
-                in_block_comment = false;
-                i += 2;
-                continue;
-            }
-            i += 1;
-            continue;
-        }
-        if in_string {
-            if c == b'"' {
-                in_string = false;
-            }
-            i += 1;
-            continue;
-        }
-        if c == b'"' {
-            in_string = true;
-            i += 1;
-            continue;
-        }
-        if c == b'\\' && i + 1 < bytes.len() {
-            match bytes[i + 1] {
-                b'*' => {
-                    in_block_comment = true;
-                    i += 2;
-                    continue;
-                }
-                b'\\' => {
-                    while i < bytes.len() && bytes[i] != b'\n' {
-                        i += 1;
-                    }
-                    continue;
-                }
-                _ => {}
-            }
-        }
-        if c == b'(' {
-            depth += 1;
-        } else if c == b')' {
-            depth -= 1;
-            if depth < 0 {
-                return true; // let parser report the error
-            }
-        }
-        i += 1;
-    }
-    depth == 0
-}
-
-fn render(interp: &Interp, v: &Value) -> String {
-    if v.is_nil() {
-        return "()".to_string();
-    }
-    if let Some(b) = v.as_bool() {
-        return b.to_string();
-    }
-    if let Some(n) = v.as_int() {
-        return n.to_string();
-    }
-    if let Some(x) = v.as_float() {
-        return format_float(x);
-    }
-    if let Some(s) = v.as_str() {
-        return s.to_string();
-    }
-    if let Some(s) = v.as_sym() {
-        return interp.resolve(s).to_string();
-    }
-    if let Some(s) = v.error_message() {
-        return format!("<error: {s}>");
-    }
-    if v.is_cons() {
-        return render_list(interp, v);
-    }
-    if v.is_vec() {
-        return render_vec(interp, v);
-    }
-    if v.is_closure() {
-        return "<closure>".to_string();
-    }
-    if v.as_stream().is_some() {
-        return "<stream>".to_string();
-    }
-    "<foreign>".to_string()
-}
-
-/// Print whole-number floats with `.0` so `4000.0` doesn't display as
-/// `4000` (which is what Rust's default `{x}` format produces). The
-/// kernel test suite compares results with `=`, and several tests
-/// expect float results like `4000.0` for `(* 5000 .8)`.
-///
-/// NaN renders as lowercase `nan`. Rust's `Display` spells the infinities
-/// lowercase (`inf` / `-inf`) but NaN as `NaN`; the cross-port convention
-/// is all-lowercase, and shen-go / shen-lua both print `nan`. Keep this in
-/// sync with the `str` primitive's copy in `crates/shen-rust/src/primitives.rs`.
-fn format_float(x: f64) -> String {
-    if x.is_nan() {
-        return "nan".to_string();
-    }
-    if x.is_finite() && x == x.trunc() && x.abs() < 1e16 {
-        format!("{x:.1}")
-    } else {
-        format!("{x}")
-    }
-}
-
-/// Shen "print vectors" are absvectors whose slot 0 holds a printer
-/// symbol (e.g. `shen.printF`) and slot 1 holds the string to display.
-/// They're the standard representation for `(fn NAME)` results from
-/// `defun` and similar.
-fn render_vec(interp: &Interp, v: &Value) -> String {
-    let cells = v.vec_cells();
-    if cells.len() == 2 && cells[0].is_sym() {
-        if let Some(s) = cells[1].as_str() {
-            return s.to_string();
-        }
-    }
-    let inner: Vec<String> = cells.iter().map(|c| render(interp, c)).collect();
-    format!("<vector {}>", inner.join(" "))
-}
-
-fn render_list(interp: &Interp, v: &Value) -> String {
-    let mut out = String::from("(");
-    let mut cur = *v;
-    let mut first = true;
-    loop {
-        if cur.is_nil() {
-            break;
-        }
-        match (cur.head(), cur.tail()) {
-            (Some(h), Some(t)) => {
-                if !first {
-                    out.push(' ');
-                }
-                out.push_str(&render(interp, h));
-                first = false;
-                cur = *t;
-            }
-            _ => {
-                out.push_str(" . ");
-                out.push_str(&render(interp, &cur));
-                break;
-            }
-        }
-    }
-    out.push(')');
-    out
 }
 
 // We don't actually expose a clone on Interner; cheat by interning into a

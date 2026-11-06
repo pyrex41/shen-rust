@@ -261,6 +261,46 @@ fn piped_stdin_eof_exits_cleanly() {
     );
 }
 
+/// REPL EOF contract (Shen/JIT design): only the REPL's own read checks for
+/// EOF, on the first byte of a line. Each shape must exit 0, and a program
+/// that reads `(stinput)` at the REPL sees ordinary end of stream rather than
+/// hanging or being short-circuited into an exit.
+#[test]
+fn repl_eof_shapes_exit_cleanly() {
+    // (input, must contain, must not contain)
+    let cases: &[(&str, &str, &str)] = &[
+        ("", "", "empty stream"),
+        ("(+ 40 2)", "42", "empty stream"),
+        ("(+ 40\n2)", "42", "empty stream"),
+        ("(+ 1 2)\n(* 6 7)", "42", "empty stream"),
+        ("(+ 40 2)\n   ", "42", "empty stream"),
+        ("(read-byte (stinput))\n", "-1", ""),
+        ("(read (stinput))\n", "empty stream", ""),
+        ("(lineread (stinput))\n", "empty stream", ""),
+        (
+            "(trap-error (read (stinput)) (/. E caught))\n",
+            "caught",
+            "",
+        ),
+        ("(+ 1", "", ""),
+    ];
+    for (input, want, reject) in cases {
+        let o = run(&["repl"], Some(input), TIMEOUT);
+        assert_no_backtrace(&o, "repl eof shape");
+        assert!(o.success, "input {input:?} exited nonzero:\n{}", o.combined);
+        assert!(
+            want.is_empty() || o.combined.contains(want),
+            "input {input:?}: expected {want:?} in:\n{}",
+            o.combined
+        );
+        assert!(
+            reject.is_empty() || !o.combined.contains(reject),
+            "input {input:?}: unexpected {reject:?} in:\n{}",
+            o.combined
+        );
+    }
+}
+
 /// Regression for issue #2: `-q` (`*hush*`) must NOT silence `pr` writes to
 /// file streams. `*hush*` only suppresses chatter on the standard output
 /// stream; an explicitly-opened file stream is always written, with or

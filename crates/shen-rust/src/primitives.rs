@@ -1324,8 +1324,7 @@ fn value_to_str(interp: &Interp, v: &Value) -> String {
 ///
 /// NaN renders as lowercase `nan`. Rust's `Display` spells the infinities
 /// lowercase (`inf` / `-inf`) but NaN as `NaN`; the cross-port convention
-/// is all-lowercase, and shen-go / shen-lua both print `nan`. Keep this in
-/// sync with the REPL renderer's copy in `bin/shen-rust/src/main.rs`.
+/// is all-lowercase, and shen-go / shen-lua both print `nan`.
 fn format_float(x: f64) -> String {
     if x.is_nan() {
         return "nan".to_string();
