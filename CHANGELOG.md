@@ -6,6 +6,14 @@ Notable changes to shen-rust. Earlier history is summarised in `STATUS.md`.
 
 ### Changed
 
+- **Kernel: ShenOSKernel 43.4.** The vendored klambda is the community
+  `Shen-Language/shen-sources` release `shen-43.4` (commit
+  `f34b307b490880eedcfe1f5e5d3cc24ca3d2602e`), `ShenOSKernel-43.4.tar.gz`
+  SHA-256 `15e7972e6bf0cd65d37c2eba85750b8839d2dbadda41027eae0c88e5017a2756`.
+  17 of 22 `.kl` files change (defuns 1117 -> 1126), including `stlib.kl`,
+  which must move with the kernel. `kernel/tests/` gains `regressions/` and
+  `extensions/expand-dynamic/`. `(version)` is `"43.4"`. The kernel AOT modules
+  are regenerated with `scripts/codegen-kernel-aot.sh`.
 - **Kernel: ShenOSKernel 43.2.** The vendored klambda is the community
   `Shen-Language/shen-sources` release `shen-43.2` (commit `e6947f507ebc`),
   `ShenOSKernel-43.2.tar.gz` SHA-256
