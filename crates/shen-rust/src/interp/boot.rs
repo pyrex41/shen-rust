@@ -2,8 +2,8 @@
 //! `shen.initialise`, then publish primitive arity / lambda-form on the
 //! kernel's property vector so `(fn NAME)` resolves correctly.
 //!
-//! The vendored kernel is the community ShenOSKernel 43.2
-//! (`Shen-Language/shen-sources`, tag `shen-43.2`). Its `.kl` files contain only `defun`s (no
+//! The vendored kernel is the community ShenOSKernel 43.4
+//! (`Shen-Language/shen-sources`, tag `shen-43.4`). Its `.kl` files contain only `defun`s (no
 //! top-level effects), so load order is cosmetic; the fixed order below
 //! follows shen-scheme 0.50's `*shen-files*` so diagnostics line up.
 //! Initialisation is explicit: `init.kl` defines `shen.initialise`, which
@@ -376,7 +376,7 @@ fn set_standard_streams(interp: &mut Interp) {
 /// `*porters*` identify this port.
 fn set_port_metadata(interp: &mut Interp) {
     let pairs: &[(&str, &str)] = &[
-        ("*version*", "43.2"),
+        ("*version*", "43.4"),
         ("*language*", "Rust"),
         ("*implementation*", "shen-rust"),
         ("*release*", "0.1.0"),

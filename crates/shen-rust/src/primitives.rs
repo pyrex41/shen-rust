@@ -50,7 +50,7 @@ pub fn register_early_overrides(interp: &mut Interp) {
     // *property-vector*, same reason as hash. The natives implement the
     // Tarver S4x pointer-list layout (`shen.change-pointer-value`), so they
     // are only installed over a kernel of that lineage (e.g. a shaken slice
-    // of it). The community ShenOSKernel (43.2, vendored) stores properties
+    // of it). The community ShenOSKernel (43.4, vendored) stores properties
     // in a `shen.dict` (`dict.kl`) and keeps its own `put`/`get`/`unput`.
     if kernel_defines(interp, "shen.change-pointer-value") {
         override_kernel(interp, "put", 4, hot_put);
@@ -82,7 +82,7 @@ pub fn register_hot_overrides(interp: &mut Interp) {
     override_kernel(interp, "shen.pvar?", 1, hot_pvar_p);
     override_kernel(interp, "shen.lazyderef", 2, hot_lazyderef);
     override_kernel(interp, "fail", 0, hot_fail);
-    // `value/or`, `<-address/or` and `<-vector/or` are not ShenOSKernel 43.2
+    // `value/or`, `<-address/or` and `<-vector/or` are not ShenOSKernel 43.4
     // functions, but klcompile lowers `trap-error` around `value` /
     // `<-address` / `<-vector` to them (Shen/Scheme-style mapping), so the
     // AOT kernel needs them regardless of lineage. shen-scheme 0.50 also
@@ -1104,7 +1104,7 @@ fn register_core(interp: &mut Interp) {
             args[0]
         ))),
     });
-    // ShenOSKernel 43.2 dispatches character I/O through these public
+    // ShenOSKernel 43.4 dispatches character I/O through these public
     // functions. Our streams are byte-oriented, so report false and keep
     // the character operations callable with explicit unsupported errors.
     interp.register_native("char-stream?", 1, |_, _args| Ok(Value::bool(false)));

@@ -5,7 +5,7 @@
 A working port of the Shen language to Rust. It boots the community
 **ShenOSKernel 42.2** (`(version)` = `"42.2"`, tag `shen-42.2`, the kernel
 upstream shen-scheme 0.50 ships; see `kernel/klambda/PROVENANCE.md`) and passes
-the full conformance suite — **143 / 143** kernel tests
+the full conformance suite — **154 / 154** kernel tests
 (`scripts/kernel-tests.sh`, release). All gates
 green (`scripts/gates.sh`): shengen-codegen, fmt+clippy, build, test
 (unit + integration suites), shen-check, tcb-audit, kernel-aot-audit,
