@@ -323,10 +323,14 @@ pub fn boot_aot_slice(
     install_kernel(interp);
     crate::primitives::register_early_overrides(interp);
     kernel_toplevel(interp)?;
+    // AOT `shen.initialise` calls klcompile's `value/or` (and the other
+    // hot natives). Those have to be installed before it runs. On the
+    // tree-walk boot they are installed after initialise, because that
+    // path still executes the KL body, which does not mention them.
+    crate::primitives::register_hot_overrides(interp);
 
     run_shen_initialise(interp)?;
     register_all_metadata(interp)?;
-    crate::primitives::register_hot_overrides(interp);
     Ok(())
 }
 

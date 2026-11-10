@@ -160,6 +160,12 @@ fn compile_options(label: &str, aot_only: bool) -> CompileOptions {
         emit_manifest: None,
         seal_same_module: false,
         compile_toplevel: aot_only,
+        // Arity / lambda / symbol tables in shen.initialise become data.
+        // The interpreter path still tree-walks that function at boot, so
+        // only the eval-free image needs the lowering (and the kernel AOT
+        // must stay byte-stable without it). YGGDRASIL_NO_LITERAL_TABLES=1
+        // keeps the straight-line code for a size comparison.
+        literal_tables: aot_only && std::env::var_os("YGGDRASIL_NO_LITERAL_TABLES").is_none(),
     }
 }
 
