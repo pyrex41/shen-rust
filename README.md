@@ -183,6 +183,32 @@ SBCL-shaped answer for that niche): `benches/authz_served.rs` measures
 and the GC / value-representation / JIT ladder live in `PERFORMANCE.md`,
 `BENCHMARKS.md`, and `design/perf-*.md`.
 
+## Lean wasm32
+
+`shen-rust` defaults keep the native port whole: Cedar (`cedar` feature),
+the precompiled ShenOSKernel (`kernel-aot`), and the KL tree-walker plus
+bytecode VM (`interpreter`). A Yggdrasil shake whose manifest says
+`cannot-reach=eval` (or `needs-eval=false`) does not need any of those.
+
+`yggdrasil-build` reads that manifest and emits a crate with
+`default-features = false`. Boot calls `boot_aot_slice`: it installs the
+AOT defuns, runs `(shen.initialise)` if the slice kept it, and runs
+compiled top-level forms. KL source is not parsed or evaluated, and
+`*home-directory*` falls back to `"/"` when `wasm32` has no process cwd.
+
+```sh
+cargo run -p yggdrasil-build -- examples/wasm-profile/fib /tmp/fib-lean
+cd /tmp/fib-lean
+cargo build --release --target wasm32-wasip1
+wasm-opt -Oz -o fib.wasm target/wasm32-wasip1/release/fib-lean.wasm
+```
+
+`yggdrasil-build --full` is the old link (default features, tree-walked KL)
+for size comparisons. `scripts/wasm-profile.sh` rebuilds both, prints
+raw/gzip/brotli sizes after `wasm-opt -Oz`, times a Node WASI boot, and
+checks stdout against the native run. Numbers and the twiggy breakdown
+are in [examples/wasm-profile/README.md](examples/wasm-profile/README.md).
+
 ## Development
 
 ```sh

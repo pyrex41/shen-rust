@@ -79,7 +79,20 @@ fn call_or_apply(interp: &mut Interp, f: Value, args: &[Value]) -> ShenResult<Va
             match &c.kind {
                 ClosureKind::Native(nf, _captures) => return nf(interp, args),
                 ClosureKind::Bytecode(bf, upvals) => {
-                    return crate::vm::exec::exec(interp, bf, upvals, args)
+                    // Bytecode closures are produced by the tree-walker. A
+                    // build without `interpreter` does not compile the VM,
+                    // and AOT code never constructs these.
+                    #[cfg(feature = "interpreter")]
+                    {
+                        return crate::vm::exec::exec(interp, bf, upvals, args);
+                    }
+                    #[cfg(not(feature = "interpreter"))]
+                    {
+                        let _ = (bf, upvals, args);
+                        return Err(ShenError::new(
+                            "bytecode VM is not included in this build (shen-rust feature `interpreter`)",
+                        ));
+                    }
                 }
                 #[cfg(feature = "jit")]
                 ClosureKind::Jit(jc, captures) => {

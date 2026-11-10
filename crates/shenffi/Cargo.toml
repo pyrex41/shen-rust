@@ -12,4 +12,7 @@ name = "shenffi"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [dependencies]
-shen-rust = { path = "../shen-rust" }
+# Full engine: embedded kernel boot calls `aot::kernel::install_all` and
+# `eval`. Named explicitly so a lean `--no-default-features` build of the
+# engine does not silently drop them here.
+shen-rust = { path = "../shen-rust", features = ["cedar", "kernel-aot", "interpreter"] }

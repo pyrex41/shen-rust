@@ -16,6 +16,13 @@
 //!
 //! `cargo build --release` in `<outdir>` yields a single static binary.
 //!
+//! When the manifest says eval is unreachable (`cannot-reach=eval` or
+//! `needs-eval=false`, and not `needs-eval=true`), the scaffold depends on
+//! shen-rust with `--no-default-features`: no Cedar, no precompiled full
+//! kernel, no KL interpreter. Defuns are AOT-compiled with no skip budget
+//! and non-defun forms go into `run_toplevel`. `--full` keeps the historical
+//! link (default features, tree-walked KL).
+//!
 //! Defuns klcompile cannot compile (over the node budget, or in the
 //! KERNEL_SLOW_DEFUNS list) are simply left tree-walked: the generated
 //! main evaluates every kernel form before installing the AOT module,
@@ -29,7 +36,18 @@ use std::process::ExitCode;
 
 use klcompile::{compile_kl, CompileOptions, SkipPolicy, KERNEL_SLOW_DEFUNS};
 
-/// Parsed Yggdrasil manifest v3/v4 (`key=value` lines; unknown keys ignored).
+const USAGE: &str = "\
+Usage: yggdrasil-build [--full] <shaken-dir> <outdir>
+
+By default, a manifest with cannot-reach=eval or needs-eval=false builds
+an image that does not link the KL interpreter, Cedar, or the precompiled
+full kernel: every defun is AOT-compiled and top-level forms are compiled
+into run_toplevel. needs-eval=true keeps the interpreter feature only.
+
+--full links the default shen-rust feature set and tree-walks KL at boot
+(the historical builder). Use it to A/B binary size.";
+
+/// Parsed Yggdrasil manifest v2/v3/v4 (`key=value` lines; unknown keys ignored).
 #[derive(Debug, Default)]
 struct Manifest {
     kernel: String,
@@ -38,6 +56,19 @@ struct Manifest {
     users: Vec<String>,
     /// `fn=<name> <arity>` lines: one per user defun.
     fns: Vec<(String, usize)>,
+    /// `needs-eval=true|false`, when the manifest says so.
+    needs_eval: Option<bool>,
+    /// `cannot-reach=` capabilities (one per line).
+    cannot_reach: Vec<String>,
+}
+
+/// The shake proved `eval-kl` is absent, and did not contradict that with
+/// `needs-eval=true`.
+fn eval_unreachable(m: &Manifest) -> bool {
+    if m.needs_eval == Some(true) {
+        return false;
+    }
+    m.cannot_reach.iter().any(|c| c == "eval") || m.needs_eval == Some(false)
 }
 
 fn parse_manifest(path: &Path) -> Result<Manifest, String> {
@@ -60,14 +91,28 @@ fn parse_manifest(path: &Path) -> Result<Manifest, String> {
             ));
         };
         match key {
-            "manifest-version" if value != "3" && value != "4" => {
+            "manifest-version" if value != "2" && value != "3" && value != "4" => {
                 return Err(format!(
-                    "unsupported manifest-version {value:?} (expected 3 or 4)"
+                    "unsupported manifest-version {value:?} (expected 2, 3, or 4)"
                 ));
             }
             "kernel" => m.kernel = value.to_string(),
             "init" => m.init = value.to_string(),
             "user" => m.users.push(value.to_string()),
+            "needs-eval" => {
+                m.needs_eval = Some(match value {
+                    "true" => true,
+                    "false" => false,
+                    other => {
+                        return Err(format!("needs-eval must be true or false, got {other:?}"))
+                    }
+                });
+            }
+            "cannot-reach" => {
+                if !value.is_empty() {
+                    m.cannot_reach.push(value.to_string());
+                }
+            }
             "fn" => {
                 let (name, arity) = value
                     .rsplit_once(' ')
@@ -78,9 +123,8 @@ fn parse_manifest(path: &Path) -> Result<Manifest, String> {
                 m.fns.push((name.to_string(), arity));
             }
             // kernel-version, primitive, primitive-optional, global,
-            // needs-eval: informational for this port (primitives and
-            // eval-kl are always compiled in; *stinput*/*stoutput* are
-            // always bound by boot). Unknown keys: ignored per contract.
+            // reaches: informational. *stinput*/*stoutput* are always
+            // bound by boot. Unknown keys: ignored per contract.
             _ => {}
         }
     }
@@ -90,22 +134,32 @@ fn parse_manifest(path: &Path) -> Result<Manifest, String> {
     Ok(m)
 }
 
-/// klcompile options for modules generated into the scaffolded crate:
-/// `shen_rust::` imports, standalone-module lint header, the kernel's
-/// known-slow skip list plus the external body-size budget. Skipped
-/// defuns stay tree-walked.
-fn compile_options(label: &str) -> CompileOptions {
+/// klcompile options for modules generated into the scaffolded crate.
+///
+/// `aot_only` (eval is unreachable) compiles every defun and every
+/// non-defun top-level form. There is no tree-walker to fall back to, so
+/// the body-size budget and the kernel slow-list are off. Otherwise
+/// skipped defuns stay tree-walked, as before.
+fn compile_options(label: &str, aot_only: bool) -> CompileOptions {
     CompileOptions {
         import_prefix: "shen_rust".to_string(),
         emit_inner_lints: true,
         external_lint_set: true,
         source_label: label.to_string(),
-        skip: SkipPolicy {
-            max_body_nodes: Some(3000),
-            force_skip: KERNEL_SLOW_DEFUNS.iter().map(|s| s.to_string()).collect(),
+        skip: if aot_only {
+            SkipPolicy {
+                max_body_nodes: None,
+                force_skip: Vec::new(),
+            }
+        } else {
+            SkipPolicy {
+                max_body_nodes: Some(3000),
+                force_skip: KERNEL_SLOW_DEFUNS.iter().map(|s| s.to_string()).collect(),
+            }
         },
         emit_manifest: None,
         seal_same_module: false,
+        compile_toplevel: aot_only,
     }
 }
 
@@ -188,15 +242,26 @@ struct UserModule {
 }
 
 fn run() -> Result<(), String> {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 3 {
-        return Err("Usage: yggdrasil-build <shaken-dir> <outdir>".to_string());
+    let args: Vec<String> = env::args().skip(1).collect();
+    let mut full = false;
+    let mut positional = Vec::new();
+    for a in args {
+        match a.as_str() {
+            "--full" => full = true,
+            "-h" | "--help" => return Err(USAGE.to_string()),
+            s if s.starts_with('-') => return Err(format!("unknown flag {s}\n{USAGE}")),
+            _ => positional.push(a),
+        }
     }
-    let shaken = PathBuf::from(&args[1]);
-    let outdir = PathBuf::from(&args[2]);
+    if positional.len() != 2 {
+        return Err(USAGE.to_string());
+    }
+    let shaken = PathBuf::from(&positional[0]);
+    let outdir = PathBuf::from(&positional[1]);
 
     let manifest_path = shaken.join("yggdrasil.manifest.txt");
     let manifest = parse_manifest(&manifest_path)?;
+    let aot_only = !full && eval_unreachable(&manifest);
     if manifest.init != "shen.initialise" {
         // boot_from_kl_source hard-codes shen.initialise (41.x contract).
         return Err(format!("unsupported init function {:?}", manifest.init));
@@ -213,9 +278,19 @@ fn run() -> Result<(), String> {
     fs::write(kl_dir.join("kernel.kl"), &kernel_src)
         .map_err(|e| format!("write kernel.kl: {e}"))?;
 
-    let opts = compile_options(&format!("{} (Yggdrasil shaken kernel)", manifest.kernel));
+    let opts = compile_options(
+        &format!("{} (Yggdrasil shaken kernel)", manifest.kernel),
+        aot_only,
+    );
     let (kernel_module, kernel_report) = compile_kl(&kernel_src, &opts)
         .map_err(|e| format!("klcompile {}: {e}", manifest.kernel))?;
+    if aot_only && !kernel_report.skipped.is_empty() {
+        return Err(format!(
+            "{}: eval is unreachable, but these defuns were not AOT-compiled:\n{}",
+            manifest.kernel,
+            kernel_report.skipped.join("\n")
+        ));
+    }
     fs::write(src_dir.join("kernel_aot.rs"), kernel_module)
         .map_err(|e| format!("write kernel_aot.rs: {e}"))?;
     eprintln!(
@@ -245,9 +320,15 @@ fn run() -> Result<(), String> {
             .to_string_lossy()
             .into_owned();
         let module = format!("user_{}", ident_suffix(&stem));
-        let opts = compile_options(&format!("{user} (Yggdrasil user code)"));
+        let opts = compile_options(&format!("{user} (Yggdrasil user code)"), aot_only);
         let (module_src, report) =
             compile_kl(&src, &opts).map_err(|e| format!("klcompile {user}: {e}"))?;
+        if aot_only && !report.skipped.is_empty() {
+            return Err(format!(
+                "{user}: eval is unreachable, but these defuns were not AOT-compiled:\n{}",
+                report.skipped.join("\n")
+            ));
+        }
         fs::write(src_dir.join(format!("{module}.rs")), module_src)
             .map_err(|e| format!("write {module}.rs: {e}"))?;
         eprintln!(
@@ -263,11 +344,27 @@ fn run() -> Result<(), String> {
     }
 
     // --- main.rs ------------------------------------------------------
-    let main_rs = generate_main(&manifest, &user_modules);
+    let main_rs = generate_main(&manifest, &user_modules, aot_only);
     fs::write(src_dir.join("main.rs"), main_rs).map_err(|e| format!("write main.rs: {e}"))?;
 
     // --- Cargo.toml / .gitignore --------------------------------------
     let shen_rust = shen_rust_path()?;
+    let dep = if full {
+        format!("shen-rust = {{ path = \"{}\" }}", shen_rust.display())
+    } else if aot_only {
+        // No Cedar, no precompiled full kernel, no KL interpreter.
+        format!(
+            "shen-rust = {{ path = \"{}\", default-features = false }}",
+            shen_rust.display()
+        )
+    } else {
+        // Eval is reachable: keep the tree-walker, drop Cedar and the
+        // precompiled full kernel (this binary boots the shaken slice).
+        format!(
+            "shen-rust = {{ path = \"{}\", default-features = false, features = [\"interpreter\"] }}",
+            shen_rust.display()
+        )
+    };
     let cargo_toml = format!(
         r#"# Auto-generated by yggdrasil-build. DO NOT EDIT.
 [package]
@@ -276,7 +373,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-shen-rust = {{ path = "{shen_rust}" }}
+{dep}
 
 # Standalone: never join an enclosing workspace.
 [workspace]
@@ -287,13 +384,27 @@ opt-level = 3
 codegen-units = 1
 "#,
         name = package_name(&outdir),
-        shen_rust = shen_rust.display(),
     );
     fs::write(outdir.join("Cargo.toml"), cargo_toml)
         .map_err(|e| format!("write Cargo.toml: {e}"))?;
+    // The scaffold is its own workspace, so it does not inherit this repo's
+    // rust-toolchain.toml. Pin stable (same channel as shen-rust) or an
+    // older default toolchain resolves crates it cannot parse.
+    fs::write(
+        outdir.join("rust-toolchain.toml"),
+        "[toolchain]\nchannel = \"stable\"\nprofile = \"minimal\"\n",
+    )
+    .map_err(|e| format!("write rust-toolchain.toml: {e}"))?;
     fs::write(outdir.join(".gitignore"), "/target\n").ok();
 
     eprintln!("scaffolded {}", outdir.display());
+    if full {
+        eprintln!("mode: full (default shen-rust features, KL loaded by the interpreter)");
+    } else if aot_only {
+        eprintln!("mode: aot-only (no interpreter, no cedar, no kernel-aot)");
+    } else {
+        eprintln!("mode: interpreter (needs-eval, no cedar, no kernel-aot)");
+    }
     eprintln!(
         "build: cargo build --release --manifest-path {}/Cargo.toml",
         outdir.display()
@@ -301,32 +412,44 @@ codegen-units = 1
     Ok(())
 }
 
-fn generate_main(manifest: &Manifest, users: &[UserModule]) -> String {
+fn generate_main(manifest: &Manifest, users: &[UserModule], aot_only: bool) -> String {
     let mut out = String::new();
-    out.push_str(
-        "//! Auto-generated by yggdrasil-build. DO NOT EDIT.\n\
-         //!\n\
-         //! Boots a minimal shen-rust Interp from the shaken kernel only\n\
-         //! (no 21-file kernel), runs (shen.initialise), installs the AOT\n\
-         //! modules, then evaluates each user file's top-level forms in\n\
-         //! source order.\n\n",
-    );
+    if aot_only {
+        out.push_str(
+            "//! Auto-generated by yggdrasil-build. DO NOT EDIT.\n\
+             //!\n\
+             //! Eval is unreachable (manifest cannot-reach=eval /\n\
+             //! needs-eval=false). Boots from AOT defuns only: no KL source\n\
+             //! is parsed or evaluated.\n\n",
+        );
+    } else {
+        out.push_str(
+            "//! Auto-generated by yggdrasil-build. DO NOT EDIT.\n\
+             //!\n\
+             //! Boots a minimal shen-rust Interp from the shaken kernel only\n\
+             //! (no 21-file kernel), runs (shen.initialise), installs the AOT\n\
+             //! modules, then evaluates each user file's top-level forms in\n\
+             //! source order.\n\n",
+        );
+    }
     out.push_str("mod kernel_aot;\n");
     for u in users {
         out.push_str(&format!("mod {};\n", u.module));
     }
     out.push_str("\nuse shen_rust::interp::boot;\nuse shen_rust::interp::eval::Interp;\n\n");
-    out.push_str("const KERNEL_KL: &str = include_str!(\"kl/kernel.kl\");\n");
-    for (i, u) in users.iter().enumerate() {
-        out.push_str(&format!(
-            "const USER_KL_{i}: &str = include_str!({:?});\n",
-            format!("kl/{}", u.kl_file)
-        ));
-        out.push_str(&format!("const USER_SKIP_{i}: &[&str] = &[\n"));
-        for name in &u.compiled {
-            out.push_str(&format!("    {name:?},\n"));
+    if !aot_only {
+        out.push_str("const KERNEL_KL: &str = include_str!(\"kl/kernel.kl\");\n");
+        for (i, u) in users.iter().enumerate() {
+            out.push_str(&format!(
+                "const USER_KL_{i}: &str = include_str!({:?});\n",
+                format!("kl/{}", u.kl_file)
+            ));
+            out.push_str(&format!("const USER_SKIP_{i}: &[&str] = &[\n"));
+            for name in &u.compiled {
+                out.push_str(&format!("    {name:?},\n"));
+            }
+            out.push_str("];\n");
         }
-        out.push_str("];\n");
     }
     out.push_str("\n/// Manifest `fn=` lines: arity + shen.lambda-form metadata for user\n/// defuns, so `(fn NAME)` / partial application resolve.\n");
     out.push_str("const USER_FN_METADATA: &[(&str, usize)] = &[\n");
@@ -337,13 +460,20 @@ fn generate_main(manifest: &Manifest, users: &[UserModule]) -> String {
 
     out.push_str("fn run() -> Result<(), String> {\n");
     out.push_str("    let mut interp = Interp::new();\n");
-    out.push_str(
-        "    boot::boot_from_kl_source(&mut interp, KERNEL_KL, Some(kernel_aot::install))\n\
-         \x20       .map_err(|e| format!(\"boot: {e}\"))?;\n",
-    );
+    if aot_only {
+        out.push_str(
+            "    boot::boot_aot_slice(&mut interp, kernel_aot::install, kernel_aot::run_toplevel)\n\
+             \x20       .map_err(|e| format!(\"boot: {e}\"))?;\n",
+        );
+    } else {
+        out.push_str(
+            "    boot::boot_from_kl_source(&mut interp, KERNEL_KL, Some(kernel_aot::install))\n\
+             \x20       .map_err(|e| format!(\"boot: {e}\"))?;\n",
+        );
+    }
     // shen.x host extensions (SHA-256 via sha2) are installed by
-    // register_hot_overrides inside boot_from_kl_source. User code that
-    // calls shen.x.sha256-octets then prefers host over pure.
+    // register_hot_overrides inside boot. User code that calls
+    // shen.x.sha256-octets then prefers host over pure.
     for u in users {
         out.push_str(&format!("    {}::install(&mut interp);\n", u.module));
     }
@@ -351,17 +481,38 @@ fn generate_main(manifest: &Manifest, users: &[UserModule]) -> String {
         "    boot::register_fn_metadata(&mut interp, USER_FN_METADATA)\n\
          \x20       .map_err(|e| format!(\"fn metadata: {e}\"))?;\n",
     );
-    for (i, u) in users.iter().enumerate() {
-        out.push_str(&format!(
-            "    boot::eval_kl_source(&mut interp, USER_KL_{i}, {:?}, USER_SKIP_{i})\n\
-             \x20       .map_err(|e| format!(\"{{e}}\"))?;\n",
-            u.kl_file
-        ));
+    if aot_only {
+        for u in users {
+            out.push_str(&format!(
+                "    {}::run_toplevel(&mut interp).map_err(|e| format!(\"{{e}}\"))?;\n",
+                u.module
+            ));
+        }
+    } else {
+        for (i, u) in users.iter().enumerate() {
+            out.push_str(&format!(
+                "    boot::eval_kl_source(&mut interp, USER_KL_{i}, {:?}, USER_SKIP_{i})\n\
+                 \x20       .map_err(|e| format!(\"{{e}}\"))?;\n",
+                u.kl_file
+            ));
+        }
     }
     out.push_str("    Ok(())\n}\n\n");
 
+    // wasm32 has no threads in the default WASI target; a 1 GB stack thread
+    // is for native prolog-depth recursion only.
     out.push_str(
         "fn main() {\n\
+         \x20   match run_on_host() {\n\
+         \x20       Ok(()) => {}\n\
+         \x20       Err(e) => {\n\
+         \x20           eprintln!(\"error: {e}\");\n\
+         \x20           std::process::exit(1);\n\
+         \x20       }\n\
+         \x20   }\n\
+         }\n\n\
+         #[cfg(not(target_arch = \"wasm32\"))]\n\
+         fn run_on_host() -> Result<(), String> {\n\
          \x20   // User code (e.g. prolog CPS) may recurse deeply: run on a\n\
          \x20   // 1 GB stack thread, like bin/shen-rust does.\n\
          \x20   let handle = std::thread::Builder::new()\n\
@@ -370,16 +521,13 @@ fn generate_main(manifest: &Manifest, users: &[UserModule]) -> String {
          \x20       .spawn(run)\n\
          \x20       .expect(\"spawn shen thread\");\n\
          \x20   match handle.join() {\n\
-         \x20       Ok(Ok(())) => {}\n\
-         \x20       Ok(Err(e)) => {\n\
-         \x20           eprintln!(\"error: {e}\");\n\
-         \x20           std::process::exit(1);\n\
-         \x20       }\n\
-         \x20       Err(_) => {\n\
-         \x20           eprintln!(\"error: shen thread panicked\");\n\
-         \x20           std::process::exit(101);\n\
-         \x20       }\n\
+         \x20       Ok(result) => result,\n\
+         \x20       Err(_) => Err(\"shen thread panicked\".to_string()),\n\
          \x20   }\n\
+         }\n\n\
+         #[cfg(target_arch = \"wasm32\")]\n\
+         fn run_on_host() -> Result<(), String> {\n\
+         \x20   run()\n\
          }\n",
     );
     out
@@ -392,5 +540,44 @@ fn main() -> ExitCode {
             eprintln!("yggdrasil-build: {e}");
             ExitCode::from(1)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cannot_reach_eval_selects_aot_only() {
+        let m = Manifest {
+            cannot_reach: vec!["eval".into(), "clock".into()],
+            needs_eval: Some(false),
+            ..Manifest::default()
+        };
+        assert!(eval_unreachable(&m));
+    }
+
+    #[test]
+    fn needs_eval_false_alone_selects_aot_only() {
+        let m = Manifest {
+            needs_eval: Some(false),
+            ..Manifest::default()
+        };
+        assert!(eval_unreachable(&m));
+    }
+
+    #[test]
+    fn needs_eval_true_keeps_the_interpreter() {
+        let m = Manifest {
+            cannot_reach: vec!["eval".into()],
+            needs_eval: Some(true),
+            ..Manifest::default()
+        };
+        assert!(!eval_unreachable(&m));
+    }
+
+    #[test]
+    fn missing_keys_keep_the_interpreter() {
+        assert!(!eval_unreachable(&Manifest::default()));
     }
 }

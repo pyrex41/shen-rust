@@ -781,6 +781,18 @@ impl Interp {
     ///
     /// This is a GC safepoint funnel: a deferred collection requested while
     /// the expression ran fires after it completes (see [`GC_DEPTH`]).
+    ///
+    /// Without the `interpreter` feature this is a stub: nothing in the
+    /// crate calls it on that build (the `eval-kl` primitive is a stub
+    /// too), so the tree-walker below is dead and not codegen'd.
+    #[cfg(not(feature = "interpreter"))]
+    pub fn eval(&mut self, _expr: &KlExpr) -> ShenResult<Value> {
+        Err(ShenError::new(
+            "KL interpreter is not included in this build (shen-rust feature `interpreter`)",
+        ))
+    }
+
+    #[cfg(feature = "interpreter")]
     pub fn eval(&mut self, expr: &KlExpr) -> ShenResult<Value> {
         // One TLS load + predicted branch when the GC is off (the default):
         // the depth-guard protocol exists only for request-mode collection.
@@ -1062,20 +1074,43 @@ impl Interp {
                 f(self, &args)
             }
             ClosureKind::Lambda(body) => {
-                let _hazard = HazardGuard::arm(args.spilled());
-                let mut locals: Locals = body.captured.clone();
-                for (p, a) in body.params.iter().zip(args) {
-                    locals.push((*p, a));
+                // `apply` is on the AOT hot path. Calling `eval_in` here
+                // would keep the whole tree-walker live even when the
+                // program never evaluates KL. AOT lambdas are `Native`.
+                #[cfg(feature = "interpreter")]
+                {
+                    let _hazard = HazardGuard::arm(args.spilled());
+                    let mut locals: Locals = body.captured.clone();
+                    for (p, a) in body.params.iter().zip(args) {
+                        locals.push((*p, a));
+                    }
+                    // The materialised lambda scope is a malloc `Vec` live for
+                    // the whole body evaluation.
+                    let _hazard_locals = HazardGuard::arm(!locals.is_empty());
+                    self.eval_in(&body.body, &locals)
                 }
-                // The materialised lambda scope is a malloc `Vec` live for
-                // the whole body evaluation.
-                let _hazard_locals = HazardGuard::arm(!locals.is_empty());
-                self.eval_in(&body.body, &locals)
+                #[cfg(not(feature = "interpreter"))]
+                {
+                    let _ = (body, args);
+                    Err(ShenError::new(
+                        "KL tree-walker is not included in this build (shen-rust feature `interpreter`)",
+                    ))
+                }
             }
             ClosureKind::Bytecode(bf, upvals) => {
                 // No ArgVec hazard across `exec` — see the Bytecode arm of
                 // the exact-arity dispatch above for the rationale.
-                crate::vm::exec::exec(self, bf, upvals, &args)
+                #[cfg(feature = "interpreter")]
+                {
+                    crate::vm::exec::exec(self, bf, upvals, &args)
+                }
+                #[cfg(not(feature = "interpreter"))]
+                {
+                    let _ = (bf, upvals, args);
+                    Err(ShenError::new(
+                        "bytecode VM is not included in this build (shen-rust feature `interpreter`)",
+                    ))
+                }
             }
             #[cfg(feature = "jit")]
             ClosureKind::Jit(jc, captures) => {

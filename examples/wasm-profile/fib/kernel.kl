@@ -1,0 +1,116 @@
+(defun @s (V3438 V3439) (cn V3438 V3439))
+
+(defun vector (V3442) (let W3443 (absvector (+ V3442 1)) (let W3444 (address-> W3443 0 V3442) (let W3445 (if (= V3442 0) W3444 (shen.fillvector W3444 1 V3442 (fail))) W3445))))
+
+(defun shen.fillvector (V3447 V3448 V3449 V3450) (cond ((= V3448 V3449) (address-> V3447 V3449 V3450)) (true (shen.fillvector (address-> V3447 V3448 V3450) (+ 1 V3448) V3449 V3450))))
+
+(defun vector? (V3451) (and (absvector? V3451) (trap-error (>= (<-address V3451 0) 0) (lambda Z3452 false))))
+
+(defun vector-> (V3453 V3454 V3455) (if (= V3454 0) (simple-error "cannot access 0th element of a vector
+") (address-> V3453 V3454 V3455)))
+
+(defun <-vector (V3456 V3457) (if (= V3457 0) (simple-error "cannot access 0th element of a vector
+") (let W3458 (<-address V3456 V3457) (if (= W3458 (fail)) (simple-error "vector element not found
+") W3458))))
+
+(defun limit (V3460) (<-address V3460 0))
+
+(defun gensym (V3477) (concat V3477 (set shen.*gensym* (+ 1 (value shen.*gensym*)))))
+
+(defun concat (V3478 V3479) (intern (cn (str V3478) (str V3479))))
+
+(defun assoc (V3532 V3533) (cond ((= () V3533) ()) ((and (cons? V3533) (and (cons? (hd V3533)) (= V3532 (hd (hd V3533))))) (hd V3533)) ((cons? V3533) (assoc V3532 (tl V3533))) (true (simple-error "attempt to search a non-list with assoc
+"))))
+
+(defun do (V3546 V3547) V3547)
+
+(defun empty? (V3563) (cond ((= () V3563) true) (true false)))
+
+(defun put (V3574 V3575 V3576 V3577) (let W3578 (hash V3574 (limit V3577)) (let W3579 (trap-error (<-vector V3577 W3578) (lambda Z3580 ())) (let W3581 (vector-> V3577 W3578 (shen.change-pointer-value V3574 V3575 V3576 W3579)) V3576))))
+
+(defun shen.change-pointer-value (V3614 V3615 V3616 V3617) (cond ((= () V3617) (cons (cons (cons V3614 (cons V3615 ())) V3616) ())) ((and (cons? V3617) (and (cons? (hd V3617)) (and (cons? (hd (hd V3617))) (and (cons? (tl (hd (hd V3617)))) (and (= () (tl (tl (hd (hd V3617))))) (and (= V3615 (hd (tl (hd (hd V3617))))) (= V3614 (hd (hd (hd V3617)))))))))) (cons (cons (hd (hd V3617)) V3616) (tl V3617))) ((cons? V3617) (cons (hd V3617) (shen.change-pointer-value V3614 V3615 V3616 (tl V3617)))) (true (simple-error "implementation error in shen.change-pointer-value"))))
+
+(defun get (V3618 V3619 V3620) (let W3621 (hash V3618 (limit V3620)) (let W3622 (trap-error (<-vector V3620 W3621) (lambda Z3623 (simple-error (shen.app V3618 (cn " has no attributes: " (shen.app V3619 "
+" shen.s)) shen.a)))) (let W3624 (assoc (cons V3618 (cons V3619 ())) W3622) (if (empty? W3624) (simple-error (cn "attribute " (shen.app V3619 (cn " not found for " (shen.app V3618 "
+" shen.s)) shen.s))) (tl W3624))))))
+
+(defun hash (V3625 V3626) (let W3627 (shen.mod (shen.hashkey V3625) V3626) (if (= W3627 0) 1 W3627)))
+
+(defun shen.hashkey (V3628) (let W3629 (map (lambda Z3630 (string->n Z3630)) (explode V3628)) (shen.prodbutzero W3629 1)))
+
+(defun shen.prodbutzero (V3631 V3632) (cond ((= () V3631) V3632) ((and (cons? V3631) (= 0 (hd V3631))) (shen.prodbutzero (tl V3631) V3632)) ((cons? V3631) (if (> V3632 10000000000) (shen.prodbutzero (tl V3631) (+ V3632 (hd V3631))) (shen.prodbutzero (tl V3631) (* V3632 (hd V3631))))) (true (simple-error "partial function shen.prodbutzero"))))
+
+(defun shen.mod (V3633 V3634) (shen.modh V3633 (shen.multiples V3633 (cons V3634 ()))))
+
+(defun shen.multiples (V3639 V3640) (cond ((and (cons? V3640) (> (hd V3640) V3639)) (tl V3640)) ((cons? V3640) (shen.multiples V3639 (cons (* 2 (hd V3640)) V3640))) (true (simple-error "implementation error in shen.multiples"))))
+
+(defun shen.modh (V3647 V3648) (cond ((= 0 V3647) 0) ((= () V3648) V3647) ((and (cons? V3648) (> (hd V3648) V3647)) (if (empty? (tl V3648)) V3647 (shen.modh V3647 (tl V3648)))) ((cons? V3648) (shen.modh (- V3647 (hd V3648)) V3648)) (true (simple-error "implementation error in shen.modh"))))
+
+(defun hdstr (V3662) (pos V3662 0))
+
+(defun reverse (V3671) (shen.reverse-help V3671 ()))
+
+(defun shen.reverse-help (V3676 V3677) (cond ((= () V3676) V3677) ((cons? V3676) (shen.reverse-help (tl V3676) (cons (hd V3676) V3677))) (true (simple-error "attempt to reverse a non-list
+"))))
+
+(defun not (V3688) (if V3688 false true))
+
+(defun explode (V3697) (shen.explode-h (shen.app V3697 "" shen.a)))
+
+(defun shen.explode-h (V3700) (cond ((= "" V3700) ()) ((shen.+string? V3700) (cons (hdstr V3700) (shen.explode-h (tlstr V3700)))) (true (simple-error "implementation error in explode-h"))))
+
+(defun map (V3702 V3703) (shen.map-h V3702 V3703 ()))
+
+(defun shen.map-h (V3704 V3705 V3706) (cond ((= () V3705) (reverse V3706)) ((cons? V3705) (shen.map-h V3704 (tl V3705) (cons (V3704 (hd V3705)) V3706))) (true (simple-error "partial function shen.map-h"))))
+
+(defun stoutput () (value *stoutput*))
+
+(defun fail () shen.fail!)
+
+(defun pr (V5564 V5565) (if (value *hush*) V5564 (if (shen.char-stoutput? V5565) (shen.write-string V5564 V5565) (shen.write-chars V5564 V5565 (shen.string->byte V5564 0) 1))))
+
+(defun shen.string->byte (V5566 V5567) (trap-error (string->n (pos V5566 V5567)) (lambda Z5568 shen.eos)))
+
+(defun shen.write-chars (V5569 V5570 V5571 V5572) (cond ((= shen.eos V5571) V5569) (true (shen.write-chars V5569 V5570 (do (write-byte V5571 V5570) (shen.string->byte V5569 V5572)) (+ V5572 1)))))
+
+(defun shen.app (V5612 V5613 V5614) (cn (shen.arg->str V5612 V5614) V5613))
+
+(defun shen.arg->str (V5618 V5619) (cond ((= V5618 (fail)) "...") ((shen.list? V5618) (shen.list->str V5618 V5619)) ((string? V5618) (shen.str->str V5618 V5619)) ((absvector? V5618) (shen.vector->str V5618 V5619)) (true (shen.atom->str V5618))))
+
+(defun shen.list->str (V5620 V5621) (cond ((= shen.r V5621) (@s "(" (@s (shen.iter-list V5620 shen.r (shen.maxseq)) ")"))) (true (@s "[" (@s (shen.iter-list V5620 V5621 (shen.maxseq)) "]")))))
+
+(defun shen.maxseq () (value *maximum-print-sequence-size*))
+
+(defun shen.iter-list (V5632 V5633 V5634) (cond ((= () V5632) "") ((= 0 V5634) "... etc") ((and (cons? V5632) (= () (tl V5632))) (shen.arg->str (hd V5632) V5633)) ((cons? V5632) (@s (shen.arg->str (hd V5632) V5633) (@s " " (shen.iter-list (tl V5632) V5633 (- V5634 1))))) (true (@s "|" (@s " " (shen.arg->str V5632 V5633))))))
+
+(defun shen.str->str (V5637 V5638) (cond ((= shen.a V5638) V5637) (true (@s (n->string 34) (@s V5637 (n->string 34))))))
+
+(defun shen.vector->str (V5639 V5640) (if (shen.print-vector? V5639) ((fn (<-address V5639 0)) V5639) (if (vector? V5639) (@s "<" (@s (shen.iter-vector V5639 1 V5640 (shen.maxseq)) ">")) (@s "<" (@s "<" (@s (shen.iter-vector V5639 0 V5640 (shen.maxseq)) ">>"))))))
+
+(defun shen.print-vector? (V5641) (let W5642 (<-address V5641 0) (if (= W5642 shen.tuple) true (if (= W5642 shen.pvar) true (if (not (number? W5642)) (shen.fbound? W5642) false)))))
+
+(defun shen.fbound? (V5643) (not (= (arity V5643) -1)))
+
+(defun shen.tuple (V5644) (cn "(@p " (shen.app (<-address V5644 1) (cn " " (shen.app (<-address V5644 2) ")" shen.s)) shen.s)))
+
+(defun shen.iter-vector (V5651 V5652 V5653 V5654) (cond ((= 0 V5654) "... etc") (true (let W5655 (trap-error (<-address V5651 V5652) (lambda Z5656 shen.out-of-bounds)) (let W5657 (trap-error (<-address V5651 (+ V5652 1)) (lambda Z5658 shen.out-of-bounds)) (if (= W5655 shen.out-of-bounds) "" (if (= W5657 shen.out-of-bounds) (shen.arg->str W5655 V5653) (@s (shen.arg->str W5655 V5653) (@s " " (shen.iter-vector V5651 (+ V5652 1) V5653 (- V5654 1)))))))))))
+
+(defun shen.atom->str (V5659) (trap-error (str V5659) (lambda Z5660 (shen.funexstring))))
+
+(defun shen.funexstring () (@s "" (@s "f" (@s "u" (@s "n" (@s "e" (@s (shen.arg->str (gensym (intern "x")) shen.a) "")))))))
+
+(defun shen.list? (V5661) (or (empty? V5661) (cons? V5661)))
+
+(defun shen.+string? (V836) (cond ((= "" V836) false) (true (string? V836))))
+
+(defun fn (V2881) (cond ((= (arity V2881) 0) (V2881)) (true (let W2882 (assoc V2881 (value shen.*lambdatable*)) (if (empty? W2882) (simple-error (cn "fn: " (shen.app V2881 " is undefined
+" shen.a))) (tl W2882))))))
+
+(defun arity (V5729) (trap-error (get V5729 arity (value *property-vector*)) (lambda Z5730 -1)))
+
+(defun shen.initialise-arity-table (V5733) (cond ((= () V5733) ()) ((and (cons? V5733) (cons? (tl V5733))) (let W5734 (put (hd V5733) arity (hd (tl V5733)) (value *property-vector*)) (shen.initialise-arity-table (tl (tl V5733))))) (true (simple-error "implementation error in shen.initialise-arity-table"))))
+
+(defun shen.pvar (V1786) (cn "Var" (shen.app (<-address V1786 1) "" shen.a)))
+
+(defun shen.initialise () (do (set shen.*history* ()) (do (set shen.*tc* false) (do (set *property-vector* (vector 20000)) (do (set *macros* ()) (do (set shen.*gensym* 0) (do (set shen.*tracking* ()) (do (set shen.*profiled* ()) (do (set *home-directory* "") (do (set shen.*special* (cons @p (cons @s (cons @v (cons cons (cons lambda (cons let (cons where (cons set (cons open (cons shen.input-h+ (cons type ())))))))))))) (do (set shen.*extraspecial* ()) (do (set shen.*spy* false) (do (set shen.*datatypes* ()) (do (set shen.*alldatatypes* ()) (do (set shen.*shen-type-theory-enabled?* true) (do (set shen.*package* null) (do (set shen.*synonyms* ()) (do (set shen.*system* ()) (do (set shen.*sigf* ()) (do (set shen.*occurs* true) (do (set shen.*factorise?* false) (do (set shen.*maxinferences* 1000000) (do (set *maximum-print-sequence-size* 20) (do (set shen.*call* 0) (do (set shen.*infs* 0) (do (set *hush* false) (do (set shen.*optimise* false) (do (set *version* "42") (do (set shen.*names* ()) (do (set shen.*step* false) (do (set shen.*it* "") (do (set shen.*residue* ()) (do (set shen.*prolog-memory* 1000) (do (set shen.*loading?* false) (do (set shen.*userdefs* ()) (do (shen.initialise-arity-table (cons absvector? (cons 1 (cons absvector (cons 1 (cons address-> (cons 3 (cons and (cons 2 (cons arity (cons 1 (cons assoc (cons 2 (cons concat (cons 2 (cons cons (cons 2 (cons cons? (cons 1 (cons cn (cons 2 (cons close (cons 1 (cons do (cons 2 (cons empty? (cons 1 (cons error-to-string (cons 1 (cons explode (cons 1 (cons fail (cons 0 (cons freeze (cons 1 (cons fn (cons 1 (cons gensym (cons 1 (cons get (cons 3 (cons get-time (cons 1 (cons address-> (cons 3 (cons <-address (cons 2 (cons <-vector (cons 2 (cons > (cons 2 (cons >= (cons 2 (cons = (cons 2 (cons hash (cons 2 (cons hd (cons 1 (cons hdstr (cons 1 (cons if (cons 3 (cons intern (cons 1 (cons limit (cons 1 (cons < (cons 2 (cons <= (cons 2 (cons vector (cons 1 (cons map (cons 2 (cons not (cons 1 (cons n->string (cons 1 (cons number? (cons 1 (cons open (cons 2 (cons or (cons 2 (cons pos (cons 2 (cons pr (cons 2 (cons put (cons 4 (cons read-byte (cons 1 (cons shen.read-unit-string (cons 1 (cons reverse (cons 1 (cons set (cons 2 (cons simple-error (cons 1 (cons stoutput (cons 0 (cons str (cons 1 (cons string->n (cons 1 (cons string? (cons 1 (cons tl (cons 1 (cons tlstr (cons 1 (cons trap-error (cons 2 (cons type (cons 2 (cons vector (cons 1 (cons vector? (cons 1 (cons vector-> (cons 3 (cons value (cons 1 (cons write-byte (cons 2 (cons + (cons 2 (cons * (cons 2 (cons / (cons 2 (cons - (cons 2 (cons @s (cons 2 ()))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) (do (put shen shen.external-symbols (cons *stinput* (cons *stoutput* (cons @s (cons = (cons >= (cons > (cons - (cons / (cons * (cons + (cons <= (cons < (cons write-byte (cons value (cons vector-> (cons <-vector (cons vector (cons vector? (cons type (cons trap-error (cons tl (cons tlstr (cons string? (cons string->n (cons stoutput (cons simple-error (cons set (cons str (cons reverse (cons read-byte (cons put (cons pr (cons pos (cons or (cons open (cons n->string (cons number? (cons not (cons map (cons limit (cons let (cons lambda (cons intern (cons if (cons hd (cons hdstr (cons hash (cons get (cons get-time (cons gensym (cons fn (cons freeze (cons fail (cons explode (cons error-to-string (cons empty? (cons do (cons defun (cons cn (cons cons? (cons cons (cons cond (cons concat (cons close (cons assoc (cons arity (cons and (cons <-address (cons address-> (cons absvector? (cons absvector ()))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) (value *property-vector*)) (set shen.*lambdatable* (cons (cons shen.tuple (lambda X1 (shen.tuple X1))) (cons (cons shen.pvar (lambda X1 (shen.pvar X1))) (cons (cons cn (lambda X1 (lambda X2 (cn X1 X2)))) (cons (cons do (lambda X1 (lambda X2 (do X1 X2)))) (cons (cons pr (lambda X1 (lambda X2 (pr X1 X2)))) (cons (cons - (lambda X1 (lambda X2 (- X1 X2)))) (cons (cons + (lambda X1 (lambda X2 (+ X1 X2)))) (cons (cons = (lambda X1 (lambda X2 (= X1 X2)))) (cons (cons vector-> (lambda X1 (lambda X2 (lambda X3 (vector-> X1 X2 X3))))) (cons (cons concat (lambda X1 (lambda X2 (concat X1 X2)))) (cons (cons gensym (lambda X1 (gensym X1))) (cons (cons vector? (lambda X1 (vector? X1))) (cons (cons fn (lambda X1 (fn X1))) (cons (cons assoc (lambda X1 (lambda X2 (assoc X1 X2)))) (cons (cons <-vector (lambda X1 (lambda X2 (<-vector X1 X2)))) (cons (cons limit (lambda X1 (limit X1))) (cons (cons get (lambda X1 (lambda X2 (lambda X3 (get X1 X2 X3))))) (cons (cons arity (lambda X1 (arity X1))) (cons (cons not (lambda X1 (not X1))) (cons (cons @s (lambda X1 (lambda X2 (@s X1 X2)))) (cons (cons hdstr (lambda X1 (hdstr X1))) (cons (cons explode (lambda X1 (explode X1))) (cons (cons reverse (lambda X1 (reverse X1))) (cons (cons map (lambda X1 (lambda X2 (map X1 X2)))) (cons (cons empty? (lambda X1 (empty? X1))) (cons (cons hash (lambda X1 (lambda X2 (hash X1 X2)))) (cons (cons put (lambda X1 (lambda X2 (lambda X3 (lambda X4 (put X1 X2 X3 X4)))))) (cons (cons vector (lambda X1 (vector X1))) ()))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+

@@ -25,6 +25,7 @@ const MAX_ABSVECTOR: i64 = 1 << 24;
 /// Register every primitive in the function namespace.
 pub fn register_all(interp: &mut Interp) {
     register_core(interp);
+    #[cfg(feature = "cedar")]
     crate::cedar::primitives::register_all(interp);
     // Host extensions (shen.x) are installed in register_hot_overrides after
     // kernel boot so globals survive boot side-effects.
@@ -1010,6 +1011,10 @@ fn register_core(interp: &mut Interp) {
     });
 
     // --- meta ---
+    // The closure below is installed for every `Interp::new`, so it is a
+    // GC root for the whole tree-walker. Builds without `interpreter`
+    // register a stub instead and never mention `Interp::eval`.
+    #[cfg(feature = "interpreter")]
     interp.register_native("eval-kl", 1, |interp, args| {
         // KL semantics: numbers, strings, booleans, streams, closures,
         // absvectors, and other non-list values are self-evaluating.
@@ -1021,6 +1026,12 @@ fn register_core(interp: &mut Interp) {
         } else {
             Ok(args[0])
         }
+    });
+    #[cfg(not(feature = "interpreter"))]
+    interp.register_native("eval-kl", 1, |_interp, _args| {
+        Err(ShenError::new(
+            "eval-kl is not included in this build (shen-rust feature `interpreter`)",
+        ))
     });
     interp.register_native("type", 2, |_, args| {
         // (type X T) — at runtime we ignore the annotation and return X.
@@ -1355,6 +1366,7 @@ fn list_to_vec(v: &Value) -> Option<Vec<Value>> {
 
 /// Convert a Shen value (list-form code) into a `KlExpr` AST. Used by
 /// `eval-kl`.
+#[cfg(feature = "interpreter")]
 fn value_to_klexpr(v: &Value) -> ShenResult<crate::kl::ast::KlExpr> {
     use crate::kl::ast::KlExpr;
     if v.is_nil() {

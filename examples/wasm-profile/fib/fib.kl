@@ -1,0 +1,5 @@
+(defun fib (V2918) (cond ((= 0 V2918) 0) ((= 1 V2918) 1) (true (+ (fib (- V2918 1)) (fib (- V2918 2))))))
+
+(pr (cn "fib 20 = " (shen.app (fib 20) "
+" shen.a)) (stoutput))
+
