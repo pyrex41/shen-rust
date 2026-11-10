@@ -416,8 +416,10 @@ fn set_port_metadata(interp: &mut Interp) {
         ("*version*", "43.4"),
         ("*language*", "Rust"),
         ("*implementation*", "shen-rust"),
-        ("*release*", "0.1.0"),
-        ("*port*", "0.1.0"),
+        // Port version tracks the workspace crate version so `(release)`,
+        // `(port)`, and the REPL banner stay aligned with Cargo.toml.
+        ("*release*", env!("CARGO_PKG_VERSION")),
+        ("*port*", env!("CARGO_PKG_VERSION")),
         ("*porters*", "Reuben Brooks"),
         ("*os*", os_name()),
     ];

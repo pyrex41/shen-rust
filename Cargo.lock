@@ -741,7 +741,7 @@ dependencies = [
 
 [[package]]
 name = "klcompile"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "shen-rust",
 ]
@@ -1298,7 +1298,7 @@ dependencies = [
 
 [[package]]
 name = "shen-cedar-authz"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "cedar-policy",
  "shen-rust",
@@ -1306,7 +1306,7 @@ dependencies = [
 
 [[package]]
 name = "shen-rust"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "cedar-policy",
  "cranelift-codegen",
@@ -1320,7 +1320,7 @@ dependencies = [
 
 [[package]]
 name = "shen-rust-bin"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "klcompile",
  "shen-rust",
@@ -1328,14 +1328,14 @@ dependencies = [
 
 [[package]]
 name = "shenffi"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "shen-rust",
 ]
 
 [[package]]
 name = "shengen-rust"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "shlex"
@@ -1796,7 +1796,7 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 
 [[package]]
 name = "yggdrasil-build"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "klcompile",
 ]

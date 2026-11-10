@@ -4,8 +4,45 @@ Notable changes to shen-rust. Earlier history is summarised in `STATUS.md`.
 
 ## Unreleased
 
+## 0.1.1 — 2026-11-10
+
+First tagged release. The workspace version moves from `0.1.0` to `0.1.1`.
+Nothing before this was tagged or published, so the notes below include
+the kernel history that had been sitting under Unreleased, plus the lean
+wasm feature gates from #35.
+
+`0.1.1` is a patch, not `0.2.0`. The only version in the tree was `0.1.0`,
+shared by every crate through `version.workspace = true`, and there is no
+release workflow or crates.io publish. Cargo's pre-1.0 rule treats a
+compatible change as a patch and a breaking change as a minor bump. #35
+adds `cedar`, `kernel-aot`, and `interpreter`, and puts all three in
+`default`, so a default native build is the same port as before.
+
+### Added
+
+- **Feature gates for a lean wasm link.** `cedar`, `kernel-aot`, and
+  `interpreter` are Cargo features.
+  `default = ["cedar", "kernel-aot", "interpreter"]`, so `cargo build`,
+  `cargo test`, and `./scripts/gates.sh` still link Cedar, the precompiled
+  full kernel, and the KL tree-walker. `jit` stays off by default and now
+  implies `interpreter` and `kernel-aot`. `yggdrasil-build` emits
+  `default-features = false` when the shake manifest says
+  `cannot-reach=eval` or `needs-eval=false`, and adds `interpreter` only
+  when eval is still reachable. `--full` keeps the default features.
+- **Eval-free fib shake on `wasm32-wasip1`** (opt-level 3, thin LTO, then
+  `wasm-opt -Oz`). Raw wasm ~4.8 MB → ~436 KB; brotli ~91 KB. Node
+  compile + instantiate + start ~26 ms → ~10.5 ms. Measured on the
+  committed fixture: 4,775,021 → 436,471 bytes raw, 975,639 → 91,047
+  brotli, 26.10 → 10.53 ms total. See `examples/wasm-profile/README.md`.
+- On `wasm32`, `*home-directory*` is `"/"` when the host has no process
+  cwd. The wasm entry calls `run` directly and does not spawn the 1 GB
+  thread.
+
 ### Changed
 
+- `(port)` and `(release)` follow the crate version
+  (`CARGO_PKG_VERSION`), so this release reports `0.1.1`. `*version*`
+  stays the kernel version, `"43.4"`.
 - **Kernel: ShenOSKernel 43.4.** The vendored klambda is the community
   `Shen-Language/shen-sources` release `shen-43.4` (commit
   `f34b307b490880eedcfe1f5e5d3cc24ca3d2602e`), `ShenOSKernel-43.4.tar.gz`
