@@ -1,0 +1,2 @@
+(set ix.frontend.exports (cons ix.frontend.validate-profile (cons ix.frontend.profile-command ())))
+

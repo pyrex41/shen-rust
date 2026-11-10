@@ -193,8 +193,13 @@ bytecode VM (`interpreter`). A Yggdrasil shake whose manifest says
 `yggdrasil-build` reads that manifest and emits a crate with
 `default-features = false`. Boot calls `boot_aot_slice`: it installs the
 AOT defuns, runs `(shen.initialise)` if the slice kept it, and runs
-compiled top-level forms. KL source is not parsed or evaluated, and
+compiled top-level forms. The arity table, external-symbol lists, and
+lambda-form entries in that initialiser are static data (`rt::lit_list`,
+`rt::lambda_alist`, `rt::install_lambda_forms`), not straight-line `cons`
+and closure nests. KL source is not parsed or evaluated.
 `*home-directory*` falls back to `"/"` when `wasm32` has no process cwd.
+Host SHA-256 is the `sha256` feature (on by default) and stays out of an
+image whose manifest does not mention it.
 
 ```sh
 cargo run -p yggdrasil-build -- examples/wasm-profile/fib /tmp/fib-lean

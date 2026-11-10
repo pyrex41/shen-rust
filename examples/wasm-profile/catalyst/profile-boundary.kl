@@ -1,0 +1,4 @@
+(defun ix.frontend.audience? (V7851) (cond ((= public V7851) true) ((= members V7851) true) ((= hidden V7851) true) (true false)))
+
+(defun ix.frontend.validate-profile (V7852 V7853 V7854 V7855) (cond ((not (string? V7852)) "Name must be text.") ((not (ix.frontend.valid-name? V7852)) "Name is required.") ((not (string? V7853)) "City must be text.") ((not (ix.frontend.valid-city? V7853)) "City is required.") ((not (ix.frontend.audience? V7854)) "Choose public, members, or hidden visibility.") ((not (or (= V7855 true) (= V7855 false))) "Catalyst must be a boolean.") (true "")))
+

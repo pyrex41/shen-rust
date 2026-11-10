@@ -1,118 +1,110 @@
 # Lean wasm32 profile
 
-A Yggdrasil-shaken fib slice, built with `yggdrasil-build` for
-`wasm32-wasip1`, then `wasm-opt -Oz`. The fixture is ShenScript's published
-fib shake (`cannot-reach=eval`, `needs-eval=false`, 54 kernel defuns, 14 KB
-of `kernel.kl`). The catalyst-finder profile slice was not readable from
-this environment (the PR returned 404); this program is the same shape: a
-pure eval-free slice whose stdout is `fib 20 = 6765`.
+Two Yggdrasil slices, built with `yggdrasil-build` for `wasm32-wasip1`, then
+`wasm-opt -Oz`. Gzip is `-9`. Brotli is `-q 11`. Node times are the minimum
+of five `compile + instantiate + wasi.start` runs
+(`scripts/wasm-profile-boot.mjs`).
 
-Rebuild:
+Release profile: `opt-level = 3`, thin LTO, `codegen-units = 1`.
 
-```sh
-./scripts/wasm-profile.sh
-```
+## Fib
 
-The script scaffolds two images from this fixture.
+`examples/wasm-profile/fib` is ShenScript's published fib shake (54 kernel
+defuns, `cannot-reach=eval`). Stdout is `fib 20 = 6765\n`.
 
-- **before / `--full`** — default `shen-rust` features. Boot parses the
-  shaken KL and evaluates non-defun forms with the tree-walker. Cedar, the
-  precompiled full kernel, and the interpreter are all available to the
-  linker.
-- **after / default** — `default-features = false`. `cannot-reach=eval`
-  selects `boot_aot_slice`: AOT defuns only, no KL parse, no Cedar, no
-  precompiled kernel, no tree-walker.
-
-Both release profiles are `opt-level = 3`, thin LTO, `codegen-units = 1`.
-Sizes below are after `wasm-opt -Oz` (bulk memory, multivalue, simd,
-reference types, nontrapping float-to-int). Gzip is `-9`, brotli is `-q 11`.
-
-The stock generated `main` spawns a 1 GB thread. WASI returns
-`Unsupported` for that spawn, so the process never reaches
-`set_home_directory`. The wasm entry calls `run` directly (`#[cfg(target_arch = "wasm32")]`).
-The before column uses that same entry on the unmodified engine (commit
-`c0cd646`) so the size diff is the link, not the thread. The thread itself
-was about 5 KB.
-
-`std::env::current_dir` succeeds under Node's default WASI preview1, so
-this host does not need the `"/"` fallback. On `wasm32` the `Err` arm is
-`"/"` only — the `getcwd: …` format string is not in the lean module — so
-a host that does fail `current_dir` still boots.
-
-## Sizes
-
-| build | raw | gzip | brotli |
-|---|---:|---:|---:|
-| before (default features, tree-walked KL) | 4,775,021 | 1,497,505 | 975,639 |
-| after (`cannot-reach=eval`, no default features) | 436,471 | 118,370 | 91,047 |
-
-About 11× smaller raw, 13× smaller gzip. `panic = "abort"` did not move
-the lean binary (wasm-opt had already dropped the unwind tables).
-
-ShenScript's self-contained JS for a slice of this kind is about 44 KB raw
-/ 12.3 KB gzip. The lean wasm module is still ~10× that gzip.
-
-## Boot in Node
-
-`scripts/wasm-profile-boot.mjs` compiles, instantiates, and `wasi.start`s
-the module. Minimum of five runs, milliseconds:
-
-| build | compile | instantiate | run | total |
+| build | raw | gzip | brotli | Node total |
 |---|---:|---:|---:|---:|
-| before | 7.38 | 1.63 | 17.09 | 26.10 |
-| after | 1.10 | 1.34 | 8.09 | 10.53 |
+| before: default features, straight-line `shen.initialise` | 4,775,021 | 1,497,505 | 975,639 | 26.10 ms |
+| lean, tables still compiled as code, `sha2` linked | 436,471 | 118,370 | 91,047 | 10.53 ms |
+| after: tables as data, `sha256` feature off | 388,110 | 107,725 | 84,339 | 8.70 ms |
 
-Stdout of both wasm runs and of the native lean binary is the same bytes:
-`fib 20 = 6765\n`.
+Fastest after run: compile 1.76 ms, instantiate 1.35 ms, run 5.59 ms.
 
-## What the bytes were
+`shen.initialise` went from 53,903 bytes of straight-line code to 18,678.
+The arity list, the external-symbol list, and `shen.*lambdatable*` are
+`rt::lit_list` / `rt::lambda_alist` over static tables. Host SHA-256 is a
+default feature (`sha256`) and is left off when the manifest never mentions
+it; that drops `sha2::sha256::compress256` (7,905 bytes).
 
-Twiggy on `wasm-opt -Oz --debuginfo` (function bodies match the stripped
-module; the name subsection is extra and is not in the size table above).
+## Catalyst profile slice
 
-**Before.** Cedar is the module.
+`examples/wasm-profile/catalyst` is a shake of `frontend/browser.shen` (the
+browser entry: domain, profile types, profile command, profile boundary).
+Yggdrasil on this port's ShenOSKernel 43.4 produced the same manifest as the
+43.1 shake except `kernel-version` (`78` kernel defuns, `cannot-reach=eval`,
+`needs-eval=false`). `driver.kl` is a harness, not part of the shake: it
+prints `(ix.frontend.profile-command "Ada" "London" members true)`.
 
-| group | bytes in the named module |
+That call returns `[ix.profile "Ada" "London" members true]` on the native
+lean binary, on every wasm build below, and from the ShenScript module
+(`shen-reference/web/domain-runtime.mjs` in the source repo: 44,224 raw /
+12,280 gzip / 10,893 brotli).
+
+| build | raw | gzip | brotli | Node total |
+|---|---:|---:|---:|---:|
+| before: default features | 4,890,731 | 1,513,184 | 986,352 | 28.84 ms |
+| lean, lambda forms still compiled as closures | 531,195 | 130,385 | 99,072 | 14.55 ms |
+| after: lambda-form runs and literal spines as data | 507,946 | 128,010 | 97,761 | 16.71 ms |
+
+Fastest after run: compile 2.09 ms, instantiate 1.38 ms, run 13.24 ms.
+Fastest before run: compile 7.14 ms, instantiate 1.63 ms, run 20.07 ms.
+
+The 43.4 initialiser is one `do` that mixes ordinary `set`s with about 40
+`(shen.set-lambda-form-entry …)` steps. Consecutive runs of those steps
+become one `rt::install_lambda_forms` table. `and` / `or` / `if` entries stay
+compiled, because a curried `apply_direct` would not short-circuit. The
+table cut is about 23 KB here; most of the lean module is the domain
+program and boot, not the tables.
+
+An earlier probe of this slice (wasm32-unknown-unknown, `opt-level = "z"`,
+fat LTO, cedar-policy 4.11, before Cedar was optional) was 2,925,235 raw /
+1,022,889 gzip / 707,833 brotli after wasm-opt. The before row above is the
+same scaffold on the current wasip1 / opt-3 / thin-LTO / cedar 4.14 build.
+
+## What the after bytes are
+
+Twiggy on `wasm-opt -Oz --debuginfo` (the name subsection is not in the
+stripped sizes above).
+
+Fib, stripped 388,110:
+
+| item | bytes |
 |---|---:|
-| `cedar-policy` + lalrpop | 2,930,674 |
-| `regex` (pulled in by Cedar) | 579,688 |
-| tree-walker (`interp::eval`) | 34,907 |
-| bytecode VM | 33,229 |
-| KL parser | 11,744 |
+| `main` (boot and `install` inlined) | 82,316 |
+| `shen.initialise` | 18,678 |
+| `<f64 as Display>` | 13,951 |
+| `dlmalloc` | 5,913 |
+| `shen.change-pointer-value` | 5,231 |
 
-The largest single function is a `cedar::primitives::register_all` closure
-(269,134 bytes), then Cedar's LALRPOP `reduce` functions (~74 KB each) and
-`regex::Regex::new` (67,699). The precompiled full kernel (`aot::kernel`,
-~140k lines) is not in the binary: nothing in this scaffold calls
-`install_all`, and thin LTO drops it. It still costs a wasm compile of
-that crate unless the `kernel-aot` feature is off.
+Catalyst, stripped 507,946:
 
-**After.** The shaken program and the Rust runtime.
+| item | bytes |
+|---|---:|
+| `main` (boot and `install` inlined) | 109,691 |
+| `shen.initialise` | 23,475 |
+| `ix.activate` | 22,609 |
+| `<f64 as Display>` | 14,025 |
+| `ix.audience-allows?` | 11,008 |
+| `dlmalloc` | 5,913 |
 
-| item | shallow bytes | share of the 436,471 stripped module |
-|---|---:|---:|
-| `main` (boot inlined) | 83,483 | 19.1% |
-| `shen.initialise` | 53,903 | 12.3% |
-| `<f64 as Display>::fmt` | 13,951 | 3.2% |
-| `sha2::sha256::compress256` | 7,905 | 1.8% |
-| `dlmalloc` | 5,913 | 1.4% |
-| `shen.change-pointer-value` | 5,231 | 1.2% |
+No Cedar, no `eval_in`, no `sha2`.
 
-No `cedar` symbols, no `eval_in`, no `aot::kernel`. `sha2` stays because
-`register_hot_overrides` always installs the host SHA-256. That is about
-8 KB, not the gap to ShenScript.
+## What still separates this from the ShenScript file
 
-## Why this is not yet a 44 KB module
+The JS module is 44 KB because the shaken program is data plus a small
+runtime. The wasm module is an order of magnitude larger for three reasons
+that are not the tables anymore:
 
-- The shaken `shen.initialise` alone is 54 KB of wasm. It is one straight-line
-  function: the arity table and the lambda table, compiled as code. ShenScript
-  emits that as data. The whole JS file is smaller than this one function.
-- `main` holds another ~83 KB of inlined boot (interner, apply, property
-  setup). That is the engine, not the fib.
-- Formatting (`Display` for floats), `dlmalloc`, and the WASI shims do not
-  exist in the JS artifact. `panic = "abort"` does not remove them.
-- Host SHA-256 (`sha2`) is still linked for `shen.x.sha256-octets-host`.
+- `main` is 80–110 KB. Thin LTO inlines `Interp::new`, primitive
+  registration, and every AOT `install_*` into it. Outlining those calls
+  does not remove the code.
+- Each AOT defun is fatter than the same function in JS. `ix.activate`
+  alone is 23 KB, about half the entire ShenScript file.
+- Float formatting, `dlmalloc`, and the WASI imports have no counterpart
+  in the JS artifact. `shen.initialise` is still ~19–23 KB of ordinary
+  `set`s plus the few lambda forms that are real special forms.
 
-Getting near the ShenScript size means treating `shen.initialise`'s tables
-as data rather than code, and shipping a smaller runtime than the current
-`Value` / interner / `apply` path. Feature flags will not close that gap.
+`./scripts/wasm-profile.sh` rebuilds the fib fixture. The catalyst image
+is `yggdrasil-build examples/wasm-profile/catalyst <outdir>`.
+`YGGDRASIL_NO_LITERAL_TABLES=1` keeps the straight-line tables for the
+comparison above.

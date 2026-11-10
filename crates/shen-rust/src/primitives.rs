@@ -1169,41 +1169,44 @@ pub fn register_shenx(interp: &mut Interp) {
     // this query from generated code.
     interp.register_aot_direct("shen.x.features.current", shenx_current_features);
 
-    if std::env::var_os("SHEN_X_SHA256").as_deref() == Some(std::ffi::OsStr::new("pure")) {
+    if !sha256_host_enabled() {
         return;
     }
-    use sha2::{Digest, Sha256};
+    #[cfg(feature = "sha256")]
+    {
+        use sha2::{Digest, Sha256};
 
-    interp.register_native("shen.x.sha256-octets-host", 1, |_, args| {
-        let mut bytes = Vec::new();
-        let mut cur = args[0].clone();
-        while !cur.is_nil() {
-            let (h, t) = match (cur.head(), cur.tail()) {
-                (Some(h), Some(t)) => (h.clone(), t.clone()),
-                _ => {
+        interp.register_native("shen.x.sha256-octets-host", 1, |_, args| {
+            let mut bytes = Vec::new();
+            let mut cur = args[0].clone();
+            while !cur.is_nil() {
+                let (h, t) = match (cur.head(), cur.tail()) {
+                    (Some(h), Some(t)) => (h.clone(), t.clone()),
+                    _ => {
+                        return Err(ShenError::new(
+                            "shen.x.sha256-octets-host: expected list of bytes 0..255",
+                        ))
+                    }
+                };
+                let n = h.as_int().ok_or_else(|| {
+                    ShenError::new("shen.x.sha256-octets-host: expected list of bytes 0..255")
+                })?;
+                if !(0..=255).contains(&n) {
                     return Err(ShenError::new(
                         "shen.x.sha256-octets-host: expected list of bytes 0..255",
-                    ))
+                    ));
                 }
-            };
-            let n = h.as_int().ok_or_else(|| {
-                ShenError::new("shen.x.sha256-octets-host: expected list of bytes 0..255")
-            })?;
-            if !(0..=255).contains(&n) {
-                return Err(ShenError::new(
-                    "shen.x.sha256-octets-host: expected list of bytes 0..255",
-                ));
+                bytes.push(n as u8);
+                cur = t;
             }
-            bytes.push(n as u8);
-            cur = t;
-        }
-        let digest = Sha256::digest(&bytes);
-        Ok(bytes_to_list(&digest))
-    });
+            let digest = Sha256::digest(&bytes);
+            Ok(bytes_to_list(&digest))
+        });
 
-    let backend = interp.symbols.intern("shen.x.*sha256-backend*");
-    let host = interp.symbols.intern("host");
-    interp.env.set_global(backend, Value::sym(host));
+        let backend = interp.symbols.intern("shen.x.*sha256-backend*");
+        let host = interp.symbols.intern("host");
+        interp.env.set_global(backend, Value::sym(host));
+    }
 }
 
 /// Return host capabilities using the feature names understood by Shen
@@ -1212,8 +1215,19 @@ pub fn register_shenx(interp: &mut Interp) {
 /// empty feature set.  The Rust port currently ships only the SHA host
 /// implementation; its presence is gated by `SHEN_X_SHA256=pure` in the same
 /// way as the extension itself.
+fn sha256_host_enabled() -> bool {
+    #[cfg(not(feature = "sha256"))]
+    {
+        false
+    }
+    #[cfg(feature = "sha256")]
+    {
+        std::env::var_os("SHEN_X_SHA256").as_deref() != Some(std::ffi::OsStr::new("pure"))
+    }
+}
+
 fn shenx_current_features(interp: &mut Interp, _args: &[Value]) -> ShenResult<Value> {
-    if std::env::var_os("SHEN_X_SHA256").as_deref() == Some(std::ffi::OsStr::new("pure")) {
+    if !sha256_host_enabled() {
         return Ok(Value::nil());
     }
     let feature = interp.symbols.intern("shen.x/sha256-host");
