@@ -204,6 +204,9 @@ pub fn boot_with_kernel(interp: &mut Interp, kernel_dir: &Path) -> ShenResult<()
     // defuns; only the function-namespace closures get replaced here.
     // `SHEN_RUST_NO_AOT` (env var) disables this — useful when
     // debugging whether a bug is in the AOT codegen or the tree-walker.
+    // The precompiled full kernel is a default feature. Shaken binaries
+    // leave `kernel-aot` off and install their own slice instead.
+    #[cfg(feature = "kernel-aot")]
     if std::env::var_os("SHEN_RUST_NO_AOT").is_none() {
         crate::aot::kernel::install_all(interp);
     }
@@ -289,6 +292,40 @@ pub fn boot_from_kl_source(
         install(interp);
     }
 
+    crate::primitives::register_hot_overrides(interp);
+    Ok(())
+}
+
+/// Boot a Yggdrasil slice whose defuns are already AOT-compiled.
+///
+/// Does not parse or evaluate KL. `install_kernel` registers the shaken
+/// kernel defuns (including `shen.initialise` when the slice kept it).
+/// `kernel_toplevel` runs any non-defun kernel forms, in source order,
+/// after the early native overrides and before `(shen.initialise)`. The
+/// caller installs user AOT modules and runs user top-level forms after
+/// this returns (hot overrides are already in place, matching
+/// [`boot_from_kl_source`]).
+///
+/// This is the `cannot-reach=eval` path: the KL tree-walker is not used,
+/// so a build with `--no-default-features` (no `interpreter`) can still
+/// boot.
+pub fn boot_aot_slice(
+    interp: &mut Interp,
+    install_kernel: fn(&mut Interp),
+    kernel_toplevel: fn(&mut Interp) -> ShenResult<crate::value::Value>,
+) -> ShenResult<()> {
+    crate::interp::guard_types_link::witness();
+
+    set_port_metadata(interp);
+    set_home_directory(interp)?;
+    set_standard_streams(interp);
+
+    install_kernel(interp);
+    crate::primitives::register_early_overrides(interp);
+    kernel_toplevel(interp)?;
+
+    run_shen_initialise(interp)?;
+    register_all_metadata(interp)?;
     crate::primitives::register_hot_overrides(interp);
     Ok(())
 }
@@ -412,14 +449,34 @@ fn os_name() -> &'static str {
 }
 
 fn set_home_directory(interp: &mut Interp) -> ShenResult<()> {
-    let cwd = std::env::current_dir().map_err(|e| ShenError::new(format!("getcwd: {e}")))?;
-    let mut home = cwd.to_string_lossy().into_owned();
-    if !home.ends_with('/') {
-        home.push('/');
-    }
+    let home = home_directory_string()?;
     let sym = interp.intern("*home-directory*");
     interp.env.set_global(sym, Value::str(Rc::from(home)));
     Ok(())
+}
+
+/// `*home-directory*`, always slash-terminated.
+///
+/// `std::env::current_dir` fails on wasm32 when the host has no preopen
+/// (WASI) or no process cwd at all (`wasm32-unknown-unknown`). Falling
+/// back to `"/"` lets a shaken image boot without a port-specific patch.
+fn home_directory_string() -> ShenResult<String> {
+    match std::env::current_dir() {
+        Ok(cwd) => {
+            let mut home = cwd.to_string_lossy().into_owned();
+            if !home.ends_with('/') {
+                home.push('/');
+            }
+            Ok(home)
+        }
+        Err(e) => {
+            if cfg!(target_arch = "wasm32") {
+                Ok("/".to_string())
+            } else {
+                Err(ShenError::new(format!("getcwd: {e}")))
+            }
+        }
+    }
 }
 
 fn load_kl_file(interp: &mut Interp, path: &Path) -> ShenResult<()> {
@@ -461,11 +518,13 @@ fn run_shen_initialise(interp: &mut Interp) -> ShenResult<()> {
 /// when the primitive has positive arity, `(put NAME 'shen.lambda-form
 /// CLOSURE *pv*)` so `(fn NAME)` lookups succeed.
 fn register_all_metadata(interp: &mut Interp) -> ShenResult<()> {
-    let all = PRIMITIVE_METADATA
-        .iter()
-        .chain(crate::cedar::primitives::CEDAR_PRIMITIVES.iter())
-        .map(|(name, arity)| (*name, *arity));
-    register_metadata_entries(interp, all)
+    register_metadata_entries(interp, PRIMITIVE_METADATA.iter().copied())?;
+    #[cfg(feature = "cedar")]
+    register_metadata_entries(
+        interp,
+        crate::cedar::primitives::CEDAR_PRIMITIVES.iter().copied(),
+    )?;
+    Ok(())
 }
 
 fn register_metadata_entries<'a>(

@@ -10,6 +10,7 @@
 //! `tests/aot_smoke.rs`; production use would target the full kernel.
 
 pub mod generated;
+#[cfg(feature = "kernel-aot")]
 pub mod kernel;
 pub mod overlay;
 pub mod runtime;

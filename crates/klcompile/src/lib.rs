@@ -63,6 +63,12 @@ pub struct CompileOptions {
     /// Same-module saturated calls compile to `aot_foo` (sealed kernel unit).
     /// Off for overlays: user `defun` / tracking must keep `apply_direct`.
     pub seal_same_module: bool,
+    /// Compile non-defun top-level forms into `pub fn run_toplevel`.
+    /// A form that cannot be compiled is an error. Off for the kernel AOT
+    /// (those forms stay tree-walked, and the emitted module stays
+    /// byte-stable). On for an eval-free Yggdrasil image, which has no
+    /// tree-walker to run them.
+    pub compile_toplevel: bool,
 }
 
 /// Generation-time provenance recorded into the overlay manifest. Both
@@ -106,6 +112,7 @@ impl CompileOptions {
             },
             emit_manifest: None,
             seal_same_module: true,
+            compile_toplevel: false,
         }
     }
 
@@ -125,6 +132,7 @@ impl CompileOptions {
             },
             emit_manifest: None,
             seal_same_module: false,
+            compile_toplevel: false,
         }
     }
 }
@@ -175,6 +183,7 @@ pub fn compile_kl(src: &str, opts: &CompileOptions) -> Result<(String, CompileRe
     }
 
     let mut g = Codegen::new(&interner);
+    let mut toplevel: Vec<&KlExpr> = Vec::new();
     // Sealed kernel unit only (Shen/Scheme runtime library). Overlays keep
     // apply_direct so later defun/tracking can invalidate the cell.
     if opts.seal_same_module {
@@ -200,6 +209,10 @@ pub fn compile_kl(src: &str, opts: &CompileOptions) -> Result<(String, CompileRe
     let mut skipped = Vec::new();
     let mut arities: Vec<(String, usize)> = Vec::new();
     for (i, form) in forms.iter().enumerate() {
+        if opts.compile_toplevel && defun_name(form, &interner).is_none() {
+            toplevel.push(form);
+            continue;
+        }
         if let Some(name) = defun_name(form, &interner) {
             if last_index.get(&name) != Some(&i) {
                 continue;
@@ -227,6 +240,9 @@ pub fn compile_kl(src: &str, opts: &CompileOptions) -> Result<(String, CompileRe
         }
     }
     g.emit_install(&compiled);
+    if opts.compile_toplevel {
+        g.emit_toplevel(&toplevel)?;
+    }
     if let Some(manifest) = &opts.emit_manifest {
         g.emit_manifest(opts, manifest, &arities);
     }
@@ -337,6 +353,43 @@ impl<'a> Codegen<'a> {
             ));
         }
         self.out.push_str("}\n\n");
+    }
+
+    /// Non-defun top-level forms, compiled as a straight-line function.
+    /// Each form is its own `loop` so `compile_tail`'s `break Ok(v)` has
+    /// something to break from. `current_fn` stays unset: there is no
+    /// self-tail-call to rewrite.
+    fn emit_toplevel(&mut self, forms: &[&KlExpr]) -> Result<(), String> {
+        self.out
+            .push_str("/// Non-defun top-level forms, in source order. Defuns in the\n");
+        self.out
+            .push_str("/// same module are installed separately, before this runs.\n");
+        self.out
+            .push_str("pub fn run_toplevel(interp: &mut Interp) -> ShenResult<Value> {\n");
+        if forms.is_empty() {
+            self.out.push_str("    let _ = interp;\n");
+            self.out.push_str("    return Ok(Value::nil());\n");
+            self.out.push_str("}\n\n");
+            return Ok(());
+        }
+        self.out.push_str("    let mut __result = Value::nil();\n");
+        self.current_fn = None;
+        self.current_params.clear();
+        for (i, form) in forms.iter().enumerate() {
+            let mut scope = Scope::new();
+            let body = self
+                .compile_tail(form, &mut scope)
+                .map_err(|e| format!("top-level form {}: {e}", i + 1))?;
+            self.out.push_str("    __result = {\n");
+            self.out.push_str("        #[allow(clippy::never_loop)]\n");
+            self.out.push_str("        loop {\n");
+            self.out.push_str(&format!("            {body}\n"));
+            self.out.push_str("        }\n");
+            self.out.push_str("    }?;\n");
+        }
+        self.out.push_str("    Ok(__result)\n");
+        self.out.push_str("}\n\n");
+        Ok(())
     }
 
     fn finish(self) -> String {
@@ -1712,6 +1765,21 @@ mod tests {
         assert!(out.contains("use shen_rust::aot::runtime as rt;"));
         assert!(!out.contains("#![allow"));
         assert!(!out.contains("use crate::"));
+        assert!(!out.contains("fn run_toplevel"));
+    }
+
+    /// Eval-free images compile leftover top-level forms into `run_toplevel`
+    /// instead of leaving them for the tree-walker.
+    #[test]
+    fn toplevel_runner_compiles_non_defuns() {
+        let src = "(defun inc (X) (+ X 1))\n(inc 41)\n";
+        let mut opts = CompileOptions::external("top.kl");
+        opts.compile_toplevel = true;
+        let (out, report) = compile_kl(src, &opts).expect("compile");
+        assert_eq!(report.compiled, vec!["inc".to_string()]);
+        assert!(report.skipped.is_empty(), "{:?}", report.skipped);
+        assert!(out.contains("pub fn run_toplevel"));
+        assert!(out.contains("rt::apply_direct(interp, \"inc\""));
     }
 
     /// `(intern "foo")` compiles to intern_static of the literal (Shen/Scheme

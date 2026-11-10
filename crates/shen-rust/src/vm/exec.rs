@@ -1,3 +1,4 @@
+#![cfg_attr(not(feature = "interpreter"), allow(dead_code, unused_imports))]
 //! Bytecode dispatch loop.
 //!
 //! Execution model (A1 + A2): a single `exec` invocation runs an entire
@@ -131,6 +132,19 @@ struct Frame {
 /// Execute a compiled function. `args` is placed in `locals[0..arity)` and
 /// the remaining locals are `Value::nil()`. `upvals` are the values captured
 /// at closure creation. Returns the value the function evaluates to.
+#[cfg(not(feature = "interpreter"))]
+pub fn exec(
+    _interp: &mut crate::interp::eval::Interp,
+    _bf: &Rc<BytecodeFn>,
+    _upvals: &[crate::value::Value],
+    _args: &[crate::value::Value],
+) -> crate::error::ShenResult<crate::value::Value> {
+    Err(crate::error::ShenError::new(
+        "bytecode VM is not included in this build (shen-rust feature `interpreter`)",
+    ))
+}
+
+#[cfg(feature = "interpreter")]
 pub fn exec(
     interp: &mut Interp,
     bf: &Rc<BytecodeFn>,

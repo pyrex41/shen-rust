@@ -10,6 +10,7 @@
 #![allow(clippy::clone_on_copy)]
 
 pub mod aot;
+#[cfg(feature = "cedar")]
 pub mod cedar;
 pub mod env;
 pub mod error;

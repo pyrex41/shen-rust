@@ -8,7 +8,9 @@ authors.workspace = true
 description = "Shen language port hosted in Rust with first-class AWS Cedar integration"
 
 [dependencies]
-cedar-policy = { workspace = true }
+# Optional: AWS Cedar primitives. On by default so native builds keep the
+# `cedar.*` surface. Lean wasm / shaken images pass `--no-default-features`.
+cedar-policy = { workspace = true, optional = true }
 smallvec = "1"
 sha2 = "0.10"
 
@@ -22,14 +24,32 @@ cranelift-module = { version = "0.132", optional = true }
 cranelift-native = { version = "0.132", optional = true }
 
 [features]
+# Defaults preserve the historical native port: Cedar primitives, the
+# precompiled full kernel (`aot/kernel`), and the KL tree-walker (`eval` /
+# `eval-kl`, plus the bytecode VM it lowers closures into). A Yggdrasil
+# shaken image that does not need any of those passes
+# `--no-default-features` and opts back in only what the manifest requires
+# (typically just `interpreter` when `needs-eval=true`).
+default = ["cedar", "kernel-aot", "interpreter"]
+# `cedar.*` primitives and the `cedar-policy` crate.
+cedar = ["dep:cedar-policy"]
+# AOT-compiled ShenOSKernel (`src/aot/kernel`, ~140k lines). Native boot
+# installs it over the tree-walked kernel. Shaken binaries ship their own
+# AOT slice and leave this off.
+kernel-aot = []
+# KL tree-walker, `eval-kl`, and the bytecode VM (runtime closures). Off
+# when a shake manifest says `cannot-reach=eval` / `needs-eval=false` and
+# every defun was AOT-compiled: boot installs those defuns and does not
+# parse or evaluate KL source.
+interpreter = []
 # `jit` is OFF by default. The Cranelift JIT (`src/jit/`) is an experimental,
 # paused tier — proven on aarch64 but falsified for the type-checker's closures
 # (`design/jit-productionization-plan.md` §5), and its codegen is aarch64-only
 # (it panics in Cranelift's x86-64 emitter). Off-by-default keeps the standard
 # build lean, portable, and Cranelift-free, and keeps `cargo test --workspace`
 # cross-platform. Enable with `--features jit`, then gate at runtime with
-# `SHEN_RUST_JIT=1`.
-default = []
+# `SHEN_RUST_JIT=1`. Depends on `interpreter` and `kernel-aot` (the JIT
+# installs over the AOT kernel and falls back through `eval`).
 # Compile the Cranelift JIT engine (`src/jit/`) into the crate.
 jit = [
     "dep:cranelift-codegen",
@@ -37,6 +57,8 @@ jit = [
     "dep:cranelift-jit",
     "dep:cranelift-module",
     "dep:cranelift-native",
+    "interpreter",
+    "kernel-aot",
 ]
 
 # Stage-D measurement instrument (paired A/B, no external deps).

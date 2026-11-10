@@ -490,11 +490,31 @@ fn write_cache(interp: &Interp, path: &Path, ctx: &LoadCtx, gensym_end: i64) {
 // ---------------------------------------------------------------- wrappers
 
 fn original_load(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
-    crate::aot::kernel::load::aot_load(interp, args)
+    #[cfg(feature = "kernel-aot")]
+    {
+        crate::aot::kernel::load::aot_load(interp, args)
+    }
+    #[cfg(not(feature = "kernel-aot"))]
+    {
+        let _ = (interp, args);
+        Err(crate::error::ShenError::new(
+            "tc-cache requires the kernel-aot feature",
+        ))
+    }
 }
 
 fn original_typecheck(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {
-    crate::aot::kernel::t_star::aot_shen_x2e_typecheck(interp, args)
+    #[cfg(feature = "kernel-aot")]
+    {
+        crate::aot::kernel::t_star::aot_shen_x2e_typecheck(interp, args)
+    }
+    #[cfg(not(feature = "kernel-aot"))]
+    {
+        let _ = (interp, args);
+        Err(crate::error::ShenError::new(
+            "tc-cache requires the kernel-aot feature",
+        ))
+    }
 }
 
 /// Is `(value shen.*tc*)` anything other than `false`? Mirrors

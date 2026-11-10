@@ -1,3 +1,4 @@
+#![cfg_attr(not(feature = "interpreter"), allow(dead_code, unused_imports))]
 //! Compile a `KlExpr` body into a `BytecodeFn`.
 //!
 //! Roughly mirrors shen-go's `klCompiler` (`../shen-go/kl/compiler.go`):
@@ -30,6 +31,17 @@ use crate::vm::opcode::Op;
 /// `params` are the formal parameters in declaration order; they
 /// occupy `locals[0..params.len())` at execution time. `body` is the
 /// expression form to evaluate when the function is called.
+#[cfg(not(feature = "interpreter"))]
+pub fn compile_fn(
+    _interp: &Interp,
+    _name: Option<SymId>,
+    _params: &[SymId],
+    _body: &KlExpr,
+) -> Result<BytecodeFn, String> {
+    Err("bytecode compiler is not included in this build (shen-rust feature `interpreter`)".into())
+}
+
+#[cfg(feature = "interpreter")]
 pub fn compile_fn(
     interp: &Interp,
     name: Option<SymId>,
@@ -84,6 +96,17 @@ pub fn compile_fn(
 ///
 /// `current_fn` is left `None`, so no self-tail-call lowering fires: an
 /// anonymous closure has no global name to recurse to.
+#[cfg(not(feature = "interpreter"))]
+pub fn compile_closure(
+    _interp: &Interp,
+    _params: &[SymId],
+    _upval_names: &[SymId],
+    _body: &KlExpr,
+) -> Result<BytecodeFn, String> {
+    Err("bytecode compiler is not included in this build (shen-rust feature `interpreter`)".into())
+}
+
+#[cfg(feature = "interpreter")]
 pub fn compile_closure(
     interp: &Interp,
     params: &[SymId],
