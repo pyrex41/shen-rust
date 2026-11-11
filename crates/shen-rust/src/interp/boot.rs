@@ -213,8 +213,11 @@ pub fn boot_with_kernel(interp: &mut Interp, kernel_dir: &Path) -> ShenResult<()
 
     // After AOT installs, override the small set of upstream
     // call-frequency leaders (`element?`, `shen.pvar?`,
-    // `shen.lazyderef`, `fail`, `value/or`, `<-address/or`, bulk file
-    // I/O) with native Rust. See `register_hot_overrides` for rationale.
+    // `shen.lazyderef`, `fail`, bulk file I/O) with native Rust.
+    // `value/or`, `<-address/or` and `<-vector/or` were already installed
+    // by `register_early_overrides` (after `sys.kl`, before
+    // `shen.initialise`); this pass re-installs them. See
+    // `register_hot_overrides`.
     crate::primitives::register_hot_overrides(interp);
 
     // Stage J1: tier one hand-JIT'd kernel leaf (`shen.length-h`) into the
@@ -264,13 +267,16 @@ pub fn run_post_aot_initialisers(interp: &mut Interp) -> ShenResult<()> {
 /// 1. port metadata / home dir / standard streams,
 /// 2. tree-walk every form in `kernel_src` (defuns only, per the 41.x
 ///    contract — registering closures is cheap),
-/// 3. `(shen.initialise)`,
-/// 4. primitive arity / `shen.lambda-form` metadata on `*property-vector*`,
-/// 5. the caller's AOT installer (klcompile output for the same shaken
+/// 3. `register_early_overrides` (`hash`, and the klcompile primitives
+///    `value/or` / `<-address/or` / `<-vector/or`) before `(shen.initialise)`,
+/// 4. `(shen.initialise)`,
+/// 5. primitive arity / `shen.lambda-form` metadata on `*property-vector*`,
+/// 6. the caller's AOT installer (klcompile output for the same shaken
 ///    kernel) over the tree-walked closures — partial coverage is fine,
 ///    skipped defuns stay tree-walked,
-/// 6. `register_hot_overrides` LAST so the native fast paths
+/// 7. `register_hot_overrides` LAST so the native fast paths
 ///    (`shen.lazyderef`, `shen.pvar?`, `fail`, …) shadow the AOT defuns.
+///    That pass re-installs the early primitives.
 pub fn boot_from_kl_source(
     interp: &mut Interp,
     kernel_src: &str,
@@ -301,7 +307,7 @@ pub fn boot_from_kl_source(
 /// Does not parse or evaluate KL. `install_kernel` registers the shaken
 /// kernel defuns (including `shen.initialise` when the slice kept it).
 /// `kernel_toplevel` runs any non-defun kernel forms, in source order,
-/// after the early native overrides and before `(shen.initialise)`. The
+/// after the hot native overrides and before `(shen.initialise)`. The
 /// caller installs user AOT modules and runs user top-level forms after
 /// this returns (hot overrides are already in place, matching
 /// [`boot_from_kl_source`]).
@@ -321,13 +327,13 @@ pub fn boot_aot_slice(
     set_standard_streams(interp);
 
     install_kernel(interp);
+    // AOT `shen.initialise` calls `bound?`, which klcompile lowered to
+    // `value/or`. `register_hot_overrides` (and the early primitives it
+    // re-installs) must run after `install_kernel`, so the natives shadow
+    // the slice, and before both toplevel forms and `shen.initialise`.
     crate::primitives::register_early_overrides(interp);
-    kernel_toplevel(interp)?;
-    // AOT `shen.initialise` calls klcompile's `value/or` (and the other
-    // hot natives). Those have to be installed before it runs. On the
-    // tree-walk boot they are installed after initialise, because that
-    // path still executes the KL body, which does not mention them.
     crate::primitives::register_hot_overrides(interp);
+    kernel_toplevel(interp)?;
 
     run_shen_initialise(interp)?;
     register_all_metadata(interp)?;

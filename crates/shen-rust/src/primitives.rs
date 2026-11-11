@@ -40,13 +40,27 @@ fn override_kernel(interp: &mut Interp, name: &str, arity: usize, f: DirectFn) {
 }
 
 /// Overrides that must be live *before* `shen.initialise` / `declarations.kl`
-/// populate `*property-vector*`. `hash` is the only one: `put`/`get` bucket
-/// with `(hash key (limit V))`, and a different algorithm at populate vs
-/// lookup corrupts the store. Shen/Scheme drops the kernel `hash` defun from
-/// generated code for the same reason; we re-assert the native after `sys.kl`
-/// (which would otherwise overwrite the primitive) and again after AOT install.
+/// populate `*property-vector*`, and before any AOT top-level form.
+///
+/// `hash` is one: `put`/`get` bucket with `(hash key (limit V))`, and a
+/// different algorithm at populate vs lookup corrupts the store. Shen/Scheme
+/// drops the kernel `hash` defun from generated code for the same reason; we
+/// re-assert the native after `sys.kl` (which would otherwise overwrite the
+/// primitive) and again after AOT install.
+///
+/// `value/or`, `<-address/or` and `<-vector/or` are the others. They are not
+/// ShenOSKernel functions. klcompile lowers `(trap-error (value …) …)`,
+/// `(trap-error (<-address …) …)` and `(trap-error (<-vector …) …)` to them.
+/// Kernel 43.4's `shen.initialise` calls `bound?`, and the AOT `bound?`
+/// calls `value/or`. `symbol?` reaches `vector?`, which calls
+/// `<-address/or`. None of those names exist until we register them, so a
+/// lean image (`boot_aot_slice`, no default features) crashes at boot if
+/// they are installed only after `shen.initialise`.
 pub fn register_early_overrides(interp: &mut Interp) {
     override_kernel(interp, "hash", 2, hot_hash);
+    override_kernel(interp, "value/or", 2, hot_value_or);
+    override_kernel(interp, "<-address/or", 3, hot_address_or);
+    override_kernel(interp, "<-vector/or", 3, hot_vector_or);
     // Property store: native put/get must be live before the kernel fills
     // *property-vector*, same reason as hash. The natives implement the
     // Tarver S4x pointer-list layout (`shen.change-pointer-value`), so they
@@ -83,14 +97,9 @@ pub fn register_hot_overrides(interp: &mut Interp) {
     override_kernel(interp, "shen.pvar?", 1, hot_pvar_p);
     override_kernel(interp, "shen.lazyderef", 2, hot_lazyderef);
     override_kernel(interp, "fail", 0, hot_fail);
-    // `value/or`, `<-address/or` and `<-vector/or` are not ShenOSKernel 43.4
-    // functions, but klcompile lowers `trap-error` around `value` /
-    // `<-address` / `<-vector` to them (Shen/Scheme-style mapping), so the
-    // AOT kernel needs them regardless of lineage. shen-scheme 0.50 also
-    // ships them as runtime primitives.
-    override_kernel(interp, "value/or", 2, hot_value_or);
-    override_kernel(interp, "<-address/or", 3, hot_address_or);
-    override_kernel(interp, "<-vector/or", 3, hot_vector_or);
+    // `value/or` / `<-address/or` / `<-vector/or` are installed by
+    // `register_early_overrides` (called below) so they exist before
+    // `shen.initialise`, not only on this late hot-override pass.
 
     // Shen/Scheme kernel overrides: portable bodies that are cheap natively.
     register_early_overrides(interp);
@@ -1169,11 +1178,8 @@ pub fn register_shenx(interp: &mut Interp) {
     // this query from generated code.
     interp.register_aot_direct("shen.x.features.current", shenx_current_features);
 
-    if !sha256_host_enabled() {
-        return;
-    }
     #[cfg(feature = "sha256")]
-    {
+    if sha256_host_enabled() {
         use sha2::{Digest, Sha256};
 
         interp.register_native("shen.x.sha256-octets-host", 1, |_, args| {

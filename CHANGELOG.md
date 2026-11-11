@@ -4,6 +4,35 @@ Notable changes to shen-rust. Earlier history is summarised in `STATUS.md`.
 
 ## Unreleased
 
+## 0.1.2 — 2026-11-11
+
+### Fixed
+
+- **`value/or` is registered before `shen.initialise`.** Kernel 43.4's
+  initialiser calls `bound?`. klcompile lowers that `trap-error` / `value`
+  pair to `value/or`, and the same pass lowers `<-address` and `<-vector`
+  traps to `<-address/or` and `<-vector/or`. Those three names are not
+  kernel functions. On 0.1.1 they were installed in `register_hot_overrides`
+  after `shen.initialise`, so a lean image (`default-features = false`, the
+  shape `yggdrasil-build` emits for an eval-free shake) died at boot with
+  `aot: undefined function value/or`. They are now part of
+  `register_early_overrides`, which every boot path runs before
+  `shen.initialise`. `boot_aot_slice` also installs the rest of the hot
+  overrides before kernel top-level forms. A default native build is
+  unchanged: the same overrides still shadow the AOT kernel after it is
+  installed. Yggdrasil's `rust-aot-boot` step, which called
+  `register_hot_overrides` before `boot_aot_slice`, is no longer required.
+
+### Added
+
+- **Lean-boot regression.** `cargo test -p shen-rust --test lean_boot`
+  boots a slice whose initialiser and top-level form call `bound?` /
+  `value/or` / `<-address/or` / `<-vector/or`, then runs `(fib 10)`.
+  `./scripts/gates.sh` runs it with `--no-default-features`. CI job
+  `lean boot` also runs it for `interpreter`, `kernel-aot`, `jit`, and
+  the default features, and runs the `lean_fib` example on
+  `wasm32-wasip1` for every combination except `jit`.
+
 ## 0.1.1 — 2026-11-10
 
 First tagged release. The workspace version moves from `0.1.0` to `0.1.1`.

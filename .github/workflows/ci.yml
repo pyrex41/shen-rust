@@ -23,7 +23,8 @@ jobs:
     # suite with the heap-reentrancy sentinel live, kernel-tests-debug-gc =
     # that suite again with GC collection forced aggressive — on x86_64
     # runners the scan is unsupported, SHEN_RUST_GC is refused with a
-    # warning, and the leg degrades to a second sentinel run, still valid).
+    # warning, and the leg degrades to a second sentinel run, still valid —
+    # plus the no-default-features lean boot).
     # Self-contained — no SBCL/shen-cl needed (the cross-port benchmark is
     # not a gate).
     name: gates (scripts/gates.sh)
@@ -62,3 +63,27 @@ jobs:
           key: jit
       - name: cargo check --features jit
         run: cargo check -p shen-rust --features jit --all-targets
+
+  lean-boot:
+    # `value/or` (and `<-address/or`, `<-vector/or`) must be registered
+    # before `shen.initialise` in every feature combination. The default
+    # `gates` job runs the no-default-features test; this job covers the
+    # other feature sets, native and wasm32-wasip1. `jit` is native only:
+    # Cranelift's JIT does not build for wasm32.
+    name: lean boot (features × wasm32)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install pinned toolchain
+        run: rustup show
+      - name: Add wasm32-wasip1
+        run: rustup target add wasm32-wasip1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: lean-boot
+      - name: Lean boot matrix
+        run: ./scripts/lean-boot.sh
