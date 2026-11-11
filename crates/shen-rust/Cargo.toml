@@ -12,7 +12,9 @@ description = "Shen language port hosted in Rust with first-class AWS Cedar inte
 # `cedar.*` surface. Lean wasm / shaken images pass `--no-default-features`.
 cedar-policy = { workspace = true, optional = true }
 smallvec = "1"
-sha2 = "0.10"
+# Host SHA-256 (`shen.x.sha256-octets-host`). On by default. A shaken image
+# whose manifest never mentions it builds with `--no-default-features`.
+sha2 = { version = "0.10", optional = true }
 
 # Cranelift JIT (GC ladder rung 3, productionization stage J1). Optional and
 # off by default so non-JIT builds stay lean and gates are bisectable; enabled
@@ -30,7 +32,7 @@ cranelift-native = { version = "0.132", optional = true }
 # shaken image that does not need any of those passes
 # `--no-default-features` and opts back in only what the manifest requires
 # (typically just `interpreter` when `needs-eval=true`).
-default = ["cedar", "kernel-aot", "interpreter"]
+default = ["cedar", "kernel-aot", "interpreter", "sha256"]
 # `cedar.*` primitives and the `cedar-policy` crate.
 cedar = ["dep:cedar-policy"]
 # AOT-compiled ShenOSKernel (`src/aot/kernel`, ~140k lines). Native boot
@@ -42,6 +44,8 @@ kernel-aot = []
 # every defun was AOT-compiled: boot installs those defuns and does not
 # parse or evaluate KL source.
 interpreter = []
+# `shen.x.sha256-octets-host` via the `sha2` crate.
+sha256 = ["dep:sha2"]
 # `jit` is OFF by default. The Cranelift JIT (`src/jit/`) is an experimental,
 # paused tier — proven on aarch64 but falsified for the type-checker's closures
 # (`design/jit-productionization-plan.md` §5), and its codegen is aarch64-only

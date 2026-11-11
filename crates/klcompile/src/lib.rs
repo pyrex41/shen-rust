@@ -69,6 +69,24 @@ pub struct CompileOptions {
     /// byte-stable). On for an eval-free Yggdrasil image, which has no
     /// tree-walker to run them.
     pub compile_toplevel: bool,
+    /// Lower long literal `cons` spines and the kernel's lambda-form
+    /// table to static data (`rt::lit_list`, `rt::install_lambda_forms`).
+    /// Off for the kernel AOT so Gate 6 stays byte-stable. On for an
+    /// eval-free Yggdrasil image, where `shen.initialise` is otherwise one
+    /// straight-line function of those tables.
+    pub literal_tables: bool,
+    /// Emit `install` as one loop over a static `(name, arity, fn)` table
+    /// instead of a straight-line `install_*` per defun. Off for the kernel
+    /// AOT (Gate 6). On for eval-free images, where those calls were being
+    /// inlined into `main`.
+    pub table_install: bool,
+    /// Smaller function bodies: shared arity/cond errors, and `?` instead of
+    /// an inlined `match` on every boolean test. Off for the kernel AOT.
+    pub lean_emit: bool,
+    /// Consecutive `(set NAME LITERAL)` steps in a `do` become one table.
+    /// Only consulted when `literal_tables` flattens the `do`. Off for the
+    /// kernel AOT.
+    pub set_tables: bool,
 }
 
 /// Generation-time provenance recorded into the overlay manifest. Both
@@ -113,6 +131,10 @@ impl CompileOptions {
             emit_manifest: None,
             seal_same_module: true,
             compile_toplevel: false,
+            literal_tables: false,
+            table_install: false,
+            lean_emit: false,
+            set_tables: false,
         }
     }
 
@@ -133,6 +155,10 @@ impl CompileOptions {
             emit_manifest: None,
             seal_same_module: false,
             compile_toplevel: false,
+            literal_tables: false,
+            table_install: false,
+            lean_emit: false,
+            set_tables: false,
         }
     }
 }
@@ -183,6 +209,10 @@ pub fn compile_kl(src: &str, opts: &CompileOptions) -> Result<(String, CompileRe
     }
 
     let mut g = Codegen::new(&interner);
+    g.literal_tables = opts.literal_tables;
+    g.table_install = opts.table_install;
+    g.lean_emit = opts.lean_emit;
+    g.set_tables = opts.set_tables;
     let mut toplevel: Vec<&KlExpr> = Vec::new();
     // Sealed kernel unit only (Shen/Scheme runtime library). Overlays keep
     // apply_direct so later defun/tracking can invalidate the cell.
@@ -239,7 +269,7 @@ pub fn compile_kl(src: &str, opts: &CompileOptions) -> Result<(String, CompileRe
             Err(reason) => skipped.push(reason),
         }
     }
-    g.emit_install(&compiled);
+    g.emit_install(&arities);
     if opts.compile_toplevel {
         g.emit_toplevel(&toplevel)?;
     }
@@ -277,6 +307,11 @@ struct Codegen<'a> {
     module_fns: HashMap<String, usize>,
     /// `let Go (freeze Else)` continuations: thaw of `Go` compiles to this Rust expr.
     inline_thaws: HashMap<String, String>,
+    /// See [`CompileOptions::literal_tables`].
+    literal_tables: bool,
+    table_install: bool,
+    lean_emit: bool,
+    set_tables: bool,
 }
 
 impl<'a> Codegen<'a> {
@@ -289,6 +324,10 @@ impl<'a> Codegen<'a> {
             current_params: Vec::new(),
             module_fns: HashMap::new(),
             inline_thaws: HashMap::new(),
+            literal_tables: false,
+            table_install: false,
+            lean_emit: false,
+            set_tables: false,
         }
     }
 
@@ -337,20 +376,40 @@ impl<'a> Codegen<'a> {
         self.out.push_str("use std::rc::Rc;\n\n");
     }
 
-    fn emit_install(&mut self, compiled: &[String]) {
+    fn emit_install(&mut self, compiled: &[(String, usize)]) {
         self.out
             .push_str("/// Register every AOT-compiled function on `interp`. Call after kernel\n");
         self.out
             .push_str("/// boot so these names override the tree-walked defuns.\n");
+        if self.table_install {
+            // One loop, data in rodata. The per-defun `install_*` helpers
+            // were being inlined into the binary's `main`.
+            if !compiled.is_empty() {
+                self.out.push_str(
+                    "const INSTALLED: &[(&str, usize, fn(&mut Interp, &[Value]) -> ShenResult<Value>)] = &[\n",
+                );
+                for (name, arity) in compiled {
+                    self.out.push_str(&format!(
+                        "    ({name:?}, {arity}, aot_{}),\n",
+                        sanitize_ident(name)
+                    ));
+                }
+                self.out.push_str("];\n\n");
+                self.out.push_str("pub fn install(interp: &mut Interp) {\n");
+                self.out
+                    .push_str("    rt::install_fns(interp, INSTALLED);\n");
+                self.out.push_str("}\n\n");
+            } else {
+                self.out.push_str("pub fn install(interp: &mut Interp) {\n");
+                self.out.push_str("    let _ = interp;\n");
+                self.out.push_str("}\n\n");
+            }
+            return;
+        }
         self.out.push_str("pub fn install(interp: &mut Interp) {\n");
-        for (rust_name, kl_name) in compiled.iter().map(|n| (sanitize_ident(n), n.clone())) {
-            let _ = rust_name;
-            // Each entry is registered with its declared arity by referencing
-            // the helper emitted below.
-            self.out.push_str(&format!(
-                "    install_{}(interp);\n",
-                sanitize_ident(&kl_name)
-            ));
+        for (name, _) in compiled {
+            self.out
+                .push_str(&format!("    install_{}(interp);\n", sanitize_ident(name)));
         }
         self.out.push_str("}\n\n");
     }
@@ -508,15 +567,22 @@ impl<'a> Codegen<'a> {
         self.out.push_str(&format!(
             "pub fn aot_{rs_name}(interp: &mut Interp, args: &[Value]) -> ShenResult<Value> {{\n"
         ));
-        self.out
-            .push_str(&format!("    if args.len() != {} {{\n", params.len()));
-        self.out
-            .push_str("        return Err(ShenError::new(format!(\n");
-        self.out.push_str(&format!(
-            "            \"{name}: expected {} args, got {{}}\", args.len())));\n",
-            params.len()
-        ));
-        self.out.push_str("    }\n");
+        if self.lean_emit {
+            self.out.push_str(&format!(
+                "    if args.len() != {n} {{\n        return Err(rt::arity_mismatch({name:?}, {n}, args.len()));\n    }}\n",
+                n = params.len(),
+            ));
+        } else {
+            self.out
+                .push_str(&format!("    if args.len() != {} {{\n", params.len()));
+            self.out
+                .push_str("        return Err(ShenError::new(format!(\n");
+            self.out.push_str(&format!(
+                "            \"{name}: expected {} args, got {{}}\", args.len())));\n",
+                params.len()
+            ));
+            self.out.push_str("    }\n");
+        }
         // Params are `mut` because tail-self-calls reassign them in
         // place. Suppress the `unused_mut` warning for cases where the
         // generator doesn't actually emit a tail-self-call.
@@ -535,18 +601,20 @@ impl<'a> Codegen<'a> {
         self.out.push_str("    }\n");
         self.out.push_str("}\n\n");
 
-        // Installer helper.
-        self.out
-            .push_str(&format!("fn install_{rs_name}(interp: &mut Interp) {{\n"));
-        self.out.push_str(&format!(
-            "    interp.register_native(\"{name}\", {}, aot_{rs_name});\n",
-            params.len()
-        ));
-        // Also populate the direct-call table for the ultra-fast path.
-        self.out.push_str(&format!(
-            "    interp.register_aot_direct(\"{name}\", aot_{rs_name});\n"
-        ));
-        self.out.push_str("}\n\n");
+        if !self.table_install {
+            // Installer helper. The table path registers from `emit_install`.
+            self.out
+                .push_str(&format!("fn install_{rs_name}(interp: &mut Interp) {{\n"));
+            self.out.push_str(&format!(
+                "    interp.register_native(\"{name}\", {}, aot_{rs_name});\n",
+                params.len()
+            ));
+            // Also populate the direct-call table for the ultra-fast path.
+            self.out.push_str(&format!(
+                "    interp.register_aot_direct(\"{name}\", aot_{rs_name});\n"
+            ));
+            self.out.push_str("}\n\n");
+        }
 
         Ok((name, params.len()))
     }
@@ -617,9 +685,36 @@ impl<'a> Codegen<'a> {
         let tv = self.fresh();
         let t = self.compile_tail(&args[1], scope)?;
         let e = self.compile_tail(&args[2], scope)?;
+        let test = self.truthy_as_bool(&tv);
         Ok(format!(
-            "{{ let {tv} = {c}; if match rt::is_truthy(interp, &{tv}) {{ Ok(b) => b, Err(e) => break Err(e), }} {{ {t} }} else {{ {e} }} }}"
+            "{{ let {tv} = {c}; if {test} {{ {t} }} else {{ {e} }} }}"
         ))
+    }
+
+    /// Boolean test in a tail-position `loop`. Lean mode uses `?`, which
+    /// returns the error from the function; that is the same as `break Err`
+    /// because the loop is the whole body. The kernel AOT keeps the match
+    /// so its bytes stay frozen.
+    fn truthy_as_bool(&self, tv: &str) -> String {
+        if self.lean_emit {
+            format!("rt::is_truthy(interp, &{tv})?")
+        } else {
+            format!("match rt::is_truthy(interp, &{tv}) {{ Ok(b) => b, Err(e) => break Err(e), }}")
+        }
+    }
+
+    fn cond_miss(&self, tail: bool) -> String {
+        if self.lean_emit {
+            if tail {
+                "break Err(rt::cond_failed());".into()
+            } else {
+                "return Err(rt::cond_failed())".into()
+            }
+        } else if tail {
+            "break Err(ShenError::new(\"cond: no clause matched\"));".into()
+        } else {
+            "return Err(ShenError::new(\"cond: no clause matched\"))".into()
+        }
     }
 
     fn compile_tail_let(&mut self, args: &[KlExpr], scope: &mut Scope) -> Result<String, String> {
@@ -644,7 +739,7 @@ impl<'a> Codegen<'a> {
     }
 
     fn compile_tail_cond(&mut self, args: &[KlExpr], scope: &mut Scope) -> Result<String, String> {
-        let mut acc = String::from("break Err(ShenError::new(\"cond: no clause matched\"));");
+        let mut acc = self.cond_miss(true);
         for clause in args.iter().rev() {
             let items = match clause {
                 KlExpr::App(items) if items.len() == 2 => items,
@@ -653,9 +748,8 @@ impl<'a> Codegen<'a> {
             let t = self.compile_expr(&items[0], scope)?;
             let v = self.compile_tail(&items[1], scope)?;
             let tv = self.fresh();
-            acc = format!(
-                "{{ let {tv} = {t}; if match rt::is_truthy(interp, &{tv}) {{ Ok(b) => b, Err(e) => break Err(e), }} {{ {v} }} else {{ {acc} }} }}"
-            );
+            let test = self.truthy_as_bool(&tv);
+            acc = format!("{{ let {tv} = {t}; if {test} {{ {v} }} else {{ {acc} }} }}");
         }
         Ok(acc)
     }
@@ -663,6 +757,9 @@ impl<'a> Codegen<'a> {
     fn compile_tail_do(&mut self, args: &[KlExpr], scope: &mut Scope) -> Result<String, String> {
         if args.is_empty() {
             return Ok("break Ok(Value::nil());".into());
+        }
+        if self.literal_tables {
+            return self.compile_do_flat(args, scope, true);
         }
         let mut block = String::from("{ ");
         for (i, a) in args.iter().enumerate() {
@@ -685,8 +782,9 @@ impl<'a> Codegen<'a> {
         let a = self.compile_expr(&args[0], scope)?;
         let av = self.fresh();
         let tail_b = self.compile_tail(&args[1], scope)?;
+        let test = self.truthy_as_bool(&av);
         Ok(format!(
-            "{{ let {av} = {a}; if !match rt::is_truthy(interp, &{av}) {{ Ok(b) => b, Err(e) => break Err(e), }} {{ break Ok(Value::bool(false)); }} else {{ {tail_b} }} }}"
+            "{{ let {av} = {a}; if !{test} {{ break Ok(Value::bool(false)); }} else {{ {tail_b} }} }}"
         ))
     }
 
@@ -697,9 +795,364 @@ impl<'a> Codegen<'a> {
         let a = self.compile_expr(&args[0], scope)?;
         let av = self.fresh();
         let tail_b = self.compile_tail(&args[1], scope)?;
+        let test = self.truthy_as_bool(&av);
         Ok(format!(
-            "{{ let {av} = {a}; if match rt::is_truthy(interp, &{av}) {{ Ok(b) => b, Err(e) => break Err(e), }} {{ break Ok(Value::bool(true)); }} else {{ {tail_b} }} }}"
+            "{{ let {av} = {a}; if {test} {{ break Ok(Value::bool(true)); }} else {{ {tail_b} }} }}"
         ))
+    }
+
+    /// Flatten a `do` and turn each run of lambda-form entries into one table.
+    /// Other steps stay ordinary expressions. Same value as the nested `do`.
+    fn compile_do_flat(
+        &mut self,
+        args: &[KlExpr],
+        scope: &mut Scope,
+        tail: bool,
+    ) -> Result<String, String> {
+        if args.is_empty() {
+            return Ok(if tail {
+                "break Ok(Value::nil());".into()
+            } else {
+                "Value::nil()".into()
+            });
+        }
+        let flat: Vec<KlExpr> = self.flatten_do(args).into_iter().cloned().collect();
+        let mut block = String::from("{ ");
+        let mut i = 0;
+        while i < flat.len() {
+            let run = self.lambda_run(&flat[i..]);
+            if run >= 4 {
+                let entries: Vec<(String, usize)> = flat[i..i + run]
+                    .iter()
+                    .map(|e| self.parse_set_lambda(e).expect("lambda run"))
+                    .collect();
+                let expr = self.emit_lambda_table("rt::install_lambda_forms", &entries, true);
+                let last = i + run == flat.len();
+                block.push_str(&self.finish_do_chunk(&expr, last, tail));
+                i += run;
+                continue;
+            }
+            if self.set_tables {
+                let run = self.set_run(&flat[i..]);
+                if run >= 4 {
+                    let rows: Vec<(String, StaticLit)> = flat[i..i + run]
+                        .iter()
+                        .map(|e| self.parse_simple_set(e).expect("set run"))
+                        .collect();
+                    let expr = self.emit_set_table(&rows);
+                    let last = i + run == flat.len();
+                    block.push_str(&self.finish_do_chunk(&expr, last, tail));
+                    i += run;
+                    continue;
+                }
+            }
+            let last = i + 1 == flat.len();
+            if last && tail {
+                block.push_str(&self.compile_tail(&flat[i], scope)?);
+            } else {
+                let expr = self.compile_expr(&flat[i], scope)?;
+                block.push_str(&self.finish_do_chunk(&expr, last, tail));
+            }
+            i += 1;
+        }
+        block.push_str(" }");
+        Ok(block)
+    }
+
+    fn finish_do_chunk(&self, expr: &str, last: bool, tail: bool) -> String {
+        if !last {
+            format!("let _ = {expr}; ")
+        } else if tail {
+            format!("break Ok({expr}); ")
+        } else {
+            expr.to_string()
+        }
+    }
+
+    /// How many leading forms are `(shen.set-lambda-form-entry (cons F <curried F>))`.
+    fn lambda_run(&self, items: &[KlExpr]) -> usize {
+        items
+            .iter()
+            .take_while(|e| self.parse_set_lambda(e).is_some())
+            .count()
+    }
+
+    /// How many leading forms are `(set NAME LITERAL)`.
+    fn set_run(&self, items: &[KlExpr]) -> usize {
+        items
+            .iter()
+            .take_while(|e| self.parse_simple_set(e).is_some())
+            .count()
+    }
+
+    fn parse_simple_set(&self, e: &KlExpr) -> Option<(String, StaticLit)> {
+        let KlExpr::App(items) = e else {
+            return None;
+        };
+        if items.len() != 3 || self.sym_str(items.first()?)? != "set" {
+            return None;
+        }
+        let name = self.sym_str(&items[1])?.to_string();
+        let lit = self.try_static_lit(&items[2])?;
+        Some((name, lit))
+    }
+
+    fn emit_set_table(&self, rows: &[(String, StaticLit)]) -> String {
+        let mut table = String::from("&[");
+        for (name, lit) in rows {
+            table.push_str(&format!("({name:?}, {}),", lit.emit()));
+        }
+        table.push(']');
+        format!(
+            "{{ const TABLE: &'static [(&'static str, rt::Lit)] = {table}; rt::set_lits(interp, TABLE)? }}"
+        )
+    }
+
+    fn flatten_do<'b>(&self, args: &'b [KlExpr]) -> Vec<&'b KlExpr> {
+        let mut out = Vec::new();
+        self.flatten_do_into(args, &mut out);
+        out
+    }
+
+    fn flatten_do_into<'b>(&self, args: &'b [KlExpr], out: &mut Vec<&'b KlExpr>) {
+        if args.len() == 2 {
+            if let Some(inner) = self.do_args(&args[1]) {
+                out.push(&args[0]);
+                self.flatten_do_into(inner, out);
+                return;
+            }
+        }
+        out.extend(args.iter());
+    }
+
+    fn do_args<'b>(&self, e: &'b KlExpr) -> Option<&'b [KlExpr]> {
+        let KlExpr::App(items) = e else {
+            return None;
+        };
+        if self.sym_str(items.first()?)? != "do" {
+            return None;
+        }
+        Some(&items[1..])
+    }
+
+    /// `(cons …)` that is either a lambda-form alist or a long literal spine.
+    fn try_lit_cons(&self, items: &[KlExpr]) -> Option<String> {
+        if let Some(entries) = self.parse_lambda_alist(items) {
+            if entries.len() >= 4 {
+                return Some(self.emit_lambda_table("rt::lambda_alist", &entries, false));
+            }
+        }
+        if let Some(lits) = self.parse_static_spine(items) {
+            if lits.len() >= 8 {
+                return Some(self.emit_lit_list(&lits));
+            }
+        }
+        None
+    }
+
+    fn emit_lambda_table(&self, func: &str, entries: &[(String, usize)], fallible: bool) -> String {
+        let mut table = String::from("&[");
+        for (name, arity) in entries {
+            table.push_str(&format!("({name:?}, {arity}),"));
+        }
+        table.push(']');
+        let q = if fallible { "?" } else { "" };
+        format!(
+            "{{ const TABLE: &'static [(&'static str, usize)] = {table}; {func}(interp, TABLE){q} }}"
+        )
+    }
+
+    fn emit_lit_list(&self, lits: &[StaticLit]) -> String {
+        let mut table = String::from("&[");
+        for lit in lits {
+            table.push_str(&lit.emit());
+            table.push(',');
+        }
+        table.push(']');
+        format!("rt::lit_list(interp, {table})?")
+    }
+
+    /// Walk `(cons H T)` starting at `items` (the full application).
+    fn parse_lambda_alist(&self, items: &[KlExpr]) -> Option<Vec<(String, usize)>> {
+        let mut entries = Vec::new();
+        let mut cur: &[KlExpr] = items;
+        loop {
+            if cur.len() != 3 || self.sym_str(cur.first()?)? != "cons" {
+                return None;
+            }
+            entries.push(self.parse_lambda_cons(&cur[1])?);
+            if self.is_nil(&cur[2]) {
+                return Some(entries);
+            }
+            let KlExpr::App(next) = &cur[2] else {
+                return None;
+            };
+            cur = next;
+        }
+    }
+
+    fn parse_static_spine(&self, items: &[KlExpr]) -> Option<Vec<StaticLit>> {
+        let mut lits = Vec::new();
+        let mut cur: &[KlExpr] = items;
+        loop {
+            if cur.len() != 3 || self.sym_str(cur.first()?)? != "cons" {
+                return None;
+            }
+            lits.push(self.try_static_lit(&cur[1])?);
+            if self.is_nil(&cur[2]) {
+                return Some(lits);
+            }
+            let KlExpr::App(next) = &cur[2] else {
+                return None;
+            };
+            cur = next;
+        }
+    }
+
+    /// `(shen.set-lambda-form-entry (cons F <curried F>))`.
+    fn parse_set_lambda(&self, e: &KlExpr) -> Option<(String, usize)> {
+        let KlExpr::App(items) = e else {
+            return None;
+        };
+        if items.len() != 2 || self.sym_str(items.first()?)? != "shen.set-lambda-form-entry" {
+            return None;
+        }
+        self.parse_lambda_cons(&items[1])
+    }
+
+    /// `(cons F <nested lambdas calling F>)`.
+    fn parse_lambda_cons(&self, e: &KlExpr) -> Option<(String, usize)> {
+        let KlExpr::App(items) = e else {
+            return None;
+        };
+        if items.len() != 3 || self.sym_str(items.first()?)? != "cons" {
+            return None;
+        }
+        let fname = self.sym_str(&items[1])?.to_string();
+        let arity = self.parse_curried(&items[2], &fname)?;
+        Some((fname, arity))
+    }
+
+    /// `(lambda V1 (lambda V2 … (F V1 V2 …)))` with the params used in order.
+    fn parse_curried(&self, e: &KlExpr, fname: &str) -> Option<usize> {
+        let mut params = Vec::new();
+        let mut cur = e;
+        while let KlExpr::App(items) = cur {
+            if items.len() != 3 || self.sym_str(items.first()?)? != "lambda" {
+                break;
+            }
+            params.push(self.sym_str(&items[1])?.to_string());
+            cur = &items[2];
+        }
+        if params.is_empty() {
+            return None;
+        }
+        let KlExpr::App(items) = cur else {
+            return None;
+        };
+        // `and`/`or`/`if` are special forms. A curried call through
+        // `apply_direct` would not short-circuit, so those stay compiled.
+        const NOT_CURRIED: &[&str] = &[
+            "if",
+            "and",
+            "or",
+            "cond",
+            "do",
+            "let",
+            "lambda",
+            "freeze",
+            "thaw",
+            "trap-error",
+            "type",
+            "quote",
+            "defun",
+        ];
+        if NOT_CURRIED.contains(&fname) {
+            return None;
+        }
+        if self.sym_str(items.first()?)? != fname || items.len() - 1 != params.len() {
+            return None;
+        }
+        for (arg, p) in items[1..].iter().zip(params.iter()) {
+            if self.sym_str(arg)? != p {
+                return None;
+            }
+        }
+        Some(params.len())
+    }
+
+    fn try_static_lit(&self, e: &KlExpr) -> Option<StaticLit> {
+        match e {
+            KlExpr::Nil => Some(StaticLit::Nil),
+            KlExpr::Bool(b) => Some(StaticLit::Bool(*b)),
+            KlExpr::Int(n) => Some(StaticLit::Int(*n)),
+            KlExpr::Str(s) => Some(StaticLit::Str(s.to_string())),
+            KlExpr::Sym(id) => Some(StaticLit::Sym(self.interner.resolve(*id).to_string())),
+            KlExpr::App(items) if items.len() == 2 && self.sym_str(items.first()?)? == "intern" => {
+                if let KlExpr::Str(s) = &items[1] {
+                    Some(StaticLit::Intern(s.to_string()))
+                } else {
+                    None
+                }
+            }
+            KlExpr::App(items) if items.len() == 2 && self.sym_str(items.first()?)? == "vector" => {
+                if let KlExpr::Int(n) = items[1] {
+                    Some(StaticLit::Vector(n))
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+
+    fn sym_str<'b>(&'b self, e: &'b KlExpr) -> Option<&'b str> {
+        match e {
+            KlExpr::Sym(id) => Some(self.interner.resolve(*id)),
+            _ => None,
+        }
+    }
+
+    fn is_nil(&self, e: &KlExpr) -> bool {
+        matches!(e, KlExpr::Nil)
+    }
+
+    /// Collapse a `tl` chain under `hd` or `tl` into `rt::list_ref` / `list_tail`.
+    fn try_list_access(
+        &mut self,
+        head: &str,
+        arg: &KlExpr,
+        scope: &mut Scope,
+    ) -> Result<Option<String>, String> {
+        let mut n: usize = if head == "tl" { 1 } else { 0 };
+        let mut cur = arg;
+        while let Some(inner) = self.unary_arg(cur, "tl") {
+            n += 1;
+            cur = inner;
+        }
+        let deep = if head == "hd" { n >= 1 } else { n >= 2 };
+        if !deep {
+            return Ok(None);
+        }
+        let base = self.compile_expr(cur, scope)?;
+        let tv = self.fresh();
+        let call = if head == "hd" {
+            format!("rt::list_ref(&{tv}, {n})?")
+        } else {
+            format!("rt::list_tail(&{tv}, {n})?")
+        };
+        Ok(Some(format!("{{ let {tv} = {base}; {call} }}")))
+    }
+
+    fn unary_arg<'b>(&self, e: &'b KlExpr, name: &str) -> Option<&'b KlExpr> {
+        let KlExpr::App(items) = e else {
+            return None;
+        };
+        if items.len() == 2 && self.sym_str(items.first()?)? == name {
+            Some(&items[1])
+        } else {
+            None
+        }
     }
 
     /// Compile a KL expression. Returns a Rust expression string that
@@ -738,6 +1191,18 @@ impl<'a> Codegen<'a> {
         let args = &items[1..];
 
         if let Some(head) = head_name.as_deref() {
+            if self.literal_tables && head == "cons" {
+                if let Some(src) = self.try_lit_cons(items) {
+                    return Ok(src);
+                }
+            }
+            // `(hd (tl (tl X)))` re-walks the spine at every field. Lean
+            // images share one walker. A lone `hd`/`tl` stays inlined.
+            if self.lean_emit && (head == "hd" || head == "tl") && args.len() == 1 {
+                if let Some(src) = self.try_list_access(head, &args[0], scope)? {
+                    return Ok(src);
+                }
+            }
             match head {
                 "if" => return self.compile_if(args, scope),
                 "let" => return self.compile_let(args, scope),
@@ -898,7 +1363,7 @@ impl<'a> Codegen<'a> {
         // Compile (cond (T1 V1) (T2 V2) ... (true VN)) as nested if/else.
         // We don't have a "no-clause-matched" trap in this fast path —
         // the kernel always ends with a `(true ...)` clause.
-        let mut acc = String::from("return Err(ShenError::new(\"cond: no clause matched\"))");
+        let mut acc = self.cond_miss(false);
         for clause in args.iter().rev() {
             let items = match clause {
                 KlExpr::App(items) if items.len() == 2 => items,
@@ -918,6 +1383,9 @@ impl<'a> Codegen<'a> {
         if args.is_empty() {
             return Ok("Value::nil()".into());
         }
+        if self.literal_tables {
+            return self.compile_do_flat(args, scope, false);
+        }
         let mut block = String::from("{ ");
         for (i, a) in args.iter().enumerate() {
             let src = self.compile_expr(a, scope)?;
@@ -935,6 +1403,9 @@ impl<'a> Codegen<'a> {
         if args.len() != 2 {
             return Err("and: expected 2 args".into());
         }
+        if self.lean_emit {
+            return self.compile_and_lean(args, scope);
+        }
         let a = self.compile_expr(&args[0], scope)?;
         let b = self.compile_expr(&args[1], scope)?;
         let av = self.fresh();
@@ -942,6 +1413,174 @@ impl<'a> Codegen<'a> {
         Ok(format!(
             "{{ let {av} = {a}; if !rt::is_truthy(interp, &{av})? {{ Value::bool(false) }} else {{ let {bv} = {b}; Value::bool(rt::is_truthy(interp, &{bv})?) }} }}"
         ))
+    }
+
+    /// Flatten a nest of binary `and`s and collapse a Shen list-pattern
+    /// (`cons?` / head tag / proper tail) into `rt::headed_list`.
+    fn compile_and_lean(&mut self, args: &[KlExpr], scope: &mut Scope) -> Result<String, String> {
+        let mut parts = Vec::new();
+        for a in args {
+            self.flatten_and(a, &mut parts);
+        }
+        let mut exprs = Vec::new();
+        let mut i = 0;
+        while i < parts.len() {
+            if let Some((end, src)) = self.try_headed_run(&parts, i, scope) {
+                exprs.push(src);
+                i = end;
+            } else {
+                exprs.push(self.compile_expr(parts[i], scope)?);
+                i += 1;
+            }
+        }
+        Ok(self.emit_and_exprs(&exprs))
+    }
+
+    fn flatten_and<'b>(&self, e: &'b KlExpr, out: &mut Vec<&'b KlExpr>) {
+        if let Some(args) = self.and_args(e) {
+            for a in args {
+                self.flatten_and(a, out);
+            }
+        } else {
+            out.push(e);
+        }
+    }
+
+    fn and_args<'b>(&self, e: &'b KlExpr) -> Option<&'b [KlExpr]> {
+        let KlExpr::App(items) = e else {
+            return None;
+        };
+        if items.len() == 3 && self.sym_str(items.first()?)? == "and" {
+            Some(&items[1..])
+        } else {
+            None
+        }
+    }
+
+    /// A consecutive run: `(cons? V)`, `(= TAG (hd V))`, `(cons? (tl^k V))`…,
+    /// `(= () (tl^len V))`. `len` is the element count, including the tag.
+    fn try_headed_run(
+        &self,
+        parts: &[&KlExpr],
+        i: usize,
+        scope: &Scope,
+    ) -> Option<(usize, String)> {
+        let (var, depth0) = self.cons_check(parts.get(i)?, scope)?;
+        if depth0 != 0 {
+            return None;
+        }
+        let tag = self.tag_check(parts.get(i + 1)?, &var, scope)?;
+        if tag.contains(['"', '\\']) || tag.chars().any(|c| c.is_control()) {
+            return None;
+        }
+        let mut k = 1usize;
+        let mut j = i + 2;
+        while j < parts.len() {
+            match self.cons_check(parts[j], scope) {
+                Some((v, d)) if v == var && d == k => {
+                    k += 1;
+                    j += 1;
+                }
+                _ => break,
+            }
+        }
+        let (v, d) = self.nil_tail(parts.get(j)?, scope)?;
+        if v != var || d != k {
+            return None;
+        }
+        let src = format!("rt::headed_list(interp, &{var}, \"{tag}\", {k})?");
+        Some((j + 1, src))
+    }
+
+    fn cons_check(&self, e: &KlExpr, scope: &Scope) -> Option<(String, usize)> {
+        let arg = self.unary_arg(e, "cons?")?;
+        self.tl_spine(arg, scope)
+    }
+
+    fn tl_spine(&self, e: &KlExpr, scope: &Scope) -> Option<(String, usize)> {
+        let mut n = 0usize;
+        let mut cur = e;
+        while let Some(inner) = self.unary_arg(cur, "tl") {
+            n += 1;
+            cur = inner;
+        }
+        let name = self.sym_str(cur)?;
+        if !scope.has(name) {
+            return None;
+        }
+        Some((rust_var(name), n))
+    }
+
+    fn tag_check(&self, e: &KlExpr, var: &str, scope: &Scope) -> Option<String> {
+        let (left, right) = self.eq_pair(e)?;
+        if let Some(tag) = self.free_sym(left, scope) {
+            if self.is_hd_var(right, var) {
+                return Some(tag);
+            }
+        }
+        if let Some(tag) = self.free_sym(right, scope) {
+            if self.is_hd_var(left, var) {
+                return Some(tag);
+            }
+        }
+        None
+    }
+
+    fn is_hd_var(&self, e: &KlExpr, var: &str) -> bool {
+        let Some(arg) = self.unary_arg(e, "hd") else {
+            return false;
+        };
+        let Some(name) = self.sym_str(arg) else {
+            return false;
+        };
+        rust_var(name) == var
+    }
+
+    fn free_sym(&self, e: &KlExpr, scope: &Scope) -> Option<String> {
+        let name = self.sym_str(e)?;
+        if scope.has(name) {
+            None
+        } else {
+            Some(name.to_string())
+        }
+    }
+
+    fn nil_tail(&self, e: &KlExpr, scope: &Scope) -> Option<(String, usize)> {
+        let (left, right) = self.eq_pair(e)?;
+        if self.is_nil(left) {
+            self.tl_spine(right, scope)
+        } else if self.is_nil(right) {
+            self.tl_spine(left, scope)
+        } else {
+            None
+        }
+    }
+
+    fn eq_pair<'b>(&self, e: &'b KlExpr) -> Option<(&'b KlExpr, &'b KlExpr)> {
+        let KlExpr::App(items) = e else {
+            return None;
+        };
+        if items.len() == 3 && self.sym_str(items.first()?)? == "=" {
+            Some((&items[1], &items[2]))
+        } else {
+            None
+        }
+    }
+
+    fn emit_and_exprs(&mut self, exprs: &[String]) -> String {
+        if exprs.is_empty() {
+            return "Value::bool(true)".into();
+        }
+        let last = exprs.last().expect("nonempty");
+        let mut acc =
+            format!("{{ let __and = {last}; Value::bool(rt::is_truthy(interp, &__and)?) }}");
+        for e in exprs[..exprs.len() - 1].iter().rev() {
+            let tv = self.fresh();
+            acc = format!(
+                "{{ let {tv} = {e}; if !rt::is_truthy(interp, &{tv})? {{ Value::bool(false) }} else {{ {acc} }} }}"
+            );
+        }
+        acc
     }
 
     fn compile_or(&mut self, args: &[KlExpr], scope: &mut Scope) -> Result<String, String> {
@@ -1414,6 +2053,30 @@ impl<'a> Codegen<'a> {
 /// Scope tracker: which KL variable names are currently bound to a
 /// Rust local. We use a flat `HashSet` because shadowing is rare in
 /// kernel code and we only need to answer "is this name in scope".
+enum StaticLit {
+    Sym(String),
+    Int(i64),
+    Str(String),
+    Bool(bool),
+    Nil,
+    Intern(String),
+    Vector(i64),
+}
+
+impl StaticLit {
+    fn emit(&self) -> String {
+        match self {
+            StaticLit::Sym(s) => format!("rt::Lit::Sym({s:?})"),
+            StaticLit::Int(n) => format!("rt::Lit::Int({n})"),
+            StaticLit::Str(s) => format!("rt::Lit::Str({s:?})"),
+            StaticLit::Bool(b) => format!("rt::Lit::Bool({b})"),
+            StaticLit::Nil => "rt::Lit::Nil".to_string(),
+            StaticLit::Intern(s) => format!("rt::Lit::Intern({s:?})"),
+            StaticLit::Vector(n) => format!("rt::Lit::Vector({n})"),
+        }
+    }
+}
+
 struct Scope {
     in_scope: HashSet<String>,
 }
@@ -1780,6 +2443,85 @@ mod tests {
         assert!(report.skipped.is_empty(), "{:?}", report.skipped);
         assert!(out.contains("pub fn run_toplevel"));
         assert!(out.contains("rt::apply_direct(interp, \"inc\""));
+    }
+
+    /// Long literal spines and the lambda-form `do` become static tables.
+    /// The kernel AOT config leaves the flag off, so Gate 6 is unchanged.
+    #[test]
+    fn literal_tables_lower_arity_spine_and_lambda_do() {
+        let src = "\
+(defun shen.initialise ()
+  (do (shen.initialise-arity-table (cons abort (cons 0 (cons absvector (cons 1 (cons cons (cons 2 (cons hd (cons 1 ())))))))))
+      (do (shen.set-lambda-form-entry (cons hd (lambda X (hd X))))
+          (do (shen.set-lambda-form-entry (cons cons (lambda X (lambda Y (cons X Y)))))
+              (do (shen.set-lambda-form-entry (cons tl (lambda X (tl X))))
+                  (shen.set-lambda-form-entry (cons cn (lambda A (lambda B (cn A B))))))))))
+";
+        let mut opts = CompileOptions::external("tables.kl");
+        opts.literal_tables = true;
+        opts.skip.max_body_nodes = None;
+        let (out, report) = compile_kl(src, &opts).expect("compile");
+        assert_eq!(report.compiled, vec!["shen.initialise".to_string()]);
+        assert!(out.contains("rt::lit_list"), "{out}");
+        assert!(out.contains("rt::install_lambda_forms"), "{out}");
+        assert!(
+            !out.contains("make_aot_closure"),
+            "curried lambda forms should be data, not per-entry closures"
+        );
+    }
+
+    /// Lean eval-free emission: one install table, shared errors, `?` tests.
+    /// The kernel config stays on the frozen straight-line shape.
+    #[test]
+    fn lean_flags_do_not_touch_the_kernel_config() {
+        let src = "(defun f (X) (if X X X))";
+        let kernel = CompileOptions::kernel("k.kl");
+        let (frozen, _) = compile_kl(src, &kernel).expect("kernel");
+        assert!(frozen.contains("install_f"));
+        assert!(frozen.contains("match rt::is_truthy"));
+        assert!(!frozen.contains("INSTALLED"));
+
+        let mut lean = CompileOptions::external("k.kl");
+        lean.table_install = true;
+        lean.lean_emit = true;
+        lean.set_tables = true;
+        let (out, _) = compile_kl(src, &lean).expect("lean");
+        assert!(out.contains("rt::install_fns"));
+        assert!(out.contains("rt::arity_mismatch"));
+        assert!(out.contains("rt::is_truthy(interp, &"));
+        assert!(!out.contains("match rt::is_truthy"));
+        assert!(!out.contains("fn install_f"));
+    }
+
+    #[test]
+    fn lean_emit_collapses_headed_list_pattern() {
+        let src = "(defun f (X Y) (cond ((and (cons? X) (and (= group-members (hd X)) (and (cons? (tl X)) (and (= () (tl (tl X))) (= X Y))))) true) (true false)))";
+        let kernel = CompileOptions::kernel("k.kl");
+        let (frozen, _) = compile_kl(src, &kernel).expect("kernel");
+        assert!(!frozen.contains("headed_list"), "{frozen}");
+
+        let mut lean = CompileOptions::external("k.kl");
+        lean.lean_emit = true;
+        let (out, _) = compile_kl(src, &lean).expect("lean");
+        assert!(
+            out.contains("rt::headed_list(interp, &v_X, \"group-members\", 2)?"),
+            "{out}"
+        );
+        assert!(out.contains("rt::eq("), "{out}");
+    }
+
+    #[test]
+    fn lean_emit_collapses_deep_list_access() {
+        let src = "(defun f (X) (hd (tl (tl X))))";
+        let kernel = CompileOptions::kernel("k.kl");
+        let (frozen, _) = compile_kl(src, &kernel).expect("kernel");
+        assert!(frozen.contains("rt::tl("), "{frozen}");
+        assert!(!frozen.contains("list_ref"));
+
+        let mut lean = CompileOptions::external("k.kl");
+        lean.lean_emit = true;
+        let (out, _) = compile_kl(src, &lean).expect("lean");
+        assert!(out.contains("rt::list_ref("), "{out}");
     }
 
     /// `(intern "foo")` compiles to intern_static of the literal (Shen/Scheme

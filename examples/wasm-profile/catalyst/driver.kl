@@ -1,0 +1,8 @@
+(defun driver.write (S)
+  (if (= S "")
+      ""
+      (do (write-byte (string->n S) (value *stoutput*))
+          (driver.write (tlstr S)))))
+
+(driver.write (shen.app (ix.frontend.profile-command "Ada" "London" members true) "
+" shen.s))

@@ -433,6 +433,46 @@ pub fn n_to_string(v: &Value) -> ShenResult<Value> {
     }
 }
 
+/// `(cons? v)` and head `tag` and a proper tail of `len` elements.
+///
+/// Shen's pattern compiler emits that shape as a nest of `cons?` / `hd` / `tl`.
+/// One walk matches it. A short or untagged list is false, not an error, which
+/// is what the `and` short-circuit did.
+#[inline(never)]
+pub fn headed_list(interp: &mut Interp, v: &Value, tag: &str, len: usize) -> ShenResult<Value> {
+    let want = interp.intern(tag);
+    let mut cur = *v;
+    for i in 0..len {
+        if !cur.is_cons() {
+            return Ok(Value::bool(false));
+        }
+        if i == 0 {
+            let h = hd(&cur)?;
+            if h.as_sym() != Some(want) {
+                return Ok(Value::bool(false));
+            }
+        }
+        cur = tl(&cur)?;
+    }
+    Ok(Value::bool(cur.is_nil()))
+}
+
+/// `(hd (tl^n v))` as one walk. Cold error path lives here, not at every field.
+#[inline(never)]
+pub fn list_ref(v: &Value, n: usize) -> ShenResult<Value> {
+    hd(&list_tail(v, n)?)
+}
+
+/// `(tl^n v)`.
+#[inline(never)]
+pub fn list_tail(v: &Value, n: usize) -> ShenResult<Value> {
+    let mut cur = *v;
+    for _ in 0..n {
+        cur = tl(&cur)?;
+    }
+    Ok(cur)
+}
+
 #[inline(always)]
 pub fn address_ref(v: &Value, n: &Value) -> ShenResult<Value> {
     match (v.is_vec(), n.as_int()) {
@@ -464,4 +504,207 @@ pub fn set_global(interp: &mut Interp, name: &'static str, val: Value) -> Value 
     let sym = interp.intern_static(name);
     interp.env.set_global(sym, val);
     val
+}
+
+/// Function pointer stored in an AOT install table.
+pub type KlFn = fn(&mut Interp, &[Value]) -> ShenResult<Value>;
+
+/// One registration loop for an AOT module. The straight-line `install_*`
+/// helpers were inlined into the binary's `main`.
+#[inline(never)]
+pub fn install_fns(interp: &mut Interp, table: &[(&str, usize, KlFn)]) {
+    for &(name, arity, f) in table {
+        interp.register_native(name, arity, f);
+        interp.register_aot_direct(name, f);
+    }
+}
+
+/// Shared arity error. One `format!` instead of one per defun.
+#[cold]
+#[inline(never)]
+pub fn arity_mismatch(name: &str, expected: usize, got: usize) -> ShenError {
+    ShenError::new(format!("{name}: expected {expected} args, got {got}"))
+}
+
+/// Shared `(cond …)` fallthrough. The string used to be inlined at every cond.
+#[cold]
+#[inline(never)]
+pub fn cond_failed() -> ShenError {
+    ShenError::new("cond: no clause matched")
+}
+
+/// Consecutive `(set NAME LITERAL)` steps from `shen.initialise`.
+pub fn set_lits(interp: &mut Interp, rows: &[(&str, Lit)]) -> ShenResult<Value> {
+    let mut last = Value::nil();
+    for &(name, lit) in rows {
+        last = lit_value(interp, lit)?;
+        let sym = interp.intern(name);
+        interp.env.set_global(sym, last);
+    }
+    Ok(last)
+}
+
+/// One element of a static list emitted for a long literal `cons` spine
+/// (arity tables, external-symbol lists, `shen.*special*`).
+///
+/// klcompile turns those spines into data plus one call to [`lit_list`]
+/// instead of a straight-line chain of `cons` instructions.
+#[derive(Clone, Copy)]
+pub enum Lit {
+    Sym(&'static str),
+    Int(i64),
+    Str(&'static str),
+    Bool(bool),
+    Nil,
+    /// `(intern "…")`, including Shen's `true`/`false` → boolean rule.
+    Intern(&'static str),
+    /// `(vector N)` — the kernel vector constructor, called while the list
+    /// is built (defuns are already installed when init runs).
+    Vector(i64),
+}
+
+/// Build a right-nested KL list from [`Lit`]s, head first.
+pub fn lit_list(interp: &mut Interp, lits: &[Lit]) -> ShenResult<Value> {
+    let mut tail = Value::nil();
+    for lit in lits.iter().rev() {
+        let head = lit_value(interp, *lit)?;
+        tail = cons(&head, &tail);
+    }
+    Ok(tail)
+}
+
+fn lit_value(interp: &mut Interp, lit: Lit) -> ShenResult<Value> {
+    Ok(match lit {
+        Lit::Sym(s) => Value::sym(interp.intern(s)),
+        Lit::Int(n) => Value::int(n),
+        Lit::Str(s) => Value::str(s),
+        Lit::Bool(b) => Value::bool(b),
+        Lit::Nil => Value::nil(),
+        Lit::Intern(s) => interp.intern_kl(s),
+        Lit::Vector(n) => apply_direct(interp, "vector", &[Value::int(n)])?,
+    })
+}
+
+/// Nested 1-arg lambdas whose body is `(name x1 … xn)`, the shape of every
+/// `shen.lambda-form` entry the kernel installs. One builder replaces the
+/// straight-line closure nest.
+pub fn curried_fn(interp: &mut Interp, name: &'static str, arity: usize) -> Value {
+    curried_from(interp, name, arity, Vec::new())
+}
+
+fn curried_from(
+    interp: &mut Interp,
+    name: &'static str,
+    arity: usize,
+    captured: Vec<Value>,
+) -> Value {
+    let captured_body = captured.clone();
+    make_aot_closure(
+        "<lambda>",
+        1,
+        move |interp, args| {
+            let mut all = captured_body.clone();
+            all.push(args[0]);
+            if all.len() >= arity {
+                apply_direct(interp, name, &all)
+            } else {
+                Ok(curried_from(interp, name, arity, all))
+            }
+        },
+        captured,
+        interp,
+    )
+}
+
+/// `(cons name (curried-fn name arity))`.
+pub fn lambda_entry(interp: &mut Interp, name: &'static str, arity: usize) -> Value {
+    let sym = Value::sym(interp.intern(name));
+    let lam = curried_fn(interp, name, arity);
+    cons(&sym, &lam)
+}
+
+/// The `shen.*lambdatable*` alist: a list of [`lambda_entry`] pairs.
+pub fn lambda_alist(interp: &mut Interp, entries: &[(&'static str, usize)]) -> Value {
+    let mut tail = Value::nil();
+    for &(name, arity) in entries.iter().rev() {
+        let e = lambda_entry(interp, name, arity);
+        tail = cons(&e, &tail);
+    }
+    tail
+}
+
+/// Run `(shen.set-lambda-form-entry (cons name <curried>))` for each row.
+/// Returns whatever the last call returned, matching a `do` chain.
+pub fn install_lambda_forms(
+    interp: &mut Interp,
+    entries: &[(&'static str, usize)],
+) -> ShenResult<Value> {
+    let mut result = Value::nil();
+    for &(name, arity) in entries {
+        let entry = lambda_entry(interp, name, arity);
+        result = apply_direct(interp, "shen.set-lambda-form-entry", &[entry])?;
+    }
+    Ok(result)
+}
+
+#[cfg(test)]
+mod table_tests {
+    use super::*;
+    use crate::interp::eval::Interp;
+
+    #[test]
+    fn lit_list_matches_nested_cons() {
+        let mut interp = Interp::new();
+        let built = lit_list(
+            &mut interp,
+            &[
+                Lit::Sym("hd"),
+                Lit::Int(1),
+                Lit::Intern(":"),
+                Lit::Bool(true),
+                Lit::Nil,
+            ],
+        )
+        .unwrap();
+        let colon = interp.intern_kl(":");
+        let manual = cons(
+            &Value::sym(interp.intern("hd")),
+            &cons(
+                &Value::int(1),
+                &cons(
+                    &colon,
+                    &cons(&Value::bool(true), &cons(&Value::nil(), &Value::nil())),
+                ),
+            ),
+        );
+        assert!(crate::value::shen_eq(&built, &manual));
+    }
+
+    #[test]
+    fn headed_list_matches_shen_pattern() {
+        let mut interp = Interp::new();
+        let tag = Value::sym(interp.intern("group-members"));
+        let name = Value::sym(interp.intern("ada"));
+        let good = cons(&tag, &cons(&name, &Value::nil()));
+        let hit = headed_list(&mut interp, &good, "group-members", 2).unwrap();
+        assert_eq!(hit.as_bool(), Some(true));
+        let short = cons(&tag, &Value::nil());
+        let miss = headed_list(&mut interp, &short, "group-members", 2).unwrap();
+        assert_eq!(miss.as_bool(), Some(false));
+        let other = cons(&name, &cons(&tag, &Value::nil()));
+        let miss_tag = headed_list(&mut interp, &other, "group-members", 2).unwrap();
+        assert_eq!(miss_tag.as_bool(), Some(false));
+        let atom = Value::int(1);
+        let miss_atom = headed_list(&mut interp, &atom, "group-members", 2).unwrap();
+        assert_eq!(miss_atom.as_bool(), Some(false));
+    }
+
+    #[test]
+    fn curried_fn_is_nested_application() {
+        let mut interp = Interp::new();
+        let f = curried_fn(&mut interp, "+", 2);
+        let g = interp.apply(f, vec![Value::int(20)]).unwrap();
+        let r = interp.apply(g, vec![Value::int(22)]).unwrap();
+        assert_eq!(r.as_int(), Some(42));
+    }
 }

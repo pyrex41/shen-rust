@@ -193,8 +193,33 @@ bytecode VM (`interpreter`). A Yggdrasil shake whose manifest says
 `yggdrasil-build` reads that manifest and emits a crate with
 `default-features = false`. Boot calls `boot_aot_slice`: it installs the
 AOT defuns, runs `(shen.initialise)` if the slice kept it, and runs
-compiled top-level forms. KL source is not parsed or evaluated, and
+compiled top-level forms. KL source is not parsed or evaluated.
 `*home-directory*` falls back to `"/"` when `wasm32` has no process cwd.
+Host SHA-256 is the `sha256` feature (on by default) and stays out of an
+image whose manifest does not mention it.
+
+The AOT-only scaffold compiles at `opt-level = "z"` (thin LTO, one codegen
+unit). A `--full` scaffold stays at opt 3, and so does this repo's own
+release profile. Kernel AOT emission is unchanged: the lean lowerings are
+off in `CompileOptions::kernel()`, which is what Gate 6 freezes.
+
+Those lowerings, all on for an eval-unreachable shake:
+
+- Arity lists, external-symbol lists, lambda-form entries, and runs of
+  literal `set`s are static tables (`rt::lit_list`, `rt::lambda_alist`,
+  `rt::install_lambda_forms`, `rt::set_lits`).
+- Function registration is one `rt::install_fns` table. `register_native`
+  is a non-generic outlined body, so each closure is not monomorphized
+  into `main`.
+- Arity errors, `cond` fallthrough, deep `hd`/`tl` chains, and Shen's
+  headed-list patterns (`cons?` / tag / proper tail) call shared helpers
+  (`rt::arity_mismatch`, `rt::cond_failed`, `rt::list_ref`,
+  `rt::headed_list`). Tail tests use `?` instead of an inlined
+  `match` on every `if`.
+
+`YGGDRASIL_NO_LITERAL_TABLES`, `YGGDRASIL_NO_TABLE_INSTALL`,
+`YGGDRASIL_NO_LEAN_EMIT`, and `YGGDRASIL_NO_SET_TABLES` turn the
+corresponding lowering off for a size comparison.
 
 ```sh
 cargo run -p yggdrasil-build -- examples/wasm-profile/fib /tmp/fib-lean

@@ -1,0 +1,6 @@
+(defun ix.frontend.valid-name? (V7841) (cond ((= "" V7841) false) (true true)))
+
+(defun ix.frontend.valid-city? (V7844) (cond ((= "" V7844) false) (true true)))
+
+(defun ix.frontend.profile-command (V7845 V7846 V7847 V7848) (cons ix.profile (cons V7845 (cons V7846 (cons V7847 (cons V7848 ()))))))
+

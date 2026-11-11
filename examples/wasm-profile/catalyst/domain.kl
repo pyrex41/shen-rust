@@ -1,0 +1,20 @@
+(defun ix.activate (V7670 V7671 V7672) (cond ((and (cons? V7670) (and (= admin-evidence (hd V7670)) (and (cons? (tl V7670)) (and (cons? (tl (tl V7670))) (and (= () (tl (tl (tl V7670)))) (and (cons? V7671) (and (= pending-membership (hd V7671)) (and (cons? (tl V7671)) (and (cons? (tl (tl V7671))) (and (= () (tl (tl (tl V7671)))) (and (cons? V7672) (and (= approval-facts (hd V7672)) (and (cons? (tl V7672)) (and (cons? (tl (tl V7672))) (and (cons? (tl (tl (tl V7672)))) (and (cons? (tl (tl (tl (tl V7672))))) (and (= admin (hd (tl (tl (tl (tl V7672)))))) (and (cons? (tl (tl (tl (tl (tl V7672)))))) (and (= pending (hd (tl (tl (tl (tl (tl V7672))))))) (and (cons? (tl (tl (tl (tl (tl (tl V7672))))))) (and (= true (hd (tl (tl (tl (tl (tl (tl V7672)))))))) (and (cons? (tl (tl (tl (tl (tl (tl (tl V7672)))))))) (and (= true (hd (tl (tl (tl (tl (tl (tl (tl V7672))))))))) (and (= () (tl (tl (tl (tl (tl (tl (tl (tl V7672))))))))) (and (= (hd (tl V7670)) (hd (tl V7671))) (and (= (hd (tl V7670)) (hd (tl V7672))) (and (= (hd (tl (tl V7670))) (hd (tl (tl V7672)))) (= (hd (tl (tl V7671))) (hd (tl (tl (tl V7672)))))))))))))))))))))))))))))))) (cons approved (cons (cons active-membership (cons (hd (tl V7670)) (tl (tl V7671)))) ()))) (true approval-denied)))
+
+(defun ix.event-key (V7673) (cond ((and (cons? V7673) (and (= event-id (hd V7673)) (and (cons? (tl V7673)) (= () (tl (tl V7673)))))) (hd (tl V7673))) (true (simple-error "partial function ix.event-key"))))
+
+(defun ix.audience-allows? (V7694 V7695 V7696 V7697) (cond ((= public V7694) true) ((= members V7694) V7695) ((= hidden V7694) false) ((and (cons? V7694) (and (= group-members (hd V7694)) (and (cons? (tl V7694)) (= () (tl (tl V7694)))))) (and V7695 (element? (hd (tl V7694)) V7697))) ((and (cons? V7694) (and (= accounts (hd V7694)) (and (cons? (tl V7694)) (= () (tl (tl V7694)))))) (and V7695 (element? V7696 (hd (tl V7694))))) ((and (cons? V7694) (and (= union (hd V7694)) (and (cons? (tl V7694)) (and (cons? (tl (tl V7694))) (= () (tl (tl (tl V7694)))))))) (or (ix.audience-allows? (hd (tl V7694)) V7695 V7696 V7697) (ix.audience-allows? (hd (tl (tl V7694))) V7695 V7696 V7697))) ((and (cons? V7694) (and (= intersection (hd V7694)) (and (cons? (tl V7694)) (and (cons? (tl (tl V7694))) (= () (tl (tl (tl V7694)))))))) (and (ix.audience-allows? (hd (tl V7694)) V7695 V7696 V7697) (ix.audience-allows? (hd (tl (tl V7694))) V7695 V7696 V7697))) (true (simple-error "partial function ix.audience-allows?"))))
+
+(defun ix.active? (V7700) (cond ((= member V7700) true) ((= admin V7700) true) (true false)))
+
+(defun ix.visible? (V7725 V7726 V7727) (cond ((= admin V7727) true) ((= member V7727) true) ((= public V7725) true) ((= members V7725) V7726) ((= hidden V7725) false) (true false)))
+
+(defun ix.can-admin? (V7730) (cond ((= admin V7730) true) (true false)))
+
+(defun ix.join-rule (V7741 V7742) (cond ((= admin V7742) (cons joined (cons admin ()))) ((= member V7742) (cons joined (cons member ()))) ((= open V7741) (cons joined (cons member ()))) ((= approval V7741) (cons joined (cons pending ()))) ((= invite V7741) denied) (true (simple-error "partial function ix.join-rule"))))
+
+(defun ix.can-chat? (V7743 V7744) (and V7743 (ix.active? V7744)))
+
+(defun ix.can-rsvp? (V7745 V7746 V7747 V7748) (and (ix.active? V7745) (or V7748 (< V7747 V7746))))
+
+(defun ix.can-approve? (V7753 V7754) (cond ((and (= admin V7753) (= pending V7754)) true) (true false)))
+
