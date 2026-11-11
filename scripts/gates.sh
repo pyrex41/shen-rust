@@ -39,6 +39,11 @@ run "Gate 7: kernel-tests (canonical)" scripts/kernel-tests.sh
 run "Gate 8: kernel-tests-debug" scripts/kernel-tests.sh --debug
 run "Gate 9: kernel-tests-debug-gc" scripts/kernel-tests.sh --debug-gc
 run "Gate 10: cedar-equiv"    scripts/shen-cedar-equiv.sh
+# Lean boot (no default features). Kernel 43.4's initialiser calls bound?,
+# which AOT code lowers to value/or. That primitive has to be registered
+# before shen.initialise. The feature matrix and wasm32 runs live in CI
+# job `lean-boot`; this gate is the fast native check.
+run "Gate 11: lean-boot"     cargo test -p shen-rust --test lean_boot --no-default-features
 
 echo
 if [ ${#fail[@]} -eq 0 ]; then
