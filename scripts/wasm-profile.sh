@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Size and boot profile for a Yggdrasil-shaken wasm32 image.
 #
+# Fixture defaults to examples/wasm-profile/fib. Point FIXTURE at
+# examples/wasm-profile/catalyst for the profile slice. WORK is the
+# scratch directory.
+#
 # Builds the fixture twice:
 #   full — yggdrasil-build --full (default shen-rust features, KL interpreter)
 #   lean — yggdrasil-build        (no cedar, no kernel-aot, no interpreter
@@ -42,11 +46,11 @@ build_wasm() {
   local raw="$dir/target/wasm32-wasip1/release/${name}.wasm"
   wasm-opt -Oz --enable-bulk-memory --enable-multivalue --enable-simd \
     --enable-reference-types --enable-nontrapping-float-to-int \
-    "$raw" -o "$dir/fib.wasm"
+    "$raw" -o "$dir/app.wasm"
   # Names survive in this copy so twiggy can attribute the same bodies.
   wasm-opt -Oz --debuginfo --enable-bulk-memory --enable-multivalue --enable-simd \
     --enable-reference-types --enable-nontrapping-float-to-int \
-    "$raw" -o "$dir/fib-named.wasm"
+    "$raw" -o "$dir/app-named.wasm"
 }
 
 scaffold full "$work/full"
@@ -70,11 +74,11 @@ size_of() {
 
 echo
 echo "sizes after wasm-opt -Oz (raw gzip brotli bytes)"
-printf 'full %s\n' "$(size_of "$work/full/fib.wasm")"
-printf 'lean %s\n' "$(size_of "$work/lean/fib.wasm")"
+printf 'full %s\n' "$(size_of "$work/full/app.wasm")"
+printf 'lean %s\n' "$(size_of "$work/lean/app.wasm")"
 
-node "$root/scripts/wasm-profile-boot.mjs" "$work/full/fib.wasm" "$work/full-out.txt" | tee "$work/full-boot.txt"
-node "$root/scripts/wasm-profile-boot.mjs" "$work/lean/fib.wasm" "$work/lean-out.txt" | tee "$work/lean-boot.txt"
+node "$root/scripts/wasm-profile-boot.mjs" "$work/full/app.wasm" "$work/full-out.txt" | tee "$work/full-boot.txt"
+node "$root/scripts/wasm-profile-boot.mjs" "$work/lean/app.wasm" "$work/lean-out.txt" | tee "$work/lean-boot.txt"
 
 echo
 echo "stdout vs native"
@@ -84,5 +88,5 @@ cmp "$native_out" "$work/full-out.txt" && echo "full wasm stdout matches native"
 if command -v twiggy >/dev/null 2>&1; then
   echo
   echo "twiggy top (lean, names kept)"
-  twiggy top -n 30 "$work/lean/fib-named.wasm"
+  twiggy top -n 30 "$work/lean/app-named.wasm"
 fi

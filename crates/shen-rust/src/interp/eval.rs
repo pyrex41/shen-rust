@@ -717,12 +717,19 @@ impl Interp {
     where
         F: Fn(&mut Interp, &[Value]) -> ShenResult<Value> + 'static,
     {
+        // The body is one non-generic function. A separate monomorphization
+        // per closure was being inlined into startup (`main` on wasm).
+        self.register_native_erased(name, arity, Rc::new(f));
+    }
+
+    #[inline(never)]
+    fn register_native_erased(&mut self, name: &str, arity: usize, f: Rc<NativeFn>) {
         let sym = self.intern(name);
         let closure = Closure {
             name: Some(sym),
             arity,
             partial: Vec::new(),
-            kind: ClosureKind::Native(Rc::new(f) as Rc<NativeFn>, Vec::new()),
+            kind: ClosureKind::Native(f, Vec::new()),
         };
         self.env.set_fn(sym, Value::closure(closure));
         // Grow direct table in lockstep and CLEAR any pre-existing direct
@@ -745,6 +752,7 @@ impl Interp {
     /// so the env closure exists when the direct entry goes live (the
     /// direct table is a mirror of env.functions, never the other way
     /// around; see `clear_aot_direct`).
+    #[inline(never)]
     pub fn register_aot_direct(&mut self, name: &str, f: DirectFn) {
         let sym = self.intern(name);
         let idx = sym.0 as usize;
